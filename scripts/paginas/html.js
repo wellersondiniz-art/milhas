@@ -57,10 +57,13 @@ export function h(tag, atributos = {}, ...filhos) {
   return new Html(`<${tag}${attrs}>${filhosParaTexto(filhos)}</${tag}>`);
 }
 
-/** Link só para endereço http(s). Qualquer outro esquema vira texto sem link. */
+/**
+ * Link só para endereço http(s). Qualquer outro esquema vira texto sem link.
+ * Esses links ficam soltos (fora de frase), então ganham alvo de toque de 44px.
+ */
 export function linkExterno(url, ...filhos) {
   if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return juntar(...filhos);
-  return h('a', { href: url, rel: 'noopener noreferrer nofollow' }, ...filhos);
+  return h('a', { href: url, rel: 'noopener noreferrer nofollow', class: 'alvo-toque' }, ...filhos);
 }
 
 /**

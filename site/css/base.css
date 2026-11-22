@@ -7,6 +7,9 @@
  * Fontes: só as do sistema, sem nada de terceiros.
  * Contraste: todo par texto/fundo dos tokens passa AA (4,5:1; bordas de
  * campo e foco passam 3:1). Conferido nos dois temas.
+ * Foco: o anel desenhado com box-shadow some no modo de alto contraste do
+ * Windows (forced-colors). Por isso, onde o anel é box-shadow, o outline
+ * fica transparente em vez de "none": nesse modo o sistema pinta o outline.
  */
 
 /* 1. Tokens -------------------------------------------------------------- */
@@ -41,6 +44,7 @@
   --cor-info-texto: #1e4e86;
 
   --cor-foco: #1e4e86;
+  --cor-foco-topo: #ffd25e;        /* foco e página atual no topo verde */
   --cor-esqueleto: #ece4d3;
   --cor-esqueleto-brilho: #f7f1e5;
 
@@ -91,6 +95,7 @@
   --largura-conteudo: 42rem;
   --largura-larga: 64rem;
   --altura-toque: 3rem;   /* 48px: alvo de toque confortável */
+  --alvo-minimo: 2.75rem; /* 44px: menor alvo de toque aceito (links soltos) */
   --anel-foco: 0 0 0 3px var(--cor-fundo), 0 0 0 6px var(--cor-foco);
   --transicao: 150ms ease;
 }
@@ -121,6 +126,7 @@
     --cor-info-fundo: #16273a;
     --cor-info-texto: #9cc6f2;
     --cor-foco: #9cc6f2;
+    --cor-foco-topo: #0e2316;
     --cor-esqueleto: #26302a;
     --cor-esqueleto-brilho: #313d35;
     --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -153,6 +159,7 @@
   --cor-info-fundo: #16273a;
   --cor-info-texto: #9cc6f2;
   --cor-foco: #9cc6f2;
+  --cor-foco-topo: #0e2316;
   --cor-esqueleto: #26302a;
   --cor-esqueleto-brilho: #313d35;
   --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -283,6 +290,14 @@ img, svg { max-width: 100%; height: auto; }
 
 .pular-para-conteudo:focus { top: var(--espaco-4); }
 
+/* Link solto (fora de frase) com alvo de toque de pelo menos 44px. */
+.alvo-toque {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--alvo-minimo);
+  min-width: var(--alvo-minimo);
+}
+
 /* 4. Botão --------------------------------------------------------------- */
 
 .botao {
@@ -314,7 +329,7 @@ img, svg { max-width: 100%; height: auto; }
 .botao:active { transform: translateY(1px); }
 
 .botao:focus-visible {
-  outline: none;
+  outline: 3px solid transparent;
   box-shadow: var(--anel-foco);
 }
 
@@ -401,8 +416,11 @@ img, svg { max-width: 100%; height: auto; }
 
 .campo__entrada:hover { border-color: var(--cor-texto-suave); }
 
-.campo__entrada:focus-visible {
-  outline: none;
+/* No campo de data, o botão do calendário fica dentro do campo e, com o foco
+   nele, o Chrome não marca o campo nem com :focus. :focus-within marca. */
+.campo__entrada:focus-visible,
+.campo__entrada[type="date"]:focus-within {
+  outline: 3px solid transparent;
   border-color: var(--cor-foco);
   box-shadow: 0 0 0 3px var(--cor-foco);
 }
@@ -652,7 +670,7 @@ select.campo__entrada {
 .termo[open] > summary::before { content: "−"; }
 
 .termo > summary:focus-visible {
-  outline: none;
+  outline: 3px solid transparent;
   box-shadow: inset 0 0 0 3px var(--cor-foco);
   border-radius: var(--raio-md);
 }
@@ -792,9 +810,21 @@ select.campo__entrada {
   to { background-position: -100% 0; }
 }
 
-/* 12. Movimento reduzido ------------------------------------------------- */
+/* 12. Alto contraste do sistema (forced-colors) ------------------------- */
+
+@media (forced-colors: active) {
+  .selo,
+  .alerta,
+  .card__bloco,
+  .confirmar { border: 1px solid CanvasText; }
+  .esqueleto { background: GrayText; }
+}
+
+/* 13. Movimento reduzido ------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+
   *,
   *::before,
   *::after {
@@ -802,4 +832,6 @@ select.campo__entrada {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  .botao:active { transform: none; }
 }

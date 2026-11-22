@@ -12,7 +12,7 @@ import { abrirArmazem } from './perfil/armazem.js';
 import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
 import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
-import { agoraLocal } from './tela/textos.js';
+import { agoraLocal, anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { maisAntiga } from './pwa/textos.js';
@@ -31,6 +31,7 @@ const botaoVer = $('ver-resultado');
 const passoResultado = $('passo-resultado');
 const titulo = $('resultado-titulo');
 const resultado = $('resultado');
+const anuncio = $('resultado-anuncio');
 const convite = $('convite-perfil');
 const telaInicio = $('tela-inicio');
 const telaPerfil = $('tela-perfil');
@@ -76,6 +77,16 @@ function marcarErro(campo, caixa, mensagem) {
 // ---------------------------------------------------------------------------
 // Passo 3: resultado
 
+// Região role="status": o leitor de tela lê o texto quando ele muda.
+// Esvazia antes e escreve depois de um instante, para repetir o aviso
+// mesmo quando o texto é igual ao anterior.
+let esperaAnuncio = 0;
+function anunciar(texto) {
+  clearTimeout(esperaAnuncio);
+  anuncio.textContent = '';
+  if (texto) esperaAnuncio = setTimeout(() => { anuncio.textContent = texto; }, 150);
+}
+
 function perfilDaConta() {
   return ehVazio(perfilSalvo)
     ? { perfil: perfilDeTodos(dados), semPerfil: true }
@@ -113,7 +124,9 @@ function calcular({ focar } = { focar: true }) {
       agoraLocal(new Date()),
     );
     resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil }));
+    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
   } catch (erro) {
+    anunciar('');
     console.error(erro);
     mostrarErro('Não deu para calcular', 'Algo nos dados ou no valor não fechou. Confira o valor e tente de novo. Se continuar, o problema é nosso.', () => calcular());
   }

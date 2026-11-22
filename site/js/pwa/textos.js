@@ -1,6 +1,9 @@
 // Textos do modo app (PWA). Funções puras: recebem datas e devolvem palavras.
 
 const dois = (n) => String(n).padStart(2, '0');
+// Hora e data no fuso do aparelho, no jeito brasileiro ("09:05", "20/11/2026").
+const HORA = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const DATA = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 function diaLocal(data) {
   return `${data.getFullYear()}-${dois(data.getMonth() + 1)}-${dois(data.getDate())}`;
@@ -14,11 +17,11 @@ export function quandoForamSalvos(salvoEmIso, agora) {
   if (typeof salvoEmIso !== 'string') return null;
   const salvo = new Date(salvoEmIso);
   if (Number.isNaN(salvo.getTime())) return null;
-  const hora = `${dois(salvo.getHours())}:${dois(salvo.getMinutes())}`;
+  const hora = HORA.format(salvo);
   const ontem = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - 1);
   if (diaLocal(salvo) === diaLocal(agora)) return `de hoje, ${hora}`;
   if (diaLocal(salvo) === diaLocal(ontem)) return `de ontem, ${hora}`;
-  return `de ${dois(salvo.getDate())}/${dois(salvo.getMonth() + 1)}/${salvo.getFullYear()}, ${hora}`;
+  return `de ${DATA.format(salvo)}, ${hora}`;
 }
 
 /** Título e texto do aviso de sem internet. */

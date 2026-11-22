@@ -341,7 +341,8 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
 
   const conteudo = juntar(
     h('section', { class: 'pilha--sm' },
-      h('p', { class: 'texto-suave texto-pequeno' }, h('a', { href: `${raiz}ofertas/` }, 'Ofertas de hoje'), ' › ', loja.nome),
+      h('nav', { class: 'texto-suave texto-pequeno', 'aria-label': 'Você está em' },
+        h('a', { class: 'alvo-toque', href: `${raiz}ofertas/` }, 'Ofertas de hoje'), h('span', { 'aria-hidden': 'true' }, ' › '), loja.nome),
       h('h1', {}, `Pontos e milhas ${naLoja(loja)} hoje`),
       h('p', { class: 'texto-suave texto-pequeno' }, `Situação em ${formatarData(hoje)}, com os dados conferidos até agora.`)),
     cartaoDaResposta(dados, loja, melhor, resposta, raiz),
@@ -436,11 +437,11 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
           h('th', { scope: 'col' }, 'Validade'),
           h('th', { scope: 'col' }, 'Conferido'))),
         h('tbody', {}, linhas.map(({ loja, oferta, porReal }) => h('tr', {},
-          h('td', { 'data-rotulo': 'Loja' }, h('a', { href: `${raiz}loja/${loja.id}/` }, loja.nome)),
+          h('td', { 'data-rotulo': 'Loja' }, h('a', { class: 'alvo-toque', href: `${raiz}loja/${loja.id}/` }, loja.nome)),
           h('td', { 'data-rotulo': 'Programa' }, porReal.programa?.nome ?? oferta.programa_id),
           h('td', { 'data-rotulo': 'Até (pontos por real)', class: 'numero' }, porReal.total_pontos_texto),
           h('td', { 'data-rotulo': 'Validade' }, confirmado(oferta.fim) ? `até ${formatarData(oferta.fim)}` : 'fim não confirmado'),
-          h('td', { 'data-rotulo': 'Conferido' }, formatarData(oferta.verificado_em), ' · ', linkExterno(oferta.fonte_url, 'fonte'))))))
+          h('td', { 'data-rotulo': 'Conferido' }, formatarData(oferta.verificado_em), ' · ', linkExterno(oferta.fonte_url, 'fonte', h('span', { class: 'visualmente-oculto' }, ` da oferta ${naLoja(loja)}`)))))))
       : null,
     h('section', { class: 'pilha--sm', 'aria-labelledby': 'lojas-titulo' },
       h('h2', { id: 'lojas-titulo', class: 'pagina__subtitulo' }, 'Todas as lojas'),

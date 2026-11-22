@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { aplicarMascara, erroDoValor, MAX_DIGITOS, VALOR_MAXIMO_CENTAVOS } from '../site/js/tela/moeda.js';
 import { filtrarLojas, lojaPeloNome, normalizar } from '../site/js/tela/lojas.js';
 import {
-  agoraLocal, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  agoraLocal, anuncioDoResultado, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
 } from '../site/js/tela/textos.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
 import { copiarDados, ARQUIVOS } from '../scripts/copiar-dados.js';
@@ -135,6 +135,21 @@ test('destaque: reais quando o motor dá o valor; pontos quando falta o milheiro
   assert.match(destaqueDoJeito(comOferta).legenda, /falta o valor do milheiro do Programa B/);
   const [vazio] = calc({ programas: [], cartoes: [] });
   assert.equal(destaqueDoJeito(vazio).principal, 'Nenhum ponto');
+});
+
+test('anúncio para leitor de tela: valor, pontos, como comprar e quantos jeitos há', () => {
+  const jeitos = calc(PERFIL);
+  const texto = anuncioDoResultado(jeitos, { nomeLoja: 'Loja A', valorTexto: 'R$ 100,00' });
+  assert.match(texto, /^Resultado para R\$ 100,00 na Loja A\. O melhor jeito rende /);
+  assert.match(texto, /Compre na Loja A pela oferta do Programa B e pague com o cartão Cartão A\./);
+  assert.match(texto, /Há mais 1 jeito logo abaixo\.$/);
+  const [semOferta] = calc({ programas: [{ programa_id: 'prog-a', clube_ativo: false }], cartoes: ['cartao-a'] }, 10000)
+    .filter((j) => j.tipo !== 'oferta');
+  assert.equal(
+    anuncioDoResultado([semOferta], { nomeLoja: 'Loja A', valorTexto: 'R$ 100,00' }),
+    'Resultado para R$ 100,00 na Loja A. A Loja A não tem oferta de pontos valendo hoje. O melhor jeito rende R$ 4,00 em pontos (200 pontos). ' +
+    'Compre direto na Loja A e pague com o cartão Cartão A. Os pontos vão para o Programa A.',
+  );
 });
 
 test('validade: da oferta, ou explica que é ponto de sempre do cartão', () => {
