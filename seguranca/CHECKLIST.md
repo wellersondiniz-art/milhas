@@ -15,15 +15,15 @@ A Cloudflare Pages publica `dist/`, gerada por `npm run build` a partir de `site
 | 3 | HTTPS obrigatório + HSTS | Feito no código, conferir no ar | HSTS de 1 ano com subdomínios e `upgrade-insecure-requests`. Sem `preload` (decisão do dono, depois do domínio próprio). No domínio próprio, ligar "Always Use HTTPS" na Cloudflare. |
 | 4 | Validação de formulários no servidor | Não se aplica | Não há servidor. Entradas do usuário são validadas no navegador e só afetam o próprio aparelho. |
 | 5 | Proteção contra XSS (textContent, CSP) | Feito e testado | Sem innerHTML/eval; o gerador de páginas escapa tudo e só faz link para `https://`; CSP sem `unsafe-inline` (CSS embutido entra por sha256). Testado com dado malicioso em todos os JSON. |
-| 6 | Monitoramento de atividade suspeita | Não se aplica | Site estático, sem conta nem servidor. Rever na Fase 2 (métricas). |
+| 6 | Monitoramento de atividade suspeita | Não se aplica | Site estático, sem conta nem servidor. As métricas (Plausible, sem cookie) contam uso, não segurança. |
 | 7 | Rotas de admin restritas | Não se aplica | Não há área de admin. |
-| 8 | Variáveis de ambiente conferidas | Feito | Não há variáveis. `.env*` no `.gitignore`. |
+| 8 | Variáveis de ambiente conferidas | Feito | Só nos scripts do computador: `ANTHROPIC_API_KEY` (extração semanal) e `PLAUSIBLE_API_KEY` (painel semanal). Nenhuma vai para o site. `.env*` no `.gitignore`. |
 | 9 | Limite de requisições | Não se aplica | Só arquivos estáticos; a Cloudflare cuida do tráfego. Rever se surgir API. |
 | 10 | Cabeçalhos de segurança | Feito e testado localmente | CSP (`img-src 'self'`, sem `data:`), HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy, COOP e CORP. `auditar.sh` confere `site/_headers` e `dist/_headers`. |
 | 11 | Cookies de sessão (HttpOnly, Secure, SameSite) | Não se aplica | Sem sessão e sem cookies. Preferências ficam no `localStorage`. |
 | 12 | Proteção contra CSRF | Não se aplica | Sem formulário enviado a servidor e sem sessão. |
 | 13 | Links de redefinição de senha que expiram | Não se aplica | Sem senha. |
-| 14 | Upload com tipos permitidos e limite de tamanho | Não se aplica a servidor | "Importar perfil" só lê o arquivo no próprio aparelho: até 50 KB, só campos e ids conhecidos, nada é enviado (`connect-src 'self'`). |
+| 14 | Upload com tipos permitidos e limite de tamanho | Não se aplica a servidor | "Importar perfil" só lê o arquivo no próprio aparelho: até 50 KB, só campos e ids conhecidos, nada é enviado (`connect-src` só libera o próprio site e o envio das métricas, que nunca leva o perfil). |
 | 15 | Debug desligado em produção | Feito | `auditar.sh` alerta sobre `console.log` e `debugger` em `site/`. |
 | 16 | Dependências atualizadas e versões fixas | Feito | Zero dependências de runtime. Actions do GitHub fixadas por SHA. Quando houver `package-lock.json`, rodar `npm audit`. |
 | 17 | Arquivos expostos fora das pastas publicadas | Feito | Só `dist/` é publicada. `auditar.sh` procura .env, .git, backups, dumps, source maps e package.json em `site/` e `dist/`, e confere que a vitrine de estilo ficou fora. |

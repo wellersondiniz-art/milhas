@@ -24,7 +24,8 @@
     "extrair": "node scripts/extrair.js",
     "propor": "node scripts/propor-mudancas.js",
     "aprovar": "node scripts/aprovar-mudancas.js",
-    "atualizacao:demo": "node testes/atualizacao/demo.mjs"
+    "atualizacao:demo": "node testes/atualizacao/demo.mjs",
+    "painel": "node scripts/painel-semanal.js"
 
   },
   "devDependencies": {

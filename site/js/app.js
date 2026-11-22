@@ -16,6 +16,7 @@ import { agoraLocal, anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { maisAntiga } from './pwa/textos.js';
+import { criarMetricas, observarCliquesDeSaida, observarInstalacao } from './metricas/metricas.js';
 
 const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
 
@@ -40,6 +41,10 @@ let dados = null;
 let perfilSalvo = null;
 let mostrandoResultado = false;
 let telaDoPerfil = null;
+// Loja da última conta: vai junto com o clique de saída (taxa calcular → clicar).
+let lojaDaConta = null;
+// Métricas sem cookie: nunca levam valor, cartões nem programas (ver metricas.js).
+const metricas = criarMetricas();
 const armazem = abrirArmazem((() => { try { return globalThis.localStorage; } catch { return undefined; } })());
 
 // ---------------------------------------------------------------------------
@@ -51,6 +56,7 @@ const busca = criarBuscaDeLoja({
   status: $('loja-status'),
   aoEscolher(loja) {
     if (!loja) return;
+    metricas.registrar('busca_loja', { loja: loja.id, origem: 'calculadora' }, { umaVez: true });
     marcarErro(campoLoja, erroLoja, '');
     if (passoValor.hidden) {
       passoValor.hidden = false;
@@ -100,14 +106,21 @@ function mostrarErro(tituloAlerta, mensagem, aoTentar) {
   resultado.removeAttribute('aria-busy');
 }
 
-function calcular({ focar } = { focar: true }) {
+// `contar`: conta como "cálculo feito" (não conta quando a conta é refeita
+// sozinha porque o perfil mudou).
+function calcular({ focar = true, contar = true } = {}) {
   const loja = busca.confirmar();
   const { centavos } = aplicarMascara(campoValor.value);
   const problemaLoja = loja ? '' : 'Escolha uma loja da lista.';
   const problemaValor = passoValor.hidden ? '' : erroDoValor(centavos);
   marcarErro(campoLoja, erroLoja, problemaLoja);
   if (!passoValor.hidden) marcarErro(campoValor, erroValor, problemaValor);
-  if (problemaLoja) { if (focar) campoLoja.focus(); return; }
+  if (problemaLoja) {
+    // Digitou uma loja que não está na lista: conta sem mandar o que foi digitado.
+    if (campoLoja.value.trim()) metricas.registrar('busca_loja', { loja: 'fora-da-lista', origem: 'calculadora' }, { umaVez: true });
+    if (focar) campoLoja.focus();
+    return;
+  }
   if (passoValor.hidden) { passoValor.hidden = false; campoValor.focus(); return; }
   if (problemaValor) { if (focar) campoValor.focus(); return; }
 
@@ -134,6 +147,8 @@ function calcular({ focar } = { focar: true }) {
     );
     resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil }));
     anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
+    lojaDaConta = loja.id;
+    if (contar) metricas.registrar('calculo', { loja: loja.id });
   } catch (erro) {
     anunciar('');
     console.error(erro);
@@ -175,7 +190,7 @@ function definirPerfil(novo) {
   perfilSalvo = novo;
   const salvou = novo === null ? (armazem.apagar(), !armazem.emMemoria) : armazem.salvar(novo);
   mostrarConvite();
-  if (mostrandoResultado) calcular({ focar: false });
+  if (mostrandoResultado) calcular({ focar: false, contar: false });
   return { salvou, emMemoria: armazem.emMemoria };
 }
 
@@ -323,6 +338,8 @@ async function carregar() {
 }
 
 const pwa = iniciarPwa({ avisoVersao: $('aviso-versao'), avisoConexao: $('aviso-conexao') });
+observarCliquesDeSaida({ metricas, pagina: 'inicio', loja: () => lojaDaConta });
+observarInstalacao({ metricas });
 
 mostrarConvite();
 aoMudarRota();

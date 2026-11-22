@@ -184,6 +184,41 @@ Cada passo usa a data de hoje (Brasília); para outra data, passe `--data AAAA-M
 
 Para ver o fluxo inteiro sem internet e sem chave: `npm run atualizacao:demo`. Ele usa duas páginas fictícias e respostas do modelo escritas à mão (`testes/atualizacao/`), roda numa cópia temporária do projeto e só simula os comandos de Git.
 
+## Métricas sem cookie (Plausible)
+
+O site conta alguns usos com o [Plausible](https://plausible.io), sem cookie e sem dado pessoal. Não há script de terceiro: o próprio site manda cada evento com `fetch` para `https://plausible.io/api/event` (o único endereço de fora liberado na CSP, em `connect-src`). O código fica em `site/js/metricas/`.
+
+| Evento | Propriedades | Quando |
+| --- | --- | --- |
+| `busca_loja` | `loja`, `origem` (`calculadora` ou `pagina-da-loja`) | Escolheu uma loja na calculadora ou abriu `/loja/<id>/`. Loja digitada que não está na lista vira `fora-da-lista`, sem o texto. |
+| `calculo` | `loja` | Fez uma conta (refazer sozinho porque o perfil mudou não conta). |
+| `clique_saida` | `destino` (site, sem `www.`), `pagina`, `loja` | Clicou num link para outro site. |
+| `instalacao` | nenhuma | Instalou o app (Chrome e Android; o Safari não avisa). |
+| `oferta_vencida_vista` | `pagina`, `loja` | A seção "Histórico" de ofertas que acabaram apareceu na tela. |
+
+Nunca vão: valor da compra, cartões, programas, perfil, texto digitado, o que vem depois de `?` no endereço, cookie ou referrer. Cada valor precisa ser um código curto (`a-z`, `0-9`, `.`, `-`); se não for, o evento inteiro é descartado. Quem liga "Do Not Track" ou "Global Privacy Control" não é medido. A página Privacidade lista o que é medido a partir do próprio código.
+
+### Ligar (uma vez só, feito por você)
+
+1. Crie uma conta em plausible.io (30 dias grátis; depois o plano mais barato custa cerca de US$ 9 por mês, para até 10 mil visualizações).
+2. Adicione o site com o endereço onde ele está no ar (hoje `milhasdavez.pages.dev`). Pode pular o passo de instalar o script: o site já manda os eventos sozinho.
+3. Em Settings → Goals, crie 5 metas do tipo "Custom event", com estes nomes exatos: `busca_loja`, `calculo`, `clique_saida`, `instalacao`, `oferta_vencida_vista`.
+4. Em Settings → Custom Properties, adicione: `loja`, `origem`, `destino`, `pagina`.
+5. Em `site/js/metricas/config.js`, troque `DOMINIO_NO_PLAUSIBLE = 'A_CONFIRMAR'` pelo mesmo endereço do passo 2, e em `scripts/paginas/config.js` troque `TEXTOS_ATUALIZADOS_EM` para a data do dia. Rode `npm test` e publique: a página Privacidade passa a dizer o que é medido.
+6. Quando mudar para `milhasdavez.com.br`, troque o domínio no Plausible (Settings → General → Change domain) e no `config.js` no mesmo dia.
+
+O site só manda eventos quando está aberto exatamente nesse endereço. No seu computador, nos testes e nas prévias da Cloudflare, nada sai.
+
+### Painel semanal
+
+```bash
+PLAUSIBLE_API_KEY=sua-chave npm run painel                 # semana fechada até ontem
+PLAUSIBLE_API_KEY=sua-chave npm run painel -- --fim 2026-11-21
+npm run painel -- --exemplo                                # números inventados, sem chave
+```
+
+A chave sai em plausible.io → Settings (da conta) → API Keys → "New API Key" do tipo Stats API. Ela fica só na variável de ambiente do seu computador: nunca no código, nem no Git. O painel é gravado em `painel/painel-AAAA-MM-DD.md` (fora do Git) com: resumo da semana, lojas mais buscadas, lojas sem oferta valendo hoje (para cadastrar), cliques de saída por site e taxa calcular → clicar (por loja e no total).
+
 ## Pastas
 
 - `site/`: o código do site, legível (`js/motor/` guarda o cálculo puro, sem interface; `js/tela/` monta a tela inicial e só exibe o que o motor devolve; `_headers` define os cabeçalhos de segurança).

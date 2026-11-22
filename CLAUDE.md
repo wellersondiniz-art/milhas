@@ -83,3 +83,4 @@ Vamos preenchendo conforme o projeto cresce.
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |
+| Painel semanal das métricas | `PLAUSIBLE_API_KEY=... npm run painel` (grava `painel/painel-AAAA-MM-DD.md`; `-- --exemplo` mostra sem chave) |

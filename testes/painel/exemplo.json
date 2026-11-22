@@ -1,0 +1,29 @@
+{
+  "_comentario": "Números inventados, só para ver o formato do painel (npm run painel -- --exemplo). Não são dados reais.",
+  "busca_loja": [
+    { "props": { "loja": "magalu", "origem": "calculadora" }, "total": 120 },
+    { "props": { "loja": "magalu", "origem": "pagina-da-loja" }, "total": 30 },
+    { "props": { "loja": "amazon", "origem": "calculadora" }, "total": 95 },
+    { "props": { "loja": "mercado-livre", "origem": "calculadora" }, "total": 60 },
+    { "props": { "loja": "kabum", "origem": "pagina-da-loja" }, "total": 12 },
+    { "props": { "loja": "fora-da-lista", "origem": "calculadora" }, "total": 9 }
+  ],
+  "calculo": [
+    { "props": { "loja": "magalu" }, "total": 110 },
+    { "props": { "loja": "amazon" }, "total": 80 },
+    { "props": { "loja": "mercado-livre" }, "total": 41 }
+  ],
+  "clique_saida": [
+    { "props": { "destino": "magazineluiza.com.br", "pagina": "inicio", "loja": "magalu" }, "total": 22 },
+    { "props": { "destino": "amazon.com.br", "pagina": "inicio", "loja": "amazon" }, "total": 20 },
+    { "props": { "destino": "magazineluiza.com.br", "pagina": "loja", "loja": "magalu" }, "total": 5 },
+    { "props": { "destino": "voeazul.com.br", "pagina": "ofertas", "loja": null }, "total": 3 }
+  ],
+  "instalacao": [
+    { "props": {}, "total": 4 }
+  ],
+  "oferta_vencida_vista": [
+    { "props": { "pagina": "loja", "loja": "magalu" }, "total": 7 },
+    { "props": { "pagina": "ofertas", "loja": null }, "total": 2 }
+  ]
+}

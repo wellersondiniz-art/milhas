@@ -150,6 +150,8 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "7. Cabeçalhos de segurança (site/_headers e dist/_headers)"
+# Únicos endereços de fora que a CSP pode liberar (regex, um por alternativa).
+CSP_ORIGENS_PERMITIDAS='https://plausible\.io'
 conferir_headers() {
   local arq="$1" cab csp
   if [ ! -f "$arq" ]; then falha "$arq não existe"; return; fi
@@ -161,6 +163,21 @@ conferir_headers() {
     falha "$arq: CSP com unsafe-inline, unsafe-eval, curinga * ou esquema inteiro liberado"
   else
     ok "$arq: CSP sem unsafe-inline, unsafe-eval nem curinga"
+  fi
+  # Endereços de fora liberados na CSP: só os da lista (métricas sem cookie).
+  # Para liberar outro, ele entra aqui e em seguranca/CHECKLIST.md, com o motivo.
+  local fora
+  fora="$(printf '%s' "$csp" | grep -oE 'https://[^[:space:];]+' | grep -vxE "$CSP_ORIGENS_PERMITIDAS" | sort -u || true)"
+  if [ -n "$fora" ]; then
+    falha "$arq: CSP libera endereço fora da lista ($CSP_ORIGENS_PERMITIDAS):"
+    printf '%s\n' "$fora" | sed 's/^/           - /'
+  else
+    ok "$arq: CSP só libera endereços da lista"
+  fi
+  if printf '%s' "$csp" | grep -oE "script-src[^;]*" | grep -qE 'https?://'; then
+    falha "$arq: script-src libera script de outro site"
+  else
+    ok "$arq: nenhum script de outro site (script-src só 'self')"
   fi
   if printf '%s' "$csp" | grep -qi "frame-ancestors 'none'"; then ok "$arq: CSP bloqueia o site dentro de iframe"; else alerta "$arq: CSP sem frame-ancestors 'none'"; fi
 }

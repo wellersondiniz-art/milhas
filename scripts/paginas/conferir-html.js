@@ -55,11 +55,18 @@ export function conferirHtml(html) {
     }
     if (nome === 'script') {
       const tipo = attrs.find(([a]) => a === 'type')?.[1];
-      if (tipo !== 'application/ld+json') problemas.push(`script que executa código na página (type=${tipo ?? 'nenhum'})`);
+      const src = attrs.find(([a]) => a === 'src')?.[1];
       const fim = html.indexOf('</script>', posicao);
       if (fim < 0) { problemas.push('<script> sem </script>'); break; }
       const corpo = html.slice(posicao, fim);
-      try { JSON.parse(corpo); } catch (erro) { problemas.push(`JSON-LD inválido: ${erro.message}`); }
+      // Só dois tipos: JSON-LD (dado, não executa) e módulo do próprio site
+      // (arquivo .js deste site, sem código dentro da tag).
+      const moduloDoSite = tipo === 'module' && src && !/^([a-z]+:|\/\/)/i.test(src) && src.endsWith('.js') && !corpo.trim();
+      if (tipo === 'application/ld+json') {
+        try { JSON.parse(corpo); } catch (erro) { problemas.push(`JSON-LD inválido: ${erro.message}`); }
+      } else if (!moduloDoSite) {
+        problemas.push(`script que executa código na página (type=${tipo ?? 'nenhum'})`);
+      }
       posicao = fim + '</script>'.length;
       TOKEN.lastIndex = posicao;
       continue;
