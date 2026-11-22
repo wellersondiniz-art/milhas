@@ -239,6 +239,12 @@ test('sem URL base (A_CONFIRMAR): sem canonical, sem og:url, sem sitemap, com av
   assert.match(avisos.join(), /URL base do site A_CONFIRMAR/);
 });
 
+test('URL base do config é válida (canonical, og:url e sitemap ligados)', async () => {
+  const { URL_BASE } = await import('../scripts/paginas/config.js');
+  assert.equal(normalizarUrlBase(URL_BASE), URL_BASE);
+  assert.match(URL_BASE, /^https:\/\//);
+});
+
 test('URL base inválida é recusada', () => {
   assert.throws(() => normalizarUrlBase('exemplo.com.br'), /URL base inválida/);
   assert.throws(() => normalizarUrlBase('https://exemplo.com.br/?x=1'), /URL base inválida/);

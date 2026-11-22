@@ -1,13 +1,17 @@
 // Configuração das páginas geradas.
 //
-// URL_BASE: endereço público do site, sem barra no fim (ex.: "https://www.exemplo.com.br").
-// O domínio ainda NÃO foi decidido, então fica "A_CONFIRMAR". Enquanto for assim,
-// o gerador não escreve link canônico, og:url nem sitemap.xml (que exige endereço
-// completo), e avisa no terminal.
+// URL_BASE: endereço público do site, sem barra no fim. Entra no link canônico,
+// no og:url, no JSON-LD, no sitemap.xml e no robots.txt.
 //
-// Para gerar com um endereço sem mexer aqui:
-//   URL_DO_SITE=https://www.exemplo.com.br node scripts/gerar-paginas.js
-//   node scripts/gerar-paginas.js --url-base https://www.exemplo.com.br
-export const URL_BASE = 'A_CONFIRMAR';
+// Por enquanto é o endereço gratuito da Cloudflare Pages. Ele só funciona se o
+// projeto na Cloudflare Pages se chamar exatamente "milhasdavez".
+// Quando o domínio milhasdavez.com.br for comprado e ligado ao projeto, troque
+// esta linha por: export const URL_BASE = 'https://milhasdavez.com.br';
+//
+// Para gerar com outro endereço sem mexer aqui:
+//   URL_DO_SITE=https://outro.exemplo node scripts/gerar-paginas.js
+//   node scripts/gerar-paginas.js --url-base https://outro.exemplo
+// "A_CONFIRMAR" desliga canônico, og:url e sitemap.
+export const URL_BASE = 'https://milhasdavez.pages.dev';
 
 export const NOME_DO_SITE = 'comprador de milhas';
