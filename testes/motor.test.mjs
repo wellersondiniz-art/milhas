@@ -7,7 +7,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
-import { calcularJeitosDeComprar as calcular, formatarPontos, formatarCentavos } from '../site/js/motor/index.js';
+import { calcularJeitosDeComprar as calcular, formatarPontos, formatarCentavos, formatarData } from '../site/js/motor/index.js';
+import { formatarNumero } from '../site/js/motor/formatar.js';
 
 const BI = 1_000_000_000n; // bilionésimos por centavo
 const reais = (centavos) => BigInt(centavos) * BI;
@@ -426,6 +427,20 @@ test('formatação pt-BR', () => {
   assert.equal(formatarCentavos(123456), 'R$ 1.234,56');
   assert.equal(formatarCentavos(5), 'R$ 0,05');
   assert.equal(formatarPontos(1_234_500_000n), '1.234,5');
+});
+
+test('formatação pt-BR pelo Intl: moeda, números e datas', () => {
+  assert.equal(formatarCentavos(0), 'R$ 0,00');
+  assert.equal(formatarCentavos(-150), '-R$ 1,50');
+  assert.equal(formatarCentavos(99_999_999_999), 'R$ 999.999.999,99');
+  // BigInt maior que o maior inteiro seguro do float: nenhum dígito se perde.
+  assert.equal(formatarCentavos(12_345_678_901_234_567_891n), 'R$ 123.456.789.012.345.678,91');
+  assert.equal(formatarPontos(1_000_000n), '1');
+  assert.equal(formatarPontos(1_234_567_000_000n), '1.234.567');
+  assert.equal(formatarNumero(1.5), '1,5');
+  assert.equal(formatarNumero(10), '10');
+  assert.equal(formatarData('2026-01-05'), '05/01/2026');
+  assert.equal(formatarData('2026-12-31T23:59'), '31/12/2026');
 });
 
 // ---------------------------------------------------------------------------

@@ -28,7 +28,7 @@ export function alerta(tipo, titulo, ...corpo) {
 
 function selos(jeito, posicao) {
   const lista = [];
-  if (posicao === 0) lista.push(el('span', { class: 'selo selo--destaque' }, '★ Melhor jeito'));
+  if (posicao === 0) lista.push(el('span', { class: 'selo selo--destaque' }, el('span', { 'aria-hidden': 'true' }, '★'), ' Melhor jeito'));
   else lista.push(el('span', { class: 'selo' }, `${posicao + 1}º jeito`));
   if (jeito.tipo === 'sem_oferta') lista.push(el('span', { class: 'selo selo--info' }, 'Sem oferta'));
   if (jeito.tem_dado_antigo) lista.push(el('span', { class: 'selo selo--aviso' }, 'Dado antigo'));
@@ -103,8 +103,8 @@ export function montarResultado(jeitos, contexto) {
 
   if (semPerfil) {
     partes.push(alerta('info', 'Mostrando com todos os cartões e programas',
-      'Você ainda não disse quais cartões e programas tem. Por isso a conta usa todos os que conhecemos, sem clube. ',
-      el('a', { href: '#/perfil' }, 'Cadastrar os meus')));
+      el('p', {}, 'Você ainda não disse quais cartões e programas tem. Por isso a conta usa todos os que conhecemos, sem clube.'),
+      el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Cadastrar os meus')));
   }
   if (!temOferta) {
     partes.push(alerta('info', `A ${loja.nome} não tem oferta de pontos valendo hoje`,

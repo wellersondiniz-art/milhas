@@ -1,23 +1,36 @@
 // Formatação para exibição (pt-BR). Só aqui se arredonda.
-// Funções puras, sem Intl, para dar o mesmo texto em qualquer navegador.
+// Funções puras. Moeda, números e datas saem do Intl com locale "pt-BR"
+// (R$ 1.234,56; 12/11/2026). O arredondamento continua com BigInt, e o Intl
+// recebe o número já arredondado como texto decimal ("1234.56"), então nenhum
+// valor passa por float. O Intl separa "R$" do número com espaço sem quebra
+// (U+00A0); aqui ele vira espaço comum, para o texto ser o mesmo em todo lugar.
+// Quem desenha a tela (el() e h()) põe o espaço sem quebra de volta.
 
 /** Escala dos pontos: 1 ponto = 1.000.000 unidades internas. */
 export const ESCALA_PONTOS = 1_000_000n;
 /** Escala do valor: 1 centavo = 1.000.000.000 unidades internas (bilionésimos de centavo). */
 export const ESCALA_VALOR = 1_000_000_000n;
 
-function separarMilhar(digitos) {
-  return digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const LOCALE = 'pt-BR';
+const MOEDA = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: 'BRL' });
+const NUMERO = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 });
+const NUMERO_LIVRE = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 20 });
+const DATA = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+const espacoComum = (texto) => texto.replace(/[\u00a0\u202f]/g, ' ');
+
+/** BigInt em centésimos → "1234.56" (texto decimal exato, para o Intl). */
+function centesimosParaDecimal(v) {
+  const negativo = v < 0n;
+  const a = negativo ? -v : v;
+  return `${negativo ? '-' : ''}${a / 100n}.${(a % 100n).toString().padStart(2, '0')}`;
 }
 
 /** Centavos inteiros (number ou BigInt) → "R$ 1.234,56". */
 export function formatarCentavos(centavos) {
-  let v = BigInt(centavos);
-  const negativo = v < 0n;
-  if (negativo) v = -v;
-  const reais = separarMilhar((v / 100n).toString());
-  const cent = (v % 100n).toString().padStart(2, '0');
-  return `${negativo ? '-' : ''}R$ ${reais},${cent}`;
+  const texto = espacoComum(MOEDA.format(centesimosParaDecimal(BigInt(centavos))));
+  // Sinal antes do R$ ("-R$ 1,00"), igual em qualquer motor de Intl.
+  return texto.replace(/^R\$ -/, '-R$ ');
 }
 
 /** Bilionésimos de centavo (BigInt, >= 0) → centavos arredondados (meio para cima). */
@@ -33,9 +46,7 @@ export function formatarValor(bilionesimos) {
 /** Pontos na escala interna (BigInt) → "1.234" ou "1.234,57" (até 2 casas). */
 export function formatarPontos(escalado) {
   const centesimos = (escalado + ESCALA_PONTOS / 200n) / (ESCALA_PONTOS / 100n);
-  const inteiro = separarMilhar((centesimos / 100n).toString());
-  const fracao = (centesimos % 100n).toString().padStart(2, '0').replace(/0+$/, '');
-  return fracao ? `${inteiro},${fracao}` : inteiro;
+  return NUMERO.format(centesimosParaDecimal(centesimos));
 }
 
 /** Pontos na escala interna (BigInt) → number (para a interface; pode perder precisão em valores gigantes). */
@@ -52,7 +63,7 @@ export function formatarCotacao(x10000) {
 
 /** Número pequeno (ex.: pontos por real) → "1,5". */
 export function formatarNumero(n) {
-  return String(n).replace('.', ',');
+  return NUMERO_LIVRE.format(String(n));
 }
 
 /** "1 ponto" / "2 pontos". */
@@ -62,6 +73,6 @@ export function pontosPorReal(n) {
 
 /** "2026-11-12" → "12/11/2026". */
 export function formatarData(iso) {
-  const [ano, mes, dia] = iso.slice(0, 10).split('-');
-  return `${dia}/${mes}/${ano}`;
+  const [ano, mes, dia] = iso.slice(0, 10).split('-').map(Number);
+  return DATA.format(Date.UTC(ano, mes - 1, dia));
 }

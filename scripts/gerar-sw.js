@@ -30,11 +30,17 @@ async function listarPasta(site, pasta) {
     });
 }
 
-/** Lista dos arquivos do app, em ordem, relativa a site/. */
-export async function listarArquivosDoApp(site) {
+/**
+ * Lista dos arquivos do app, em ordem, relativa a site/.
+ * cssEmbutido: em dist/ o CSS vai dentro das páginas e os .css não existem.
+ */
+export async function listarArquivosDoApp(site, { cssEmbutido = false } = {}) {
+  const fixos = cssEmbutido ? FIXOS.filter((a) => !a.endsWith('.css')) : FIXOS;
   const js = (await listarPasta(site, 'js/')).filter((a) => a.endsWith('.js') && !FORA.has(a));
-  const icones = (await listarPasta(site, 'img/icones/')).filter((a) => /\.(png|svg)$/.test(a));
-  return [...FIXOS, ...js.sort(), ...icones.sort()];
+  // Os ícones de 512 px só servem na hora de instalar, e quem baixa é o
+  // navegador. Guardar no aparelho custaria ~50 KB na primeira visita.
+  const icones = (await listarPasta(site, 'img/icones/')).filter((a) => /\.(png|svg)$/.test(a) && !/-512\.png$/.test(a));
+  return [...fixos, ...js.sort(), ...icones.sort()];
 }
 
 /** Versão = 12 primeiros caracteres do SHA-256 de (caminho + conteúdo) de cada arquivo. */
@@ -57,8 +63,8 @@ export function montarSw(modelo, { versao, arquivos }) {
     .replace(marcas[1], `const ARQUIVOS_DO_APP = ${JSON.stringify(arquivos, null, 2)};`);
 }
 
-export async function gerarSw(site = new URL('site/', RAIZ)) {
-  const arquivos = await listarArquivosDoApp(site);
+export async function gerarSw(site = new URL('site/', RAIZ), opcoes = {}) {
+  const arquivos = await listarArquivosDoApp(site, opcoes);
   const versao = await calcularVersao(site, arquivos);
   const modelo = await readFile(new URL('scripts/pwa/sw-modelo.js', RAIZ), 'utf8');
   await writeFile(new URL('sw.js', site), montarSw(modelo, { versao, arquivos }), 'utf8');
