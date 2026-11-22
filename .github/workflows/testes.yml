@@ -18,4 +18,4 @@ jobs:
         with:
           node-version: 22
       - run: node --test
-      - run: node scripts/validar-dados.mjs
+      - run: node scripts/validar-dados.js

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "lojas.schema.json",
+  "title": "Lojas",
+  "description": "Lista de lojas onde a compra é feita.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id", "nome", "dominio", "categoria", "aceita_cupom", "observacoes",
+      "fonte_url", "verificado_em"
+    ],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "nome": { "type": "string", "minLength": 1 },
+      "dominio": {
+        "description": "Domínio do site, sem https:// (ex.: loja.com.br).",
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^([a-z0-9]([a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}$"
+          },
+          { "$ref": "#/$defs/a_confirmar" }
+        ]
+      },
+      "categoria": {
+        "anyOf": [
+          { "enum": ["marketplace", "varejo", "viagem", "combustível", "mercado", "serviço"] },
+          { "$ref": "#/$defs/a_confirmar" }
+        ]
+      },
+      "aceita_cupom": {
+        "anyOf": [{ "type": "boolean" }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "observacoes": { "type": "string" },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Letras minúsculas, números e hífen (ex.: magalu).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" }
+  }
+}

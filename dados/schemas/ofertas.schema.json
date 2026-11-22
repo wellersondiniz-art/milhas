@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ofertas.schema.json",
+  "title": "Ofertas",
+  "description": "Ofertas de pontos: loja × programa × período.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id", "loja_id", "programa_id", "regras", "escopo", "acumula_com_cartao",
+      "exige_cupom", "inicio", "fim", "credito_prazo_dias", "link_oferta",
+      "fonte_url", "verificado_em"
+    ],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "loja_id": { "description": "id de um registro de lojas.json.", "$ref": "#/$defs/id" },
+      "programa_id": { "description": "id de um registro de programas.json.", "$ref": "#/$defs/id" },
+      "regras": {
+        "description": "Faixas de pontuação. Condição ausente = sem exigência. Vale a maior faixa cujas condições a pessoa cumpre.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["condicao", "pontos_por_real"],
+          "properties": {
+            "condicao": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "clube_ativo": { "type": "boolean" },
+                "cartao_id": { "description": "id de um registro de cartoes.json.", "$ref": "#/$defs/id" }
+              }
+            },
+            "pontos_por_real": { "type": "number", "minimum": 0 }
+          }
+        }
+      },
+      "escopo": {
+        "enum": ["vendido_e_entregue_pela_loja", "todos_os_produtos", "categorias_selecionadas"]
+      },
+      "categorias_incluidas": { "$ref": "#/$defs/lista_de_textos" },
+      "categorias_excluidas": { "$ref": "#/$defs/lista_de_textos" },
+      "pontos_fora_do_escopo_por_real": {
+        "description": "Pontos por real nos itens fora do escopo (ex.: vendedor parceiro).",
+        "anyOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "acumula_com_cartao": {
+        "description": "O ponto do cartão soma com o do programa?",
+        "anyOf": [{ "type": "boolean" }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "clube_ativo_ha_horas": {
+        "description": "Há quantas horas o clube precisa estar ativo antes da compra.",
+        "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "exige_cupom": {
+        "anyOf": [{ "type": "boolean" }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "cupom": { "type": "string", "minLength": 1 },
+      "inicio": { "anyOf": [{ "$ref": "#/$defs/data" }, { "$ref": "#/$defs/a_confirmar" }] },
+      "fim": { "anyOf": [{ "$ref": "#/$defs/data" }, { "$ref": "#/$defs/a_confirmar" }] },
+      "credito_prazo_dias": {
+        "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "link_oferta": { "anyOf": [{ "$ref": "#/$defs/url" }, { "$ref": "#/$defs/a_confirmar" }] },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" },
+      "observacoes": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Letras minúsculas, números e hífen.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" },
+    "lista_de_textos": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}
