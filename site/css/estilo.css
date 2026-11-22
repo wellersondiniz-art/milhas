@@ -79,6 +79,24 @@ main {
   padding-bottom: var(--espaco-8);
 }
 
+.rodape__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--espaco-4);
+  margin: 0 0 var(--espaco-2);
+  padding: 0;
+  list-style: none;
+}
+
+/* Links soltos: alvo de toque de 44px. */
+.rodape__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--alvo-minimo);
+}
+
+.rodape__links a[aria-current="page"] { font-weight: var(--peso-forte); }
+
 /* Passos ----------------------------------------------------------------- */
 
 .passo {

@@ -61,6 +61,12 @@ site/loja/
 site/ofertas/
 site/sitemap.xml
 site/robots.txt
+# Páginas institucionais (scripts/paginas/institucionais.js)
+site/como-funciona/
+site/sobre-os-dados/
+site/privacidade/
+site/termos/
+site/contato/
 
 # Service worker gerado a partir de scripts/pwa/sw-modelo.js (npm run sw)
 site/sw.js

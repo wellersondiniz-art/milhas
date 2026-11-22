@@ -1,5 +1,5 @@
-// Monta as páginas estáticas (uma por loja + ofertas de hoje), o sitemap e o
-// robots.txt. Funções puras: recebem os dados, a data de hoje e a URL base e
+// Monta as páginas estáticas (uma por loja + ofertas de hoje + institucionais),
+// o sitemap e o robots.txt. Funções puras: recebem os dados, a data de hoje e a URL base e
 // devolvem a lista de arquivos com o conteúdo. Não leem disco nem relógio.
 //
 // Os números ("rende X pontos por real", "R$ Y a cada R$ 100") vêm SEMPRE do
@@ -9,7 +9,9 @@ import { calcularJeitosDeComprar, formatarData } from '../../site/js/motor/index
 import { formatarNumero, pontosPorReal } from '../../site/js/motor/formatar.js';
 import { fraseDoJeito } from '../../site/js/tela/textos.js';
 import { NOME_DO_SITE } from './config.js';
-import { escaparXml, h, jsonLd, juntar, linkExterno } from './html.js';
+import { escaparXml, h, juntar, linkExterno } from './html.js';
+import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
+import { paginasInstitucionais } from './institucionais.js';
 
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const ID_SEGURO = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -114,89 +116,8 @@ function motivoFora(oferta, hoje) {
 // ---------------------------------------------------------------------------
 // Peças de página
 
-function urlAbsoluta(urlBase, caminho) {
-  return urlBase ? `${urlBase}/${caminho}` : null;
-}
-
-function cabecalho(raiz, atual) {
-  const link = (href, texto, rota) => h('a', { class: 'topo__link', href, 'aria-current': rota === atual ? 'page' : null }, texto);
-  return h('header', { class: 'topo' },
-    h('div', { class: 'container topo__linha' },
-      h('a', { class: 'topo__marca', href: raiz }, NOME_DO_SITE),
-      h('nav', { class: 'topo__menu', 'aria-label': 'Principal' },
-        link(raiz, 'Comparar', 'inicio'),
-        link(`${raiz}ofertas/`, 'Ofertas', 'ofertas'),
-        link(`${raiz}#/perfil`, 'Meu perfil', 'perfil'))));
-}
-
-function rodape() {
-  return h('footer', { class: 'container rodape' },
-    h('p', { class: 'texto-suave texto-pequeno' },
-      'Não pedimos número de cartão nem CPF. Os números são estimativas a partir das regras publicadas pelas lojas e programas: confira sempre antes de comprar.'));
-}
-
-function documento({ titulo, descricao, caminho, raiz, urlBase, atual, dadosEstruturados, principal }) {
-  const url = urlAbsoluta(urlBase, caminho);
-  const og = (prop, valor) => h('meta', { property: prop, content: valor });
-  return `<!doctype html>\n${h('html', { lang: 'pt-BR' },
-    h('head', {},
-      h('meta', { charset: 'utf-8' }),
-      h('meta', { name: 'viewport', content: 'width=device-width, initial-scale=1' }),
-      h('title', {}, titulo),
-      h('meta', { name: 'description', content: descricao }),
-      h('meta', { name: 'theme-color', content: '#1f6b3a' }),
-      h('link', { rel: 'manifest', href: `${raiz}manifest.webmanifest` }),
-      h('link', { rel: 'icon', href: `${raiz}img/icones/icone.svg`, type: 'image/svg+xml' }),
-      h('link', { rel: 'apple-touch-icon', href: `${raiz}img/icones/apple-touch-icon.png` }),
-      url ? h('link', { rel: 'canonical', href: url }) : null,
-      og('og:type', 'website'),
-      og('og:locale', 'pt_BR'),
-      og('og:site_name', NOME_DO_SITE),
-      og('og:title', titulo),
-      og('og:description', descricao),
-      url ? og('og:url', url) : null,
-      h('meta', { name: 'twitter:card', content: 'summary' }),
-      h('link', { rel: 'stylesheet', href: `${raiz}css/base.css` }),
-      h('link', { rel: 'stylesheet', href: `${raiz}css/estilo.css` }),
-      h('link', { rel: 'stylesheet', href: `${raiz}css/paginas.css` }),
-      dadosEstruturados ? jsonLd(dadosEstruturados) : null),
-    h('body', {},
-      h('a', { class: 'pular-para-conteudo', href: '#conteudo' }, 'Pular para o conteúdo'),
-      cabecalho(raiz, atual),
-      h('main', { id: 'conteudo', class: 'container pilha--lg' }, principal),
-      rodape()))}\n`;
-}
-
-function alerta(tipo, icone, titulo, ...corpo) {
-  return h('div', { class: `alerta alerta--${tipo}`, role: 'note' },
-    h('span', { class: 'alerta__icone', 'aria-hidden': 'true' }, icone),
-    h('div', { class: 'alerta__corpo' }, h('strong', { class: 'alerta__titulo' }, titulo), ...corpo));
-}
-
 function linhaConta(rotulo, ...valor) {
   return h('div', {}, h('dt', {}, rotulo), h('dd', {}, ...valor));
-}
-
-const TERMOS = {
-  milheiro: ['O que é milheiro?', 'É quanto valem 1.000 pontos ou milhas, em reais. Usamos uma estimativa média para dizer quanto os pontos valem; você pode trocar pelo seu valor em "Meu perfil".'],
-  clube: ['O que é clube?', 'É uma assinatura mensal do programa de pontos. Quem assina costuma ganhar mais pontos por real nas lojas parceiras, às vezes só depois de algumas horas de assinatura.'],
-  bonus: ['O que é bônus?', 'É uma porcentagem a mais de pontos que o programa dá por um tempo, por cima dos pontos normais.'],
-};
-
-/** Explica milheiro, clube e bônus quando a palavra aparece no texto da página. */
-function termosExplicados(htmlDaPagina) {
-  const texto = htmlDaPagina.toString();
-  const usados = [
-    /milheiro/i.test(texto) && 'milheiro',
-    /clube/i.test(texto) && 'clube',
-    /bônus/i.test(texto) && 'bonus',
-  ].filter(Boolean);
-  if (!usados.length) return null;
-  return h('section', { class: 'pilha--sm', 'aria-labelledby': 'termos-titulo' },
-    h('h2', { id: 'termos-titulo', class: 'pagina__subtitulo' }, 'Palavras desta página'),
-    usados.map((t) => h('details', { class: 'termo' },
-      h('summary', {}, TERMOS[t][0]),
-      h('p', { class: 'termo__texto' }, TERMOS[t][1]))));
 }
 
 function conferido(registro) {
@@ -523,10 +444,12 @@ export function gerarPaginas(dados, { hoje, urlBase = null }) {
   }
   const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
-  const arquivos = [ofertas, ...lojas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
-  const avisos = [];
+  const institucionais = paginasInstitucionais({ hoje, urlBase: base });
+  const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
+  const avisos = [...institucionais.avisos];
   if (base) {
-    arquivos.push({ caminho: 'sitemap.xml', conteudo: sitemap(base, ['', 'ofertas/', ...dados.lojas.map((l) => `loja/${l.id}/`)], hoje) });
+    const caminhos = ['', 'ofertas/', ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];
+    arquivos.push({ caminho: 'sitemap.xml', conteudo: sitemap(base, caminhos, hoje) });
   } else {
     avisos.push('URL base do site A_CONFIRMAR: sem link canônico, sem og:url e sem sitemap.xml. Defina em scripts/paginas/config.js, ou use URL_DO_SITE / --url-base.');
   }
