@@ -25,7 +25,7 @@ A Cloudflare Pages publica `dist/`, gerada por `npm run build` a partir de `site
 | 13 | Links de redefinição de senha que expiram | Não se aplica | Sem senha. |
 | 14 | Upload com tipos permitidos e limite de tamanho | Não se aplica a servidor | "Importar perfil" só lê o arquivo no próprio aparelho: até 50 KB, só campos e ids conhecidos, nada é enviado (`connect-src 'self'`). |
 | 15 | Debug desligado em produção | Feito | `auditar.sh` alerta sobre `console.log` e `debugger` em `site/`. |
-| 16 | Dependências atualizadas e versões fixas | Feito | Zero dependências de runtime. Actions do GitHub fixadas por SHA. Quando houver `package-lock.json`, rodar `npm audit`. |
+| 16 | Dependências atualizadas e versões fixas | Feito | Zero dependências de runtime. Actions do GitHub fixadas por SHA. `npm audit` roda no CI (reprova falha moderada ou pior) e no `auditar.sh`. |
 | 17 | Arquivos expostos fora das pastas publicadas | Feito | Só `dist/` é publicada. `auditar.sh` procura .env, .git, backups, dumps, source maps e package.json em `site/` e `dist/`, e confere que a vitrine de estilo ficou fora. |
 | 18 | Segredos no histórico do Git | Feito | `auditar.sh` varre todos os commits. Nenhum encontrado. |
 | 19 | Chaves comprometidas revogadas e substituídas | Não se aplica | Nenhuma chave existe ou vazou. Se vazar: revogar primeiro, limpar o histórico depois. |

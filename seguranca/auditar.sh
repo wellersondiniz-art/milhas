@@ -255,6 +255,26 @@ if [ -f package.json ]; then
 fi
 [ -n "$(git ls-files node_modules | head -1)" ] && falha "pasta node_modules está no Git"
 
+# Falhas conhecidas nas dependências (consulta o registro do npm; precisa de rede).
+if [ -f package-lock.json ]; then
+  resumo_audit="$(npm audit --json 2>/dev/null | node -e '
+    let t = ""; process.stdin.on("data", (d) => (t += d)).on("end", () => {
+      try {
+        const j = JSON.parse(t);
+        if (j.error || !j.metadata) { console.log("erro"); return; }
+        const v = j.metadata.vulnerabilities;
+        console.log([v.moderate + v.high + v.critical, v.low + v.info, v.critical, v.high, v.moderate].join(" "));
+      } catch { console.log("erro"); }
+    });' 2>/dev/null)"
+  case "$resumo_audit" in
+    ""|erro) alerta "npm audit não respondeu (sem rede?); rode de novo com internet" ;;
+    "0 0"*) ok "npm audit: nenhuma falha conhecida nas dependências" ;;
+    "0 "*) alerta "npm audit: só falhas de gravidade baixa (rode npm audit para ver)" ;;
+    *) set -- $resumo_audit
+       falha "npm audit: $3 crítica(s), $4 alta(s), $5 moderada(s) (rode npm audit para ver e atualize)" ;;
+  esac
+fi
+
 if [ -d .github/workflows ]; then
   soltas="$(git grep -nE 'uses:[[:space:]]*[^[:space:]]+@' -- .github/workflows | grep -vE '@[0-9a-f]{40}' || true)"
   if [ -n "$soltas" ]; then
