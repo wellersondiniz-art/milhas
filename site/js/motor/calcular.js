@@ -15,16 +15,14 @@
 //        conta que corta casas: guardamos 6 casas de ponto e cortamos para baixo.
 
 import { diasEntre, horasGarantidasDesde, lerDataHora, soData } from './datas.js';
+import { DIAS_ALERTA_VENCIMENTO, DIAS_DADO_ANTIGO, quandoVence, situacaoDaOferta } from './ciclo.js';
 import {
   ESCALA_PONTOS, formatarCentavos, formatarCotacao, formatarData, formatarNumero, formatarPontos,
   formatarValor, pontosParaNumero, pontosPorReal,
 } from './formatar.js';
 
 export const A_CONFIRMAR = 'A_CONFIRMAR';
-/** A partir de quantos dias para o fim a oferta ganha o aviso "vence em N dias". */
-export const DIAS_AVISO_VENCIMENTO = 7;
-/** Dado verificado há mais que isso ganha aviso. */
-export const DIAS_DADO_ANTIGO = 14;
+// Prazos do ciclo de vida (vencimento, dado antigo, reconferir): ver ciclo.js.
 /** Escala da cotação do dólar: R$ 5,3456 = 53456. */
 export const ESCALA_COTACAO = 10_000;
 /** id do registro de cambio.json com a cotação do dólar. */
@@ -127,18 +125,12 @@ function montarContexto(perfil, compra, dados, hoje) {
 // ---------------------------------------------------------------------------
 // Oferta
 
-function ofertaValeHoje(oferta, dataHoje) {
-  if (oferta.inicio !== A_CONFIRMAR && oferta.inicio > dataHoje) return false;
-  if (oferta.fim !== A_CONFIRMAR && oferta.fim < dataHoje) return false;
-  return true;
-}
-
+/** Ofertas da loja que entram no ranking hoje (ativas ou vencendo logo; ver ciclo.js). */
 function ofertasQueValem(ctx) {
   return ctx.ofertas
     .filter((o) => o.loja_id === ctx.compra.loja_id)
     .filter((o) => ctx.programasDoPerfil.has(o.programa_id))
-    .filter((o) => o.status !== A_CONFIRMAR)
-    .filter((o) => ofertaValeHoje(o, ctx.dataHoje));
+    .filter((o) => situacaoDaOferta(o, ctx.dataHoje).no_ranking);
 }
 
 /** O produto está no escopo da oferta? Se não, diz por quê. */
@@ -403,8 +395,7 @@ function jeitoComOferta(ctx, oferta, cartao) {
     avisos.push('A data de fim da oferta não está confirmada; confira antes de comprar.');
   } else {
     const dias = diasEntre(ctx.dataHoje, oferta.fim);
-    const quando = dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : `em ${dias} dias`;
-    if (dias <= DIAS_AVISO_VENCIMENTO) avisos.push(`A oferta vence ${quando} (${formatarData(oferta.fim)}).`);
+    if (dias <= DIAS_ALERTA_VENCIMENTO) avisos.push(`A oferta vence ${quandoVence(dias)} (${formatarData(oferta.fim)}).`);
   }
   avisarDadoAntigo(ctx, oferta, `oferta ${nomeProg} na ${ctx.loja.nome}`, avisos);
 
@@ -488,6 +479,7 @@ function jeitoComOferta(ctx, oferta, cartao) {
   return {
     tipo: 'oferta',
     oferta,
+    situacao: situacaoDaOferta(oferta, ctx.dataHoje),
     programaId: oferta.programa_id,
     cartao,
     progEsc,
@@ -569,6 +561,7 @@ function paraSaida(ctx, j) {
       j.valorEsc === null ? null : { bilionesimos_de_centavo: j.valorEsc, texto: formatarValor(j.valorEsc) },
     condicoes_a_cumprir: j.condicoes,
     validade_da_oferta: j.validade,
+    situacao_da_oferta: j.situacao ?? null,
     prazo_de_credito: j.prazo,
     avisos: [...new Set(j.avisos)],
     conferido_em: j.avisos.conferidos,

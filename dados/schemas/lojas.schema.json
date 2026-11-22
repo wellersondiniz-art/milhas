@@ -18,6 +18,11 @@
         "description": "Opcional. Artigo do nome da loja, para escrever \"na Magalu\", \"no Mercado Livre\", \"nas Casas Bahia\". Sem ele, vale \"a\".",
         "enum": ["a", "o", "as", "os"]
       },
+      "prioridade": {
+        "description": "Opcional. Ordem de importância da loja para a reconferência semanal (1 = a mais buscada). PROVISÓRIO: o site não mede buscas (sem métricas e sem cookies), então esta ordem é escolhida à mão e pode ser editada. Sem ela, a loja vai para o fim da fila.",
+        "type": "integer",
+        "minimum": 1
+      },
       "dominio": {
         "description": "Domínio do site, sem https:// (ex.: loja.com.br).",
         "anyOf": [

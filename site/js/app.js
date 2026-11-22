@@ -5,14 +5,14 @@
 // Ficar numa página só deixa o perfil vivo na memória quando o navegador
 // não deixa salvar (modo privado): trocar de tela não perde nada.
 
-import { calcularJeitosDeComprar, formatarCentavos } from './motor/index.js';
+import { calcularJeitosDeComprar, dataHoraEmSaoPaulo, formatarCentavos } from './motor/index.js';
 import { criarBuscaDeLoja } from './tela/busca-loja.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
 import { abrirArmazem } from './perfil/armazem.js';
 import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
 import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
-import { agoraLocal, anuncioDoResultado } from './tela/textos.js';
+import { anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { maisAntiga } from './pwa/textos.js';
@@ -130,7 +130,8 @@ function calcular({ focar } = { focar: true }) {
       perfil,
       { loja_id: loja.id, valor_centavos: centavos, tipo_vendedor: 'loja' },
       dados,
-      agoraLocal(new Date()),
+      // As datas das ofertas são de Brasília: o dia vira à meia-noite de São Paulo.
+      dataHoraEmSaoPaulo(new Date()),
     );
     resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil }));
     anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
@@ -151,7 +152,7 @@ formulario.addEventListener('submit', (evento) => {
 // Perfil: convite na tela inicial e tela "Meu perfil"
 
 function hojeLocal() {
-  return agoraLocal(new Date()).slice(0, 10);
+  return dataHoraEmSaoPaulo(new Date()).slice(0, 10);
 }
 
 // O convite aparece logo no começo, antes dos dados chegarem, para o formulário

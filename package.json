@@ -24,8 +24,8 @@
     "extrair": "node scripts/extrair.js",
     "propor": "node scripts/propor-mudancas.js",
     "aprovar": "node scripts/aprovar-mudancas.js",
-    "atualizacao:demo": "node testes/atualizacao/demo.mjs"
-
+    "atualizacao:demo": "node testes/atualizacao/demo.mjs",
+    "reconferir": "node scripts/reconferir.js"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0"

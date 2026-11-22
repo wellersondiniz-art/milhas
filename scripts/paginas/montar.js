@@ -5,7 +5,9 @@
 // Os números ("rende X pontos por real", "R$ Y a cada R$ 100") vêm SEMPRE do
 // motor (site/js/motor). Aqui só se escolhe o cenário e as palavras.
 
-import { calcularJeitosDeComprar, formatarData } from '../../site/js/motor/index.js';
+import {
+  calcularJeitosDeComprar, DIAS_DADO_ANTIGO, ESTADOS, formatarData, quandoVence, situacaoDaOferta,
+} from '../../site/js/motor/index.js';
 import { formatarNumero, pontosPorReal } from '../../site/js/motor/formatar.js';
 import { fraseDoJeito } from '../../site/js/tela/textos.js';
 import { NOME_DO_SITE } from './config.js';
@@ -105,12 +107,38 @@ export function ofertasAtivasDaLoja(dados, lojaId, hoje) {
   return [...vistas].map(([id, jeito]) => ({ oferta: dados.ofertas.find((o) => o.id === id), ...jeito }));
 }
 
-/** Por que uma oferta da loja ficou fora da conta de hoje. */
-function motivoFora(oferta, hoje) {
-  if (oferta.status === A_CONFIRMAR) return 'ainda em conferência, fica fora da conta';
-  if (confirmado(oferta.fim) && oferta.fim < hoje) return `terminou em ${formatarData(oferta.fim)}`;
-  if (confirmado(oferta.inicio) && oferta.inicio > hoje) return `começa em ${formatarData(oferta.inicio)}`;
-  return 'fora da conta de hoje';
+/** Por que uma oferta da loja ficou fora da conta de hoje (ciclo de vida em site/js/motor/ciclo.js). */
+export function motivoFora(oferta, hoje) {
+  const s = situacaoDaOferta(oferta, hoje);
+  switch (s.estado) {
+    case ESTADOS.EM_CONFERENCIA: return 'ainda em conferência, fica fora da conta';
+    case ESTADOS.VENCIDA: return `terminou em ${formatarData(oferta.fim)}`;
+    case ESTADOS.FUTURA: return `começa em ${formatarData(oferta.inicio)}`;
+    case ESTADOS.RECONFERIR:
+      return `conferida pela última vez em ${formatarData(oferta.verificado_em)}, há ${s.dias_desde_conferencia} dias; fica fora da conta até ser conferida de novo`;
+    default: return 'fora da conta de hoje';
+  }
+}
+
+/** Ofertas da loja que não entram na conta hoje: { fora, historico } (vencidas, da que terminou por último). */
+export function ofertasForaDaConta(dados, lojaId, hoje, idsAtivas) {
+  const fora = [];
+  const historico = [];
+  for (const o of dados.ofertas) {
+    if (o.loja_id !== lojaId || idsAtivas.has(o.id)) continue;
+    (situacaoDaOferta(o, hoje).no_historico ? historico : fora).push(o);
+  }
+  historico.sort((a, b) => (a.fim < b.fim ? 1 : a.fim > b.fim ? -1 : 0));
+  return { fora, historico };
+}
+
+/** Selos de alerta de uma oferta ativa: vence em até 3 dias; conferida há mais de 14 dias. */
+function selosDaOferta(oferta, hoje) {
+  const s = situacaoDaOferta(oferta, hoje);
+  const selos = [];
+  if (s.estado === ESTADOS.VENCE_LOGO) selos.push(h('span', { class: 'selo selo--aviso' }, `Vence ${quandoVence(s.dias_para_vencer)}`));
+  if (s.dado_antigo) selos.push(h('span', { class: 'selo selo--aviso' }, `Conferida há ${s.dias_desde_conferencia} dias`));
+  return selos;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,13 +199,15 @@ function textoCupom(oferta) {
   return 'Não confirmado.';
 }
 
-function secaoDaOferta(ativa, dados, indice) {
+function secaoDaOferta(ativa, dados, indice, hoje) {
   const { oferta, porReal } = ativa;
   const nomePrograma = porReal.programa?.nome ?? oferta.programa_id;
   const idTitulo = `oferta-${indice}`;
   const regras = [...oferta.regras].sort((a, b) => b.pontos_por_real - a.pontos_por_real);
+  const selos = selosDaOferta(oferta, hoje);
   return h('section', { class: 'card pilha', 'aria-labelledby': idTitulo },
     h('h3', { id: idTitulo, class: 'card__titulo' }, `Oferta ${nomePrograma}`),
+    selos.length ? h('div', { class: 'card__topo' }, selos) : null,
     h('table', { class: 'tabela' },
       h('caption', {}, 'Pontos por real em cada caso'),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Quem compra'), h('th', { scope: 'col', class: 'numero' }, 'Pontos por real'))),
@@ -252,7 +282,7 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
   const melhor = melhorJeito(dados, loja.id, hoje);
   const resposta = respostaDaLoja(loja, melhor, ativas);
   const idsAtivas = new Set(ativas.map((a) => a.oferta.id));
-  const foraDaConta = dados.ofertas.filter((o) => o.loja_id === loja.id && !idsAtivas.has(o.id));
+  const { fora: foraDaConta, historico } = ofertasForaDaConta(dados, loja.id, hoje, idsAtivas);
   const nomeProg = (id) => dados.programas.find((p) => p.id === id)?.nome ?? id;
 
   const titulo = `${loja.nome}: pontos e milhas hoje | ${NOME_DO_SITE}`;
@@ -270,12 +300,19 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
     h('section', { class: 'pilha', 'aria-labelledby': 'regras-titulo' },
       h('h2', { id: 'regras-titulo', class: 'pagina__subtitulo' }, ativas.length ? 'Regras das ofertas ativas' : 'Ofertas ativas'),
       ativas.length
-        ? ativas.map((a, i) => secaoDaOferta(a, dados, i + 1))
+        ? ativas.map((a, i) => secaoDaOferta(a, dados, i + 1, hoje))
         : h('p', {}, `Nenhuma oferta de pontos ativa ${naLoja(loja)} hoje.`)),
     foraDaConta.length
       ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'fora-titulo' },
-        h('h2', { id: 'fora-titulo', class: 'pagina__subtitulo' }, 'Ofertas que não valem hoje'),
+        h('h2', { id: 'fora-titulo', class: 'pagina__subtitulo' }, 'Ofertas fora da conta hoje'),
         h('ul', { class: 'pagina__lista' }, foraDaConta.map((o) => h('li', {},
+          `Oferta ${nomeProg(o.programa_id)}: ${motivoFora(o, hoje)}. `,
+          linkExterno(o.fonte_url, 'Fonte')))))
+      : null,
+    historico.length
+      ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'historico-titulo' },
+        h('h2', { id: 'historico-titulo', class: 'pagina__subtitulo' }, 'Histórico: ofertas que já acabaram'),
+        h('ul', { class: 'pagina__lista' }, historico.map((o) => h('li', {},
           `Oferta ${nomeProg(o.programa_id)}: ${motivoFora(o, hoje)}. `,
           linkExterno(o.fonte_url, 'Fonte')))))
       : null,
@@ -347,7 +384,7 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
     h('section', { class: 'pilha--sm' },
       h('h1', {}, 'Ofertas de pontos ativas hoje'),
       h('p', { class: 'resposta' }, frase),
-      h('p', { class: 'texto-suave texto-pequeno' }, 'Ofertas vencidas saem desta lista. "Até" é o máximo da oferta, que pode pedir clube ou um cartão específico: veja as regras na página da loja.')),
+      h('p', { class: 'texto-suave texto-pequeno' }, `Ofertas vencidas saem desta lista e vão para o histórico. Oferta conferida há mais de ${DIAS_DADO_ANTIGO} dias ganha um aviso; há mais de 30 dias, sai da lista até ser conferida de novo. "Até" é o máximo da oferta, que pode pedir clube ou um cartão específico: veja as regras na página da loja.`)),
     linhas.length
       ? h('table', { class: 'tabela' },
         h('caption', {}, 'Ofertas ativas, da que mais rende para a que menos rende'),
@@ -361,9 +398,13 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
           h('td', { 'data-rotulo': 'Loja' }, h('a', { class: 'alvo-toque', href: `${raiz}loja/${loja.id}/` }, loja.nome)),
           h('td', { 'data-rotulo': 'Programa' }, porReal.programa?.nome ?? oferta.programa_id),
           h('td', { 'data-rotulo': 'Até (pontos por real)', class: 'numero' }, porReal.total_pontos_texto),
-          h('td', { 'data-rotulo': 'Validade' }, confirmado(oferta.fim) ? `até ${formatarData(oferta.fim)}` : 'fim não confirmado'),
-          h('td', { 'data-rotulo': 'Conferido' }, formatarData(oferta.verificado_em), ' · ', linkExterno(oferta.fonte_url, 'fonte', h('span', { class: 'visualmente-oculto' }, ` da oferta ${naLoja(loja)}`)))))))
+          h('td', { 'data-rotulo': 'Validade' }, confirmado(oferta.fim) ? `até ${formatarData(oferta.fim)}` : 'fim não confirmado',
+            ...selosDaOferta(oferta, hoje).slice(0, 1).map((selo) => juntar(' ', selo))),
+          h('td', { 'data-rotulo': 'Conferido' }, formatarData(oferta.verificado_em),
+            situacaoDaOferta(oferta, hoje).dado_antigo ? juntar(' ', h('span', { class: 'selo selo--aviso' }, 'dado antigo')) : null,
+            ' · ', linkExterno(oferta.fonte_url, 'fonte', h('span', { class: 'visualmente-oculto' }, ` da oferta ${naLoja(loja)}`)))))))
       : null,
+    listaForaDoRanking(dados, hoje, raiz),
     h('section', { class: 'pilha--sm', 'aria-labelledby': 'lojas-titulo' },
       h('h2', { id: 'lojas-titulo', class: 'pagina__subtitulo' }, 'Todas as lojas'),
       h('ul', { class: 'pagina__lojas' }, [...porLoja]
@@ -405,6 +446,38 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
     }),
     resumo: { ofertasAtivas: linhas.length, lojasComOferta },
   };
+}
+
+/** Na página de ofertas: as que saíram por falta de conferência e o histórico das vencidas. */
+function listaForaDoRanking(dados, hoje, raiz) {
+  const lojas = new Map(dados.lojas.map((l) => [l.id, l]));
+  const nomeProg = (id) => dados.programas.find((p) => p.id === id)?.nome ?? id;
+  const reconferir = [];
+  const historico = [];
+  for (const o of dados.ofertas) {
+    const s = situacaoDaOferta(o, hoje);
+    if (s.estado === ESTADOS.RECONFERIR) reconferir.push(o);
+    else if (s.no_historico) historico.push(o);
+  }
+  historico.sort((a, b) => (a.fim < b.fim ? 1 : a.fim > b.fim ? -1 : 0));
+  const item = (o) => {
+    const loja = lojas.get(o.loja_id);
+    return h('li', {},
+      loja ? h('a', { href: `${raiz}loja/${loja.id}/` }, loja.nome) : o.loja_id,
+      ` · ${nomeProg(o.programa_id)}: ${motivoFora(o, hoje)}.`);
+  };
+  return juntar(
+    reconferir.length
+      ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'reconferir-titulo' },
+        h('h2', { id: 'reconferir-titulo', class: 'pagina__subtitulo' }, 'Fora da lista até a gente conferir de novo'),
+        h('ul', { class: 'pagina__lista' }, reconferir.map(item)))
+      : null,
+    historico.length
+      ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'historico-titulo' },
+        h('h2', { id: 'historico-titulo', class: 'pagina__subtitulo' }, 'Histórico: ofertas que já acabaram'),
+        h('ul', { class: 'pagina__lista' }, historico.map(item)))
+      : null,
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -83,3 +83,4 @@ Vamos preenchendo conforme o projeto cresce.
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |
+| O que reconferir esta semana | `npm run reconferir` (ou `-- --hoje AAAA-MM-DD`; ordem pela `prioridade` de `dados/lojas.json`) |

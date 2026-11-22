@@ -177,15 +177,18 @@ describe('validade da oferta', () => {
     assert.equal(ofertaDe(calcular(perfil(), compra(), dadosBase(), '2026-12-01T00:00')), undefined);
   });
 
-  test('aviso de vencimento: amanhã, 7 dias sim, 8 dias não', () => {
+  test('aviso de vencimento: amanhã, 3 dias sim, 4 dias não (troca o aviso de 7 dias)', () => {
     const avisos = (hoje) => ofertaDe(calcular(perfil(), compra(), dadosBase(), hoje)).avisos;
     assert.ok(avisos('2026-11-29').includes('A oferta vence amanhã (30/11/2026).'));
-    assert.ok(avisos('2026-11-23').includes('A oferta vence em 7 dias (30/11/2026).'));
-    assert.ok(!avisos('2026-11-22').some((a) => a.startsWith('A oferta vence')));
+    assert.ok(avisos('2026-11-27').includes('A oferta vence em 3 dias (30/11/2026).'));
+    assert.ok(!avisos('2026-11-26').some((a) => a.startsWith('A oferta vence')));
+    assert.ok(!avisos('2026-11-23').some((a) => a.startsWith('A oferta vence')));
   });
 
   test('início e fim A_CONFIRMAR: entra, com avisos e texto de validade', () => {
-    const d = dadosCom((x) => { x.ofertas[0].inicio = 'A_CONFIRMAR'; x.ofertas[0].fim = 'A_CONFIRMAR'; });
+    const d = dadosCom((x) => {
+      x.ofertas[0].inicio = 'A_CONFIRMAR'; x.ofertas[0].fim = 'A_CONFIRMAR'; x.ofertas[0].verificado_em = '2029-12-20';
+    });
     const o = ofertaDe(calcular(perfil(), compra(), d, '2030-01-01'));
     assert.ok(o);
     assert.ok(o.avisos.includes('A data de início da oferta não está confirmada.'));

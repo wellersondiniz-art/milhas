@@ -1,13 +1,14 @@
 // Textos dos cards de resultado. Funções puras: recebem um "jeito de comprar"
 // que já saiu do motor e só escolhem as palavras. Nenhuma conta é feita aqui.
 
-import { formatarData } from '../motor/index.js';
+import { ESTADOS, formatarData, quandoVence } from '../motor/index.js';
 
-/** Data e hora locais do aparelho no formato que o motor pede ("AAAA-MM-DDTHH:MM"). */
-export function agoraLocal(data) {
-  const dois = (n) => String(n).padStart(2, '0');
-  return `${data.getFullYear()}-${dois(data.getMonth() + 1)}-${dois(data.getDate())}` +
-    `T${dois(data.getHours())}:${dois(data.getMinutes())}`;
+/** Texto do selo de alerta quando a oferta vence em até 3 dias ("Vence hoje", "Vence em 3 dias"). null se não vence logo. */
+export function seloDeVencimento(jeito) {
+  const s = jeito.situacao_da_oferta;
+  if (s?.estado !== ESTADOS.VENCE_LOGO) return null;
+  const quando = quandoVence(s.dias_para_vencer);
+  return `Vence ${quando}`;
 }
 
 function pontos(texto) {

@@ -3,7 +3,7 @@
 
 import { el } from './dom.js';
 import {
-  destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, seloDeVencimento, textoValidade, textosAntesDeComprar, textosConferido,
 } from './textos.js';
 
 const TERMOS = {
@@ -31,6 +31,8 @@ function selos(jeito, posicao) {
   if (posicao === 0) lista.push(el('span', { class: 'selo selo--destaque' }, el('span', { 'aria-hidden': 'true' }, '★'), ' Melhor jeito'));
   else lista.push(el('span', { class: 'selo' }, `${posicao + 1}º jeito`));
   if (jeito.tipo === 'sem_oferta') lista.push(el('span', { class: 'selo selo--info' }, 'Sem oferta'));
+  const vence = seloDeVencimento(jeito);
+  if (vence) lista.push(el('span', { class: 'selo selo--aviso' }, vence));
   if (jeito.tem_dado_antigo) lista.push(el('span', { class: 'selo selo--aviso' }, 'Dado antigo'));
   return el('div', { class: 'card__topo' }, lista);
 }
@@ -114,7 +116,7 @@ export function montarResultado(jeitos, contexto) {
   }
   if (jeitos.some((j) => j.tem_dado_antigo)) {
     partes.push(alerta('aviso', 'Alguns dados podem estar desatualizados',
-      'Parte do que usamos foi conferido há mais de 14 dias. As regras podem ter mudado: confira na loja e no programa antes de comprar.'));
+      'Parte do que usamos foi conferido há mais de 14 dias. As regras podem ter mudado: confira na loja e no programa antes de comprar. Oferta conferida há mais de 30 dias fica fora da conta até ser conferida de novo.'));
   }
 
   partes.push(el('h3', { class: 'resultado__secao' }, 'O melhor jeito de comprar'));
