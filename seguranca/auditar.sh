@@ -186,14 +186,22 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "10. Dependências"
+# Fase 1: nenhuma dependência de runtime. Ferramenta de teste (devDependencies)
+# só da lista aprovada e com versão exata.
+DEV_PERMITIDAS='["@playwright/test"]'
 if [ -f package.json ]; then
-  if node -e 'const p=require("./package.json");process.exit(Object.keys({...p.dependencies,...p.devDependencies,...p.optionalDependencies,...p.peerDependencies}).length?1:0)' 2>/dev/null; then
-    ok "package.json sem dependências"
+  if node -e 'const p=require("./package.json");process.exit(Object.keys({...p.dependencies,...p.optionalDependencies,...p.peerDependencies}).length?1:0)' 2>/dev/null; then
+    ok "package.json sem dependências de runtime"
   else
-    falha "package.json tem dependências (a Fase 1 é sem dependências de runtime)"
+    falha "package.json tem dependências de runtime (a Fase 1 não usa nenhuma)"
+  fi
+  if node -e 'const p=require("./package.json");const ok=JSON.parse(process.argv[1]);const d=p.devDependencies||{};process.exit(Object.entries(d).every(([n,v])=>ok.includes(n)&&/^\d+\.\d+\.\d+$/.test(v))?0:1)' "$DEV_PERMITIDAS" 2>/dev/null; then
+    ok "ferramentas de teste só da lista aprovada, com versão exata"
+  else
+    falha "devDependencies fora da lista aprovada ($DEV_PERMITIDAS) ou sem versão exata"
   fi
 fi
-[ -d node_modules ] && alerta "pasta node_modules presente (não deve ir para o Git)"
+[ -n "$(git ls-files node_modules | head -1)" ] && falha "pasta node_modules está no Git"
 
 if [ -d .github/workflows ]; then
   soltas="$(git grep -nE 'uses:[[:space:]]*[^[:space:]]+@' -- .github/workflows | grep -vE '@[0-9a-f]{40}' || true)"

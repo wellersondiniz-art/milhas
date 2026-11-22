@@ -1,0 +1,22 @@
+[
+  {
+    "id": "programa-alfa",
+    "nome": "Programa Alfa",
+    "tipo": "milhas",
+    "valor_milheiro_brl": 2000,
+    "valor_milheiro_origem": "estimativa_editavel",
+    "valor_milheiro_fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "url": "https://exemplo.invalid/dados-de-teste",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05"
+  },
+  {
+    "id": "programa-beta",
+    "nome": "Programa Beta",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://exemplo.invalid/dados-de-teste",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05"
+  }
+]

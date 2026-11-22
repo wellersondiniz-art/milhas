@@ -6,11 +6,11 @@ Fase 1: site estático (PWA), sem login e sem banco de dados. As regras do proje
 
 ## Como rodar
 
-Não precisa instalar nada além do Node 22 (para os testes) e do Python 3 (para o servidor local).
+O site não tem dependências. Para os testes no navegador, rode `npm install` uma vez (instala só o Playwright, ferramenta de teste) e `npx playwright install chromium`. O servidor local usa Python 3.
 
 | Para quê | Comando |
 | --- | --- |
-| Rodar os testes | `npm test` (ou `node --test`) |
+| Rodar todos os testes | `npm test` (unitários + dados + navegador; ver abaixo) |
 | Validar os dados | `npm run validar` |
 | Servir localmente | `npm run servir` e abra http://localhost:8080 (copia `dados/` para `site/dados/` antes) |
 | Copiar os dados para o site | `npm run dados` |
@@ -34,3 +34,21 @@ Endereço do site: `URL_BASE` em `scripts/paginas/config.js`. Hoje é `https://m
 - `testes/`: testes com `node --test`.
 - `scripts/`: validação dos dados e geração de páginas por loja.
 - `seguranca/`: auditoria de segurança e checklist.
+
+## Testes
+
+`npm test` roda tudo, em ordem, e para no primeiro erro:
+
+1. **Unitários** (`npm run test:unidade`): `node --test` em `testes/*.test.mjs`, com relatório de cobertura de `site/js/` e `scripts/`. Reprova abaixo de 95% das linhas, 88% dos caminhos ou 95% das funções.
+2. **Dados** (`npm run validar`): schemas, ids entre arquivos, datas e fontes de `dados/`.
+3. **Navegador** (`npm run test:navegador`): Playwright em `testes/navegador/`, cada teste no celular (Pixel 7) e no computador (1280 × 800). Monta o site (`npm run build`) e serve com os cabeçalhos de `site/_headers`; erro de JavaScript ou de CSP no console reprova.
+   - `calcular.spec.mjs`: loja, valor e resultado, por teclado e por toque; erros do formulário; falha ao carregar; toda loja real calcula.
+   - `perfil.spec.mjs`: marcar, recarregar, a conta usar o perfil, exportar/importar, apagar e modo privado.
+   - `offline.spec.mjs`: instalável segundo o próprio Chrome, calculadora sem internet, página nunca aberta, perfil fora do cache.
+   - `fotos.spec.mjs`: regressão visual com as fotos de `testes/navegador/fotos/`.
+
+Os testes do navegador usam dados falsos (`testes/navegador/dados-de-teste/`, validados pelo mesmo schema) e o relógio parado em 10/11/2026, para o resultado não mudar quando os dados reais mudam.
+
+**Fotos de referência.** Foram tiradas na imagem Docker oficial do Playwright, a mesma do CI, porque a letra muda de um sistema para outro. Por isso, fora do CI o `npm test` pula as fotos. Para comparar no seu computador: `npm run test:fotos` (precisa do Docker). Mudou a tela de propósito? `npm run test:fotos:atualizar` e confira as imagens novas no pull request. Relatório com as diferenças: `npm run test:relatorio`.
+
+**No GitHub.** `.github/workflows/testes.yml` roda em todo pull request: "Unitários e dados" e "Navegador (Playwright)". Quando o navegador falha, o relatório (com fotos e passo a passo) fica no artefato `relatorio-playwright` da execução.

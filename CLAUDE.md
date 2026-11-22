@@ -76,7 +76,8 @@ Vamos preenchendo conforme o projeto cresce.
 
 | Para quê | Comando |
 | --- | --- |
-| Rodar testes | `node --test` *(a confirmar quando houver testes)* |
-| Validar dados | *a definir* |
+| Rodar testes | `npm test` (unitários, dados e navegador) |
+| Validar dados | `npm run validar` |
 | Servir localmente | *a definir* |
-| Auditar segurança | `seguranca/auditar.sh` *(a criar)* |
+| Auditar segurança | `npm run auditar` |
+| Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
