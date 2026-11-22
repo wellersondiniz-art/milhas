@@ -76,8 +76,9 @@ Vamos preenchendo conforme o projeto cresce.
 
 | Para quê | Comando |
 | --- | --- |
-| Rodar testes | `node --test` *(a confirmar quando houver testes)* |
-| Validar dados | *a definir* |
+| Rodar testes | `npm test` (unitários, dados e navegador) |
+| Validar dados | `npm run validar` |
 | Montar o que vai para o ar | `npm run build` (gera `dist/`, a pasta publicada na Cloudflare Pages) |
 | Servir localmente | `npm run servir` (serve `dist/`) |
-| Auditar segurança | `seguranca/auditar.sh` *(a criar)* |
+| Auditar segurança | `npm run auditar` |
+| Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |

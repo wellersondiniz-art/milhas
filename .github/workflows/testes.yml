@@ -1,5 +1,9 @@
 name: testes
 
+# Roda a cada pull request e a cada push na main. Os dois trabalhos abaixo
+# ("Unitários e dados" e "Navegador") são os que a regra de proteção da main
+# deve exigir para liberar o merge.
+
 on:
   push:
     branches: [main]
@@ -8,8 +12,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: testes-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  testes:
+  unidade:
+    name: Unitários e dados
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
@@ -17,5 +26,42 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
-      - run: node --test
-      - run: node scripts/validar-dados.js
+      # Sem npm install: os testes unitários e o validador não usam dependências.
+      - name: Testes unitários (com cobertura mínima)
+        run: npm run test:unidade
+      - name: Validação dos dados
+        run: |
+          set -o pipefail
+          {
+            echo '### Validação dos dados'
+            echo '```'
+            node scripts/validar-dados.js 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  navegador:
+    name: Navegador (Playwright)
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    # Mesma imagem usada para tirar as fotos de referência (npm run test:fotos:atualizar).
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host
+    env:
+      CI: 'true'
+      HOME: /root
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Instalar o Playwright (só ferramenta de teste)
+        run: npm ci --no-audit --no-fund
+      - name: Ponta a ponta e fotos (celular e computador)
+        run: npx playwright test
+      - name: Guardar o relatório
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: relatorio-playwright
+          path: |
+            testes/navegador/relatorio/
+            testes/navegador/resultados/
+          retention-days: 14
