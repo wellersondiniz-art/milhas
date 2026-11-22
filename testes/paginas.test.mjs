@@ -71,8 +71,13 @@ test('html: nome de tag ou atributo vindo de dado é recusado', () => {
   assert.throws(() => h('p', { 'onclick="x"': 1 }), /atributo inválido/);
 });
 
-test('html: link externo só para http(s)', () => {
+test('html: link externo só para https://', () => {
   assert.equal(linkExterno('javascript:alert(1)', 'fonte').toString(), 'fonte');
+  assert.equal(linkExterno('http://a.com', 'fonte').toString(), 'fonte');
+  assert.equal(linkExterno('data:text/html,oi', 'fonte').toString(), 'fonte');
+  assert.equal(linkExterno('//a.com', 'fonte').toString(), 'fonte');
+  assert.equal(linkExterno('https://a.com/x y', 'fonte').toString(), 'fonte');
+  assert.equal(linkExterno('A_CONFIRMAR', 'fonte').toString(), 'fonte');
   assert.match(linkExterno('https://a.com', 'fonte').toString(), /^<a href="https:\/\/a.com" rel="noopener noreferrer nofollow" class="alvo-toque">/);
 });
 

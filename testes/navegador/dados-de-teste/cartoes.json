@@ -1,0 +1,28 @@
+[
+  {
+    "id": "cartao-alfa",
+    "nome": "Cartão Alfa Platinum",
+    "emissor": "Banco Teste",
+    "bandeira": "Visa",
+    "programa_id": "programa-alfa",
+    "pontos_por_real": 2,
+    "anuidade_brl": 0,
+    "observacoes": "Dado de teste, não é um cartão real.",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "status": "confirmado"
+  },
+  {
+    "id": "cartao-beta",
+    "nome": "Cartão Beta Gold",
+    "emissor": "Banco Teste",
+    "bandeira": "Mastercard",
+    "programa_id": "programa-beta",
+    "pontos_por_real": 3,
+    "anuidade_brl": 0,
+    "observacoes": "Dado de teste, não é um cartão real.",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "status": "confirmado"
+  }
+]

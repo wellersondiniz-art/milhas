@@ -1,0 +1,22 @@
+[
+  {
+    "id": "loja-teste",
+    "nome": "Loja Teste",
+    "dominio": "loja-teste.invalid",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Dado de teste, não é uma loja real.",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05"
+  },
+  {
+    "id": "outra-loja",
+    "nome": "Outra Loja",
+    "dominio": "outra-loja.invalid",
+    "categoria": "varejo",
+    "aceita_cupom": false,
+    "observacoes": "Dado de teste, sem oferta.",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05"
+  }
+]

@@ -81,18 +81,40 @@ done
 [ -f .gitignore ] && ok ".gitignore presente"
 
 # ---------------------------------------------------------------------------
-secao "4. Arquivos expostos na pasta publicada (site/)"
+secao "4. Arquivos expostos (site/ e a pasta publicada, dist/)"
+# A Cloudflare Pages publica dist/, gerada por npm run build. Auditar só site/
+# deixaria de fora o que o build acrescenta (o _headers final, por exemplo).
 if [ -d site ]; then
-  expostos="$(find site \( -name '.env*' -o -name '.git' -o -name '*.map' -o -name '*.bak' -o -name '*.sql' \
-    -o -name '*.dump' -o -name '*.zip' -o -name '*.log' -o -name '*.pem' -o -name '*.key' -o -name '.DS_Store' \) -print)"
-  if [ -n "$expostos" ]; then
-    falha "arquivo que não deveria ser publicado:"
-    printf '%s\n' "$expostos" | sed 's/^/           - /'
+  if npm run build >/dev/null 2>&1; then
+    ok "npm run build gerou dist/"
   else
-    ok "nenhum .env, .git, backup, dump ou source map em site/"
+    falha "npm run build falhou (rode-o para ver o erro); dist/ não foi auditada"
   fi
 else
   falha "pasta site/ não encontrada"
+fi
+PROIBIDOS=( -name '.env*' -o -name '.git' -o -name '*.map' -o -name '*.bak' -o -name '*.sql' -o -name '*.dump'
+  -o -name '*.zip' -o -name '*.log' -o -name '*.pem' -o -name '*.key' -o -name '.DS_Store' -o -name 'package*.json'
+  -o -name 'node_modules' )
+for pasta in site dist; do
+  [ -d "$pasta" ] || continue
+  expostos="$(find "$pasta" \( "${PROIBIDOS[@]}" \) -print)"
+  if [ -n "$expostos" ]; then
+    falha "arquivo que não deveria ser publicado em $pasta/:"
+    printf '%s\n' "$expostos" | sed 's/^/           - /'
+  else
+    ok "nenhum .env, .git, backup, dump, source map ou package.json em $pasta/"
+  fi
+done
+if [ -d dist ]; then
+  # Só para quem desenvolve: fica em site/, mas não pode ir para o ar.
+  dev="$(find dist \( -name 'estilo.html' -o -name 'vitrine.*' \) -print)"
+  if [ -n "$dev" ]; then
+    falha "página de desenvolvimento publicada em dist/:"
+    printf '%s\n' "$dev" | sed 's/^/           - /'
+  else
+    ok "vitrine de estilo fora de dist/"
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -127,17 +149,47 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-secao "7. Cabeçalhos de segurança (site/_headers)"
-if [ -f site/_headers ]; then
-  for cab in Content-Security-Policy Strict-Transport-Security X-Content-Type-Options X-Frame-Options Referrer-Policy Permissions-Policy; do
-    if grep -qi "^[[:space:]]*$cab:" site/_headers; then ok "$cab"; else falha "falta $cab"; fi
+secao "7. Cabeçalhos de segurança (site/_headers e dist/_headers)"
+conferir_headers() {
+  local arq="$1" cab csp
+  if [ ! -f "$arq" ]; then falha "$arq não existe"; return; fi
+  for cab in Content-Security-Policy Strict-Transport-Security X-Content-Type-Options X-Frame-Options Referrer-Policy Permissions-Policy Cross-Origin-Opener-Policy; do
+    if grep -qi "^[[:space:]]*$cab:" "$arq"; then ok "$arq: $cab"; else falha "$arq: falta $cab"; fi
   done
-  if grep -iE '^[[:space:]]*Content-Security-Policy:' site/_headers | grep -qE "unsafe-inline|unsafe-eval|\*"; then
-    falha "CSP com unsafe-inline, unsafe-eval ou curinga *"
+  csp="$(grep -iE '^[[:space:]]*Content-Security-Policy:' "$arq")"
+  if printf '%s' "$csp" | grep -qE "unsafe-inline|unsafe-eval|unsafe-hashes|[[:space:]]\*|[[:space:]]https?:[;[:space:]]"; then
+    falha "$arq: CSP com unsafe-inline, unsafe-eval, curinga * ou esquema inteiro liberado"
+  else
+    ok "$arq: CSP sem unsafe-inline, unsafe-eval nem curinga"
   fi
-  if grep -qiE "frame-ancestors 'none'" site/_headers; then ok "CSP bloqueia o site dentro de iframe"; else alerta "CSP sem frame-ancestors 'none'"; fi
-else
-  falha "site/_headers não existe"
+  if printf '%s' "$csp" | grep -qi "frame-ancestors 'none'"; then ok "$arq: CSP bloqueia o site dentro de iframe"; else alerta "$arq: CSP sem frame-ancestors 'none'"; fi
+}
+conferir_headers site/_headers
+if [ -d dist ]; then
+  conferir_headers dist/_headers
+  # Cada <style> embutido pelo build precisa do seu sha256 na CSP, e nenhuma
+  # página publicada pode ter <script> inline (só JSON-LD) ou evento on*=.
+  inline_dist="$(node -e '
+    const fs = require("fs"), path = require("path"), crypto = require("crypto");
+    const csp = fs.readFileSync("dist/_headers", "utf8");
+    const paginas = fs.readdirSync("dist", { recursive: true }).map(String).filter((f) => f.endsWith(".html"));
+    for (const p of paginas) {
+      const html = fs.readFileSync(path.join("dist", p), "utf8");
+      for (const [, css] of html.matchAll(/<style>([\s\S]*?)<\/style>/g)) {
+        const h = "sha256-" + crypto.createHash("sha256").update(css, "utf8").digest("base64");
+        if (!csp.includes(h)) console.log(p + ": <style> sem resumo na CSP");
+      }
+      for (const [tag] of html.matchAll(/<script\b[^>]*>/gi)) {
+        if (!/\ssrc=/.test(tag) && !/type="?application\/ld\+json/.test(tag)) console.log(p + ": <script> inline");
+      }
+      if (/<[^>]+\son[a-z]+=/i.test(html)) console.log(p + ": atributo de evento on*=");
+    }' 2>&1)"
+  if [ -n "$inline_dist" ]; then
+    falha "HTML publicado que a CSP vai bloquear ou que foge dela:"
+    printf '%s\n' "$inline_dist" | sed 's/^/           - /'
+  else
+    ok "dist/: todo <style> tem resumo na CSP; nenhum script ou evento inline"
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -186,14 +238,22 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "10. Dependências"
+# Fase 1: nenhuma dependência de runtime. Ferramenta de teste (devDependencies)
+# só da lista aprovada e com versão exata.
+DEV_PERMITIDAS='["@playwright/test"]'
 if [ -f package.json ]; then
-  if node -e 'const p=require("./package.json");process.exit(Object.keys({...p.dependencies,...p.devDependencies,...p.optionalDependencies,...p.peerDependencies}).length?1:0)' 2>/dev/null; then
-    ok "package.json sem dependências"
+  if node -e 'const p=require("./package.json");process.exit(Object.keys({...p.dependencies,...p.optionalDependencies,...p.peerDependencies}).length?1:0)' 2>/dev/null; then
+    ok "package.json sem dependências de runtime"
   else
-    falha "package.json tem dependências (a Fase 1 é sem dependências de runtime)"
+    falha "package.json tem dependências de runtime (a Fase 1 não usa nenhuma)"
+  fi
+  if node -e 'const p=require("./package.json");const ok=JSON.parse(process.argv[1]);const d=p.devDependencies||{};process.exit(Object.entries(d).every(([n,v])=>ok.includes(n)&&/^\d+\.\d+\.\d+$/.test(v))?0:1)' "$DEV_PERMITIDAS" 2>/dev/null; then
+    ok "ferramentas de teste só da lista aprovada, com versão exata"
+  else
+    falha "devDependencies fora da lista aprovada ($DEV_PERMITIDAS) ou sem versão exata"
   fi
 fi
-[ -d node_modules ] && alerta "pasta node_modules presente (não deve ir para o Git)"
+[ -n "$(git ls-files node_modules | head -1)" ] && falha "pasta node_modules está no Git"
 
 if [ -d .github/workflows ]; then
   soltas="$(git grep -nE 'uses:[[:space:]]*[^[:space:]]+@' -- .github/workflows | grep -vE '@[0-9a-f]{40}' || true)"
