@@ -10,7 +10,7 @@ import { formatarNumero, pontosPorReal } from '../../site/js/motor/formatar.js';
 import { fraseDoJeito } from '../../site/js/tela/textos.js';
 import { NOME_DO_SITE } from './config.js';
 import { escaparXml, h, juntar, linkDeSaida, linkExterno } from './html.js';
-import { montarLinkDeSaida, siteTemLinkDeAfiliado } from '../../site/js/saida/links.js';
+import { montarLinkDeSaida, siteTemLinkDeAfiliado, siteUsaAwin } from '../../site/js/saida/links.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 import { paginasInstitucionais } from './institucionais.js';
 
@@ -448,7 +448,7 @@ export function gerarPaginas(dados, { hoje, urlBase = null }) {
   }
   const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
-  const institucionais = paginasInstitucionais({ urlBase: base, temAfiliado: siteTemLinkDeAfiliado(dados) });
+  const institucionais = paginasInstitucionais({ urlBase: base, temAfiliado: siteTemLinkDeAfiliado(dados), usaAwin: siteUsaAwin(dados) });
   const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {

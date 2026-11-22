@@ -140,7 +140,7 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade(temAfiliado) {
+function paginaPrivacidade(temAfiliado, usaAwin) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -184,6 +184,11 @@ function paginaPrivacidade(temAfiliado) {
         p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.'),
         temAfiliado
           ? p('Alguns links para lojas são links de afiliado. Eles têm, logo abaixo, o aviso "', AVISO_COMISSAO, '" Esses links levam no endereço um código do ', NOME_DO_SITE, ', para a loja saber que a visita veio daqui. O código é o mesmo para todo mundo e não identifica você. No site dela, a loja pode guardar esse código num cookie dela, com as regras de privacidade dela.')
+          : null,
+        temAfiliado && usaAwin
+          ? p('Alguns desses links passam antes, por um instante, pela Awin, a empresa que cuida do programa de afiliados de algumas lojas. A Awin registra o clique e leva você para o site da loja. Ela pode guardar um cookie dela, com as regras de privacidade dela, que estão no site da Awin.')
+          : null,
+        temAfiliado ? null
           : p('Hoje os links para as lojas são links comuns: não levam nenhum código nosso.')),
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
@@ -317,6 +322,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
  *   temAfiliado      algum link de dados/links.json é de afiliado (siteTemLinkDeAfiliado)
+ *   usaAwin          algum link passa pela Awin (siteUsaAwin)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -326,10 +332,11 @@ export function paginasInstitucionais({
   email = EMAIL_DE_CONTATO,
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
   temAfiliado = false,
+  usaAwin = false,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(temAfiliado), paginaTermos(temAfiliado), contatoPagina];
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(temAfiliado, usaAwin), paginaTermos(temAfiliado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

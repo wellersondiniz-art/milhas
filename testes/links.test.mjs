@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import {
-  AVISO_COMISSAO, REL_AFILIADO, REL_COMUM, conferirDestino, hostPermitido, montarLinkDeSaida, siteTemLinkDeAfiliado,
+  AVISO_COMISSAO, AWIN_CLIQUE, REL_AFILIADO, REL_COMUM, conferirDestino, hostPermitido, montarLinkDeSaida, siteTemLinkDeAfiliado, siteUsaAwin,
 } from '../site/js/saida/links.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
 import { conferirHtml } from '../scripts/paginas/conferir-html.js';
@@ -35,13 +35,13 @@ const comAfiliado = (dados) => ({
 // Montar o link
 
 test('sem parâmetro de afiliado: link comum, sem "sponsored" e sem aviso', () => {
-  assert.deepEqual(montar(), { url: 'https://www.amazon.com.br/', afiliado: false, rel: REL_COMUM, aviso: null });
+  assert.deepEqual(montar(), { url: 'https://www.amazon.com.br/', destino: 'https://www.amazon.com.br/', afiliado: false, rede: null, rel: REL_COMUM, aviso: null });
   assert.equal(REL_COMUM, 'noopener noreferrer');
 });
 
 test('com parâmetro de afiliado: entra no endereço, rel="sponsored noopener noreferrer" e aviso de comissão', () => {
   const saida = montar({ parametro_afiliado: { nome: 'tag', valor: 'meucodigo-20' } });
-  assert.deepEqual(saida, { url: 'https://www.amazon.com.br/?tag=meucodigo-20', afiliado: true, rel: REL_AFILIADO, aviso: AVISO_COMISSAO });
+  assert.deepEqual(saida, { url: 'https://www.amazon.com.br/?tag=meucodigo-20', destino: 'https://www.amazon.com.br/?tag=meucodigo-20', afiliado: true, rede: null, rel: REL_AFILIADO, aviso: AVISO_COMISSAO });
   assert.equal(REL_AFILIADO, 'sponsored noopener noreferrer');
   assert.equal(AVISO_COMISSAO, 'Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você.');
 });
@@ -100,6 +100,48 @@ test('sem loja, sem link ou loja sem domínio confirmado: não há link de saíd
   assert.equal(hostPermitido(undefined, 'amazon.com.br'), false);
   assert.match(conferirDestino('https://x.com/', 'A_CONFIRMAR').motivo, /domínio A_CONFIRMAR/);
   assert.match(conferirDestino(1, 'x.com').motivo, /não é texto/);
+});
+
+// ---------------------------------------------------------------------------
+// Awin: única exceção à lista de permissão
+
+const AWIN = { nome: 'awin', anunciante_id: '17629', afiliado_id: '123456' };
+
+test('Awin: link fixo da Awin, destino (ued) no domínio da loja, sponsored e aviso', () => {
+  const saida = montar({ programa_afiliado: 'Awin: Amazon BR', rede_afiliado: AWIN, url_base: 'https://www.amazon.com.br/ofertas?x=1&y=2' });
+  assert.equal(AWIN_CLIQUE, 'https://www.awin1.com/cread.php');
+  const url = new URL(saida.url);
+  assert.equal(`${url.origin}${url.pathname}`, AWIN_CLIQUE);
+  assert.deepEqual([...url.searchParams.keys()], ['awinmid', 'awinaffid', 'ued']);
+  assert.equal(url.searchParams.get('awinmid'), '17629');
+  assert.equal(url.searchParams.get('awinaffid'), '123456');
+  assert.equal(url.searchParams.get('ued'), 'https://www.amazon.com.br/ofertas?x=1&y=2');
+  assert.equal(saida.destino, 'https://www.amazon.com.br/ofertas?x=1&y=2');
+  assert.equal(saida.rede, 'Awin');
+  assert.equal(saida.rel, REL_AFILIADO);
+  assert.equal(saida.aviso, AVISO_COMISSAO);
+});
+
+test('Awin: sem programa da Awin, com id estranho ou destino fora da loja, não passa pela Awin', () => {
+  // programa_afiliado não diz Awin: link comum direto na loja.
+  for (const programa_afiliado of ['A_CONFIRMAR', 'Programa de Associados da Amazon', 'Awinner']) {
+    const saida = montar({ programa_afiliado, rede_afiliado: AWIN });
+    assert.equal(saida.url, 'https://www.amazon.com.br/', programa_afiliado);
+    assert.equal(saida.rede, null);
+  }
+  for (const rede_afiliado of ['A_CONFIRMAR', { ...AWIN, nome: 'outra' }, { ...AWIN, afiliado_id: '12a' }, { ...AWIN, anunciante_id: '' }, { nome: 'awin' }]) {
+    assert.equal(montar({ programa_afiliado: 'Awin', rede_afiliado }).rede, null, JSON.stringify(rede_afiliado));
+  }
+  // O destino continua passando na lista de permissão: fora da loja, nada de link.
+  assert.equal(montar({ programa_afiliado: 'Awin', rede_afiliado: AWIN, url_base: 'https://golpe.com.br/' }), null);
+  assert.equal(montar({ programa_afiliado: 'Awin', rede_afiliado: AWIN, url_base: 'https://www.awin1.com/cread.php?ued=https://golpe.com.br' }), null);
+});
+
+test('Awin: siteUsaAwin só com link da Awin de verdade', () => {
+  const lojas = LOJAS;
+  assert.equal(siteUsaAwin({ lojas, links: [link()] }), false);
+  assert.equal(siteUsaAwin({ lojas, links: [link({ programa_afiliado: 'Awin', rede_afiliado: AWIN })] }), true);
+  assert.equal(siteUsaAwin({}), false);
 });
 
 // ---------------------------------------------------------------------------
@@ -211,6 +253,10 @@ async function validarLinks(alterar) {
 test('validador: aceita os links reais e um parâmetro de afiliado bem formado', async () => {
   assert.deepEqual(await validarLinks(() => {}), []);
   assert.deepEqual(await validarLinks((links) => { links[0].parametro_afiliado = { nome: 'tag', valor: 'abc-20' }; }), []);
+  assert.deepEqual(await validarLinks((links) => {
+    links[3].programa_afiliado = 'Awin: Casas Bahia BR';
+    links[3].rede_afiliado = { nome: 'awin', anunciante_id: '17629', afiliado_id: '123456' };
+  }), []);
 });
 
 test('validador: recusa domínio fora da lista, http, loja inexistente, loja repetida e parâmetro estranho', async () => {
@@ -222,6 +268,9 @@ test('validador: recusa domínio fora da lista, http, loja inexistente, loja rep
     [(l) => { l[1].loja_id = l[0].loja_id; }, /loja_id repetido: "magalu"/],
     [(l) => { l[0].parametro_afiliado = { nome: 'tag', valor: 'a b' }; }, /campo parametro_afiliado/],
     [(l) => { delete l[0].fonte_url; }, /campo fonte_url/],
+    [(l) => { l[0].rede_afiliado = { nome: 'awin', anunciante_id: '1', afiliado_id: '2' }; }, /rede_afiliado "awin" só vale quando programa_afiliado é da Awin/],
+    [(l) => { l[0].programa_afiliado = 'Awin'; l[0].rede_afiliado = { nome: 'awin', anunciante_id: '1', afiliado_id: '2' }; l[0].parametro_afiliado = { nome: 'tag', valor: 'x' }; }, /use parametro_afiliado ou rede_afiliado, não os dois/],
+    [(l) => { l[0].programa_afiliado = 'Awin'; l[0].rede_afiliado = { nome: 'awin', anunciante_id: '1x', afiliado_id: '2' }; }, /campo rede_afiliado/],
   ];
   for (const [alterar, esperado] of casos) {
     const erros = await validarLinks(alterar);

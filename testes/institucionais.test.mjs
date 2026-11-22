@@ -143,6 +143,10 @@ test('afiliado: com link de afiliado, os textos mudam, mostram o aviso e o build
   assert.match(termos, /A comissão nunca muda a ordem do resultado/);
   assert.match(privacidade, /Alguns links para lojas são links de afiliado/);
   assert.match(privacidade, /O código é o mesmo para todo mundo e não identifica você\./);
+  assert.doesNotMatch(privacidade, /Awin/);
+  const comAwin = textoVisivel(porCaminho(paginasInstitucionais({ temAfiliado: true, usaAwin: true }).paginas)['privacidade/index.html']);
+  assert.match(comAwin, /passam antes, por um instante, pela Awin/);
+  assert.doesNotMatch(textoVisivel(porCaminho(paginasInstitucionais({ temAfiliado: false, usaAwin: true }).paginas)['privacidade/index.html']), /Awin/);
   assert.ok(avisos.some((a) => /TEXTOS_ATUALIZADOS_EM/.test(a) && /afiliado/.test(a)));
   // Como funciona diz o mesmo nos dois casos.
   assert.equal(p['como-funciona/index.html'], porCaminho(paginasInstitucionais({ temAfiliado: false }).paginas)['como-funciona/index.html']);

@@ -223,6 +223,15 @@ function regrasExtras(dados, hoje) {
     if (!loja) return;
     const { motivo } = conferirDestino(link.url_base, loja.dominio);
     if (motivo) erros.push({ arquivo: 'links', indice: i, caminho: ['url_base'], mensagem: motivo });
+    // Awin: só para programa da Awin, e nunca junto com parâmetro na própria loja.
+    if (link.rede_afiliado && typeof link.rede_afiliado === 'object') {
+      if (!/\bawin\b/i.test(typeof link.programa_afiliado === 'string' ? link.programa_afiliado : '')) {
+        erros.push({ arquivo: 'links', indice: i, caminho: ['rede_afiliado'], mensagem: 'rede_afiliado "awin" só vale quando programa_afiliado é da Awin (ex.: "Awin: Casas Bahia BR")' });
+      }
+      if (link.parametro_afiliado && typeof link.parametro_afiliado === 'object') {
+        erros.push({ arquivo: 'links', indice: i, caminho: ['parametro_afiliado'], mensagem: 'use parametro_afiliado ou rede_afiliado, não os dois' });
+      }
+    }
   });
 
   (dados.ofertas ?? []).forEach((o, i) => {
