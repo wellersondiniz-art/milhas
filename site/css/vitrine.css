@@ -1,0 +1,67 @@
+/* Estilos só da página de vitrine (estilo.html). O site usa base.css. */
+
+.vitrine-topo {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--cor-fundo);
+  border-bottom: 1px solid var(--cor-borda);
+  padding-block: var(--espaco-3);
+  margin-bottom: var(--espaco-6);
+}
+
+.vitrine-topo__linha { justify-content: space-between; }
+
+.vitrine-marca {
+  margin: 0;
+  font-weight: var(--peso-extra);
+  color: var(--cor-primaria);
+}
+
+.vitrine-marca .texto-suave { font-weight: var(--peso-medio); }
+
+.vitrine-cores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: var(--espaco-3);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+}
+
+.vitrine-amostra {
+  display: block;
+  height: 3rem;
+  margin-bottom: var(--espaco-1);
+  border-radius: var(--raio-md);
+  border: 1px solid var(--cor-borda);
+}
+
+.vitrine-amostra--primaria { background: var(--cor-primaria); }
+.vitrine-amostra--destaque { background: var(--cor-destaque); }
+.vitrine-amostra--fundo { background: var(--cor-fundo); }
+.vitrine-amostra--superficie { background: var(--cor-superficie); }
+.vitrine-amostra--texto { background: var(--cor-texto); }
+.vitrine-amostra--sucesso { background: var(--cor-sucesso-fundo); }
+.vitrine-amostra--aviso { background: var(--cor-aviso-fundo); }
+.vitrine-amostra--perigo { background: var(--cor-perigo-fundo); }
+
+.vitrine-termo { margin-top: var(--espaco-3); }
+
+.vitrine-form { max-width: 34rem; }
+
+/* No celular, marca e botão cabem na mesma linha. */
+.vitrine-topo__linha { flex-wrap: nowrap; }
+.vitrine-topo .botao { min-height: 2.75rem; padding: var(--espaco-2) var(--espaco-4); font-size: var(--texto-sm); flex: none; }
+
+@media (max-width: 30rem) {
+  .vitrine-marca .texto-suave { display: none; }
+}
+
+.vitrine-rodape {
+  margin-top: var(--espaco-12);
+  padding-block: var(--espaco-6);
+  border-top: 1px solid var(--cor-borda);
+}
