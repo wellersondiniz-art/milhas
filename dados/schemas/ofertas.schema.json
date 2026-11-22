@@ -66,7 +66,11 @@
       "link_oferta": { "anyOf": [{ "$ref": "#/$defs/url" }, { "$ref": "#/$defs/a_confirmar" }] },
       "fonte_url": { "$ref": "#/$defs/url" },
       "verificado_em": { "$ref": "#/$defs/data" },
-      "observacoes": { "type": "string" }
+      "observacoes": { "type": "string" },
+      "status": {
+        "description": "Opcional. A_CONFIRMAR tira a oferta do ranking.",
+        "enum": ["confirmado", "A_CONFIRMAR"]
+      }
     }
   },
   "$defs": {
