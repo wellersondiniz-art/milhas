@@ -12,7 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { minificarCss, minificarHtml, minificarJs } from '../scripts/publicar/minificar.js';
-import { conferirImagens, cspComEstilos, grafoDeModulos, importsDe, montarDist, resolverHref, resumoCsp } from '../scripts/publicar/montar-dist.js';
+import { conferirImagens, cspComEstilos, ficaForaDoAr, grafoDeModulos, importsDe, montarDist, resolverHref, resumoCsp } from '../scripts/publicar/montar-dist.js';
 
 const raiz = new URL('../', import.meta.url);
 const site = new URL('site/', raiz);
@@ -164,6 +164,7 @@ test('dist/: CSS dentro das páginas, CSP com os resumos, modulepreload e sw.js 
     await montarDist(site, destino);
     const arquivos = (await readdir(destino, { recursive: true })).map(String);
     assert.ok(!arquivos.some((a) => a.endsWith('.css')), 'nenhum .css solto em dist/');
+    for (const a of ['estilo.html', 'js/vitrine.js']) assert.ok(!arquivos.includes(a), `${a} não vai para o ar`);
 
     const headers = await readFile(new URL('_headers', destino), 'utf8');
     for (const pagina of arquivos.filter((a) => a.endsWith('.html'))) {
@@ -187,4 +188,9 @@ test('dist/: CSS dentro das páginas, CSP com os resumos, modulepreload e sw.js 
     assert.ok(!lista.some((a) => a.endsWith('.css') || a.endsWith('-512.png')));
     assert.match(sw, /const VERSAO='[0-9a-f]{12}';/);
   });
+});
+
+test('ficaForaDoAr: vitrine, sw.js de site/ e .gitkeep não vão para dist/', () => {
+  for (const f of ['estilo.html', 'js/vitrine.js', 'css/vitrine.css', 'sw.js', 'img/.gitkeep']) assert.ok(ficaForaDoAr(f), f);
+  for (const f of ['index.html', 'js/app.js', 'offline.html', 'loja/magalu/index.html', 'js/tela/estilo.js']) assert.ok(!ficaForaDoAr(f), f);
 });
