@@ -14,6 +14,8 @@ import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
 import { agoraLocal } from './tela/textos.js';
 import { el } from './tela/dom.js';
+import { iniciarPwa } from './pwa/pwa.js';
+import { maisAntiga } from './pwa/textos.js';
 
 const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas'];
 
@@ -198,14 +200,18 @@ async function carregar() {
   resultado.setAttribute('aria-busy', 'true');
   resultado.replaceChildren(montarCarregando());
   try {
+    const salvosEm = [];
     const listas = await Promise.all(ARQUIVOS.map(async (nome) => {
       const resposta = await fetch(`dados/${nome}.json`, { cache: 'no-cache' });
       if (!resposta.ok) throw new Error(`dados/${nome}.json respondeu ${resposta.status}`);
+      // Veio da cópia guardada pelo service worker? Ele marca a hora em X-Salvo-Em.
+      salvosEm.push(resposta.headers.get('X-Salvo-Em'));
       const lista = await resposta.json();
       if (!Array.isArray(lista)) throw new Error(`dados/${nome}.json não é uma lista`);
       return lista;
     }));
     dados = Object.fromEntries(ARQUIVOS.map((nome, i) => [nome, listas[i]]));
+    pwa.definirDadosSalvosEm(maisAntiga(salvosEm));
   } catch (erro) {
     console.error(erro);
     titulo.textContent = 'Não deu para carregar';
@@ -245,6 +251,8 @@ async function carregar() {
   if (lojaDaUrl && rotaAtual() === 'inicio') busca.escolherPorId(lojaDaUrl);
   aoMudarRota();
 }
+
+const pwa = iniciarPwa({ avisoVersao: $('aviso-versao'), avisoConexao: $('aviso-conexao') });
 
 aoMudarRota();
 carregar();

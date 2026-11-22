@@ -6,6 +6,10 @@
   <title>comprador de milhas</title>
   <meta name="description" content="Descubra onde comprar e com qual cartão para ganhar mais milhas e pontos.">
   <meta name="theme-color" content="#1f6b3a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="img/icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icones/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="Milhas da Vez">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/estilo.css">
   <script type="module" src="js/app.js"></script>
@@ -25,6 +29,10 @@
   </header>
 
   <main id="conteudo" class="container">
+   <div class="avisos-app">
+    <div id="aviso-versao" role="status"></div>
+    <div id="aviso-conexao" role="status"></div>
+   </div>
    <div id="tela-inicio" class="pilha--lg">
     <section class="pilha--sm">
       <h1>Onde e com qual cartão comprar para ganhar mais pontos</h1>
