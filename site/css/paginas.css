@@ -1,0 +1,45 @@
+/* Páginas geradas (loja/<id>/ e ofertas/). Só usa os tokens do base.css. */
+
+.resposta {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-medio);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.pagina__subtitulo {
+  margin: 0;
+  font-size: var(--texto-xl);
+}
+
+.pagina__rotulo {
+  margin-bottom: var(--espaco-1);
+  font-weight: var(--peso-forte);
+}
+
+.pagina__lista {
+  margin: 0;
+  padding-left: var(--espaco-5);
+}
+
+.pagina__lista > li + li { margin-top: var(--espaco-2); }
+
+.pagina__lojas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+}
+
+.pagina__lojas > li {
+  padding: var(--espaco-3) var(--espaco-4);
+  border-bottom: 1px solid var(--cor-borda);
+}
+
+.pagina__lojas > li:last-child { border-bottom: 0; }
+.pagina__lojas a { font-weight: var(--peso-forte); }
+
+.card .tabela tr { background: var(--cor-superficie-2); }
+.lista-conta dd { overflow-wrap: anywhere; }

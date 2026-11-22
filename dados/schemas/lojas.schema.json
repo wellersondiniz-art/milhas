@@ -14,6 +14,10 @@
     "properties": {
       "id": { "$ref": "#/$defs/id" },
       "nome": { "type": "string", "minLength": 1 },
+      "artigo": {
+        "description": "Opcional. Artigo do nome da loja, para escrever \"na Magalu\", \"no Mercado Livre\", \"nas Casas Bahia\". Sem ele, vale \"a\".",
+        "enum": ["a", "o", "as", "os"]
+      },
       "dominio": {
         "description": "Domínio do site, sem https:// (ex.: loja.com.br).",
         "anyOf": [

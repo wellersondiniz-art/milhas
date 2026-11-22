@@ -113,6 +113,12 @@ export function criarBuscaDeLoja({ campo, lista, status, aoEscolher }) {
   return {
     definirLojas(novas) { lojas = novas; },
     escolhida: () => escolhida,
+    /** Escolhe a loja pelo id (link "?loja=magalu" das páginas de loja). Devolve a loja ou null. */
+    escolherPorId(id) {
+      const loja = lojas.find((l) => l.id === id);
+      if (loja) escolher(loja);
+      return loja ?? null;
+    },
     /** Tenta aceitar o texto digitado (nome exato). Devolve a loja ou null. */
     confirmar() {
       if (!escolhida) {
