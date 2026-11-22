@@ -22,6 +22,7 @@
   {
     "id": "mercado-livre",
     "nome": "Mercado Livre",
+    "artigo": "o",
     "dominio": "mercadolivre.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
@@ -32,6 +33,7 @@
   {
     "id": "casas-bahia",
     "nome": "Casas Bahia",
+    "artigo": "as",
     "dominio": "casasbahia.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,

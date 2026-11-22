@@ -54,3 +54,9 @@ desktop.ini
 
 # Cópia gerada dos dados para o site (npm run dados)
 site/dados/
+
+# Páginas geradas a partir dos dados (npm run paginas)
+site/loja/
+site/ofertas/
+site/sitemap.xml
+site/robots.txt

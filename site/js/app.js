@@ -240,6 +240,9 @@ async function carregar() {
   resultado.replaceChildren();
   passoResultado.hidden = true;
   ajudaValor.textContent = 'Só números. Os centavos entram sozinhos: para R$ 1.299,00, digite 129900.';
+  // Vindo de uma página de loja ("?loja=magalu"), a loja já chega escolhida.
+  const lojaDaUrl = new URLSearchParams(location.search).get('loja');
+  if (lojaDaUrl && rotaAtual() === 'inicio') busca.escolherPorId(lojaDaUrl);
   aoMudarRota();
 }
 
