@@ -9,10 +9,14 @@
 //   - valor em bilionésimos de centavo  (ESCALA_VALOR)
 // Conta: pontos = pontos_por_real × valor_centavos / 100
 //        valor (centavos) = pontos × milheiro (centavos) / 1000
+// Cartão que só tem pontos por dólar:
+//        pontos = valor em reais ÷ cotação do dólar × pontos_por_dolar
+//        A cotação entra × 10.000 (R$ 5,3456 = 53456). A divisão é a única
+//        conta que corta casas: guardamos 6 casas de ponto e cortamos para baixo.
 
 import { diasEntre, horasGarantidasDesde, lerDataHora, soData } from './datas.js';
 import {
-  ESCALA_PONTOS, formatarCentavos, formatarData, formatarNumero, formatarPontos,
+  ESCALA_PONTOS, formatarCentavos, formatarCotacao, formatarData, formatarNumero, formatarPontos,
   formatarValor, pontosParaNumero, pontosPorReal,
 } from './formatar.js';
 
@@ -21,6 +25,10 @@ export const A_CONFIRMAR = 'A_CONFIRMAR';
 export const DIAS_AVISO_VENCIMENTO = 7;
 /** Dado verificado há mais que isso ganha aviso. */
 export const DIAS_DADO_ANTIGO = 14;
+/** Escala da cotação do dólar: R$ 5,3456 = 53456. */
+export const ESCALA_COTACAO = 10_000;
+/** id do registro de cambio.json com a cotação do dólar. */
+export const ID_COTACAO_DOLAR = 'usd-brl';
 
 const ESCALA_PPR = 10_000;
 
@@ -46,6 +54,10 @@ function validarEntrada(perfil, compra, dados, hoje) {
   for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas']) {
     if (!dados || !Array.isArray(dados[nome])) throw erro(`dados.${nome} precisa ser uma lista`);
   }
+  if (perfil.cotacao_dolar !== undefined && (!Number.isSafeInteger(perfil.cotacao_dolar) || perfil.cotacao_dolar <= 0)) {
+    throw erro(`cotacao_dolar precisa ser um inteiro > 0, em reais × ${ESCALA_COTACAO} (recebido: ${perfil.cotacao_dolar})`);
+  }
+  if (dados && dados.cambio !== undefined && !Array.isArray(dados.cambio)) throw erro('dados.cambio precisa ser uma lista');
   for (const [id, v] of Object.entries(perfil.valor_milheiro_brl ?? {})) {
     if (!Number.isSafeInteger(v) || v < 0) {
       throw erro(`valor_milheiro_brl de "${id}" precisa ser centavos inteiros >= 0 (recebido: ${v})`);
@@ -83,6 +95,7 @@ function montarContexto(perfil, compra, dados, hoje) {
   const ids = [...new Set(perfil.cartoes)].filter((id) => cartoesPorId.has(id));
   const cartoes = ids.map((id) => cartoesPorId.get(id));
   const milheiroDoPerfil = perfil.valor_milheiro_brl ?? {};
+  const registroCotacao = (dados.cambio ?? []).find((c) => c.id === ID_COTACAO_DOLAR) ?? null;
 
   return {
     compra,
@@ -101,6 +114,12 @@ function montarContexto(perfil, compra, dados, hoje) {
       if (Object.hasOwn(milheiroDoPerfil, id)) return { centavos: milheiroDoPerfil[id], doPerfil: true };
       const v = programas.get(id)?.valor_milheiro_brl;
       return Number.isSafeInteger(v) ? { centavos: v, doPerfil: false } : null;
+    },
+    /** Cotação do dólar (reais × 10.000): a do perfil vence a dos dados. null se desconhecida. */
+    cotacao() {
+      if (perfil.cotacao_dolar !== undefined) return { x10000: perfil.cotacao_dolar, doPerfil: true, registro: null };
+      const v = registroCotacao?.reais_por_dolar;
+      return Number.isSafeInteger(v) && v > 0 ? { x10000: v, doPerfil: false, registro: registroCotacao } : null;
     },
   };
 }
@@ -279,7 +298,10 @@ function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
   }
   condicoes.push(`Pagar com o cartão ${cartao.nome}.`);
   avisarDadoAntigo(ctx, cartao, `cartão ${cartao.nome}`, avisos);
-  const ppr = cartao.status === A_CONFIRMAR ? null : pprEscalado(cartao.pontos_por_real);
+  const confirmado = cartao.status !== A_CONFIRMAR;
+  const ppr = confirmado ? pprEscalado(cartao.pontos_por_real) : null;
+  const ppd = confirmado && ppr === null ? pprEscalado(cartao.pontos_por_dolar) : null;
+  if (ppr === null && ppd !== null) return pontosDoCartaoEmDolar(ctx, cartao, ppd, avisos, passos);
   if (ppr === null) {
     avisos.push(`Os pontos por real do cartão ${cartao.nome} não estão confirmados; não entram no cálculo.`);
     passos.push(`Pontos do cartão ${cartao.nome}: não confirmados, contamos 0.`);
@@ -289,6 +311,31 @@ function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
   passos.push(
     `Pontos do cartão ${cartao.nome}: ${formatarCentavos(ctx.valor)} × ${formatarNumero(cartao.pontos_por_real)} = ` +
     `${formatarPontos(esc)} pontos no programa ${ctx.nomePrograma(cartao.programa_id)}.`,
+  );
+  return { esc, programaId: cartao.programa_id };
+}
+
+/** Pontos de um cartão que só informa pontos por dólar. */
+function pontosDoCartaoEmDolar(ctx, cartao, ppdEsc, avisos, passos) {
+  const cot = ctx.cotacao();
+  if (!cot) {
+    avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe em "Meu perfil".`);
+    passos.push(`Pontos do cartão ${cartao.nome}: falta a cotação do dólar, contamos 0.`);
+    return { esc: 0n, programaId: cartao.programa_id };
+  }
+  if (cot.registro) avisarDadoAntigo(ctx, cot.registro, 'cotação do dólar', avisos);
+  // pontos × 1.000.000 = centavos × (ppd × 10.000) × 10.000 ÷ (cotação × 10.000)
+  const esc = (ctx.valor * ppdEsc * BigInt(ESCALA_COTACAO)) / BigInt(cot.x10000);
+  const origem = cot.doPerfil
+    ? 'valor que você informou'
+    : `PTAX${cot.registro?.data_referencia && cot.registro.data_referencia !== A_CONFIRMAR ? ` de ${formatarData(cot.registro.data_referencia)}` : ''}`;
+  avisos.push(
+    `O cartão ${cartao.nome} rende pontos por dólar. Usamos o dólar a ${formatarCotacao(cot.x10000)} (${origem}); ` +
+    'o banco usa a cotação do dia em que fecha a conta, então os pontos podem variar um pouco.',
+  );
+  passos.push(
+    `Pontos do cartão ${cartao.nome}: ${formatarCentavos(ctx.valor)} ÷ ${formatarCotacao(cot.x10000)} por dólar × ` +
+    `${formatarNumero(cartao.pontos_por_dolar)} pontos por dólar = ${formatarPontos(esc)} pontos no programa ${ctx.nomePrograma(cartao.programa_id)}.`,
   );
   return { esc, programaId: cartao.programa_id };
 }
@@ -534,9 +581,9 @@ function paraSaida(ctx, j) {
 /**
  * Lista os jeitos de comprar, do melhor ao pior (mais pontos; empate → mais reais).
  *
- * @param {object} perfil  { programas: [{programa_id, clube_ativo, clube_ativo_desde}], cartoes: [cartao_id], valor_milheiro_brl?: {programa_id: centavos} }
+ * @param {object} perfil  { programas: [{programa_id, clube_ativo, clube_ativo_desde}], cartoes: [cartao_id], valor_milheiro_brl?: {programa_id: centavos}, cotacao_dolar?: reais × 10.000 }
  * @param {object} compra  { loja_id, valor_centavos, tipo_vendedor: "loja"|"parceiro", categoria?, cupom_aplicado? }
- * @param {object} dados   { programas, cartoes, lojas, ofertas }
+ * @param {object} dados   { programas, cartoes, lojas, ofertas, cambio? }
  * @param {string} hoje    "AAAA-MM-DD" (ou "AAAA-MM-DDTHH:MM")
  */
 export function calcularJeitosDeComprar(perfil, compra, dados, hoje) {

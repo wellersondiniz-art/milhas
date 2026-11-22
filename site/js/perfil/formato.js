@@ -10,8 +10,11 @@
 //   versao: 2,
 //   programas: [{ programa_id, clube_ativo, clube_ativo_desde? }],
 //   cartoes: [cartao_id],
-//   valor_milheiro_brl: { programa_id: centavos }
+//   valor_milheiro_brl: { programa_id: centavos },
+//   cotacao_dolar?: reais × 10.000 (53456 = R$ 5,3456)
 // }
+// cotacao_dolar é opcional e entrou depois, sem mudar a versão: perfis
+// antigos simplesmente não têm o campo.
 // Versão 1 (tela inicial, antes desta tela): o mesmo, mas sem o campo versao.
 
 export const VERSAO_ATUAL = 2;
@@ -19,6 +22,8 @@ export const APP = 'comprador-de-milhas';
 
 /** Maior milheiro aceito: R$ 999,99 (em centavos). */
 export const MILHEIRO_MAXIMO = 99999;
+/** Cotação do dólar aceita, em reais × 10.000: de R$ 0,0001 a R$ 99,9999. */
+export const COTACAO_MAXIMA = 999999;
 /** Maior arquivo de importação aceito, em caracteres. Um perfil real tem poucos KB. */
 export const TAMANHO_MAXIMO = 50000;
 
@@ -46,6 +51,16 @@ function objetoSimples(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
 }
 
+export function cotacaoValida(v) {
+  return Number.isSafeInteger(v) && v > 0 && v <= COTACAO_MAXIMA;
+}
+
+/** Copia a cotação para o perfil só se ela for válida. */
+function comCotacao(perfil, v) {
+  if (cotacaoValida(v)) perfil.cotacao_dolar = v;
+  return perfil;
+}
+
 /**
  * Leva um perfil de qualquer versão conhecida para a versão atual.
  * Devolve null se não for perfil ou se for de uma versão mais nova que esta.
@@ -57,12 +72,12 @@ export function migrar(bruto) {
   if (!Number.isSafeInteger(versao) || versao < 1 || versao > VERSAO_ATUAL) return null;
   if (!Array.isArray(bruto.programas) || !Array.isArray(bruto.cartoes)) return null;
   // 1 → 2: só ganhou o campo versao.
-  return {
+  return comCotacao({
     versao: VERSAO_ATUAL,
     programas: bruto.programas,
     cartoes: bruto.cartoes,
     valor_milheiro_brl: objetoSimples(bruto.valor_milheiro_brl) ? bruto.valor_milheiro_brl : {},
-  };
+  }, bruto.cotacao_dolar);
 }
 
 /**
@@ -90,21 +105,29 @@ export function limparPerfil(bruto, dados) {
     const v = perfil.valor_milheiro_brl[id];
     if (vistos.has(id) && Number.isSafeInteger(v) && v > 0 && v <= MILHEIRO_MAXIMO) valor_milheiro_brl[id] = v;
   }
-  return { versao: VERSAO_ATUAL, programas, cartoes, valor_milheiro_brl };
+  return comCotacao({ versao: VERSAO_ATUAL, programas, cartoes, valor_milheiro_brl }, perfil.cotacao_dolar);
 }
 
-/** O que o motor recebe: programas, cartões e milheiro (sem o campo versao). */
+/** O que o motor recebe: programas, cartões, milheiro e cotação (sem o campo versao). */
 export function perfilParaConta(perfil) {
-  return { programas: perfil.programas, cartoes: perfil.cartoes, valor_milheiro_brl: perfil.valor_milheiro_brl };
+  return comCotacao(
+    { programas: perfil.programas, cartoes: perfil.cartoes, valor_milheiro_brl: perfil.valor_milheiro_brl },
+    perfil.cotacao_dolar,
+  );
 }
 
-/** Perfil para quem ainda não disse nada: todos os programas (sem clube) e todos os cartões. */
-export function perfilDeTodos(dados) {
-  return {
+/** Perfil para quem não marcou nada: todos os programas (sem clube) e todos os cartões, com a cotação que a pessoa informou, se houver. */
+export function perfilDeTodos(dados, cotacaoDolar) {
+  return comCotacao({
     programas: dados.programas.map((p) => ({ programa_id: p.id, clube_ativo: false })),
     cartoes: dados.cartoes.map((c) => c.id),
     valor_milheiro_brl: {},
-  };
+  }, cotacaoDolar);
+}
+
+/** Nada para guardar: nem marcação nem cotação. */
+export function semNadaParaGuardar(perfil) {
+  return ehVazio(perfil) && !cotacaoValida(perfil?.cotacao_dolar);
 }
 
 // ---------------------------------------------------------------------------
@@ -120,6 +143,7 @@ export function textoParaExportar(perfil, agora) {
     programas: p.programas,
     cartoes: p.cartoes,
     valor_milheiro_brl: p.valor_milheiro_brl,
+    ...(cotacaoValida(p.cotacao_dolar) ? { cotacao_dolar: p.cotacao_dolar } : {}),
   }, null, 2)}\n`;
 }
 
@@ -167,7 +191,7 @@ export function validarImportacao(texto, dados, hoje) {
   if (!objetoSimples(bruto)) return falha('O arquivo não tem o formato de um perfil.');
 
   const erros = [];
-  const sobra = chavesSobrando(bruto, ['app', 'versao', 'exportado_em', 'programas', 'cartoes', 'valor_milheiro_brl']);
+  const sobra = chavesSobrando(bruto, ['app', 'versao', 'exportado_em', 'programas', 'cartoes', 'valor_milheiro_brl', 'cotacao_dolar']);
   if (sobra.length) erros.push(`Campo que não conhecemos: ${sobra.map(trecho).join(', ')}.`);
   if (bruto.app !== APP) erros.push('O arquivo não foi gerado pelo site Milhas da Vez.');
   if (!Number.isSafeInteger(bruto.versao) || bruto.versao < 1) {
@@ -246,6 +270,10 @@ export function validarImportacao(texto, dados, hoje) {
     }
   }
 
+  if (bruto.cotacao_dolar !== undefined && !cotacaoValida(bruto.cotacao_dolar)) {
+    erros.push(`Cotação do dólar: precisa ser um inteiro entre 1 e ${COTACAO_MAXIMA} (reais × 10.000; recebido: ${trecho(bruto.cotacao_dolar)}).`);
+  }
+
   if (erros.length) return { ok: false, erros: erros.slice(0, 10).concat(erros.length > 10 ? [`E mais ${erros.length - 10} problemas.`] : []) };
-  return { ok: true, perfil: { versao: VERSAO_ATUAL, programas, cartoes, valor_milheiro_brl } };
+  return { ok: true, perfil: comCotacao({ versao: VERSAO_ATUAL, programas, cartoes, valor_milheiro_brl }, bruto.cotacao_dolar) };
 }

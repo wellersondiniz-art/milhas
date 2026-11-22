@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 
 import {
   APP, MILHEIRO_MAXIMO, TAMANHO_MAXIMO, VERSAO_ATUAL, dataValida, ehVazio, limparPerfil, migrar, nomeDoArquivo,
-  perfilDeTodos, perfilParaConta, perfilVazio, textoParaExportar, trecho, validarImportacao,
+  perfilDeTodos, perfilParaConta, perfilVazio, semNadaParaGuardar, textoParaExportar, trecho, validarImportacao,
 } from '../site/js/perfil/formato.js';
 import { CHAVE, CHAVE_V1, abrirArmazem } from '../site/js/perfil/armazem.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
@@ -348,4 +348,35 @@ test('trecho: valores longos são cortados', () => {
   assert.equal(trecho('a'.repeat(100)).length, 40);
   assert.equal(trecho(undefined), 'undefined');
   assert.equal(trecho(42), '42');
+});
+
+// ---------------------------------------------------------------------------
+// Cotação do dólar (opcional, reais × 10.000)
+
+test('cotação do dólar: entra na conta, sai no arquivo e volta na importação', () => {
+  const comDolar = { ...PERFIL_CHEIO, cotacao_dolar: 53456 };
+  assert.equal(perfilParaConta(comDolar).cotacao_dolar, 53456);
+  assert.equal(migrar(comDolar).cotacao_dolar, 53456);
+  const texto = textoParaExportar(comDolar, '2026-11-22T12:00:00.000Z');
+  assert.equal(JSON.parse(texto).cotacao_dolar, 53456);
+  assert.deepEqual(validarImportacao(texto, DADOS, HOJE), { ok: true, perfil: comDolar });
+});
+
+test('cotação do dólar inválida: some do aparelho e reprova na importação', () => {
+  for (const ruim of [0, -1, 5.3, '53456', 1_000_000]) {
+    assert.equal('cotacao_dolar' in limparPerfil({ ...PERFIL_CHEIO, cotacao_dolar: ruim }, DADOS), false);
+    const texto = JSON.stringify({ app: APP, versao: VERSAO_ATUAL, programas: [], cartoes: [], valor_milheiro_brl: {}, cotacao_dolar: ruim });
+    assert.ok(erros(texto).some((e) => e.startsWith('Cotação do dólar')));
+  }
+});
+
+test('perfil só com cotação: não é descartado, e a conta usa todos com essa cotação', () => {
+  const soCotacao = { ...perfilVazio(), cotacao_dolar: 50000 };
+  assert.equal(ehVazio(soCotacao), true);
+  assert.equal(semNadaParaGuardar(soCotacao), false);
+  assert.equal(semNadaParaGuardar(perfilVazio()), true);
+  const todos = perfilDeTodos(DADOS, soCotacao.cotacao_dolar);
+  assert.equal(todos.cotacao_dolar, 50000);
+  assert.equal(todos.cartoes.length, DADOS.cartoes.length);
+  assert.equal('cotacao_dolar' in perfilDeTodos(DADOS), false);
 });

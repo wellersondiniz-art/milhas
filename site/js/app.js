@@ -17,7 +17,7 @@ import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { maisAntiga } from './pwa/textos.js';
 
-const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas'];
+const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
 
 const $ = (id) => document.getElementById(id);
 const formulario = $('formulario');
@@ -78,7 +78,7 @@ function marcarErro(campo, caixa, mensagem) {
 
 function perfilDaConta() {
   return ehVazio(perfilSalvo)
-    ? { perfil: perfilDeTodos(dados), semPerfil: true }
+    ? { perfil: perfilDeTodos(dados, perfilSalvo?.cotacao_dolar), semPerfil: true }
     : { perfil: perfilParaConta(perfilSalvo), semPerfil: false };
 }
 
