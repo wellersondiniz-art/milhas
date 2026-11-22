@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Milhas da Vez</title>
+  <rect width="512" height="512" rx="112" fill="#1f6b3a"/>
+  <circle cx="256" cy="256" r="160" fill="#ffd25e"/>
+  <circle cx="256" cy="256" r="132" fill="none" stroke="#e9b23a" stroke-width="10"/>
+  <g fill="#1f6b3a" stroke="#1f6b3a" stroke-width="10" stroke-linejoin="round">
+    <path d="M168 262 L350 180 L306 346 L262 296 Z"/>
+    <path d="M262 296 L248 344 L282 314 Z"/>
+  </g>
+  <path d="M350 180 L262 296" stroke="#ffd25e" stroke-width="10" stroke-linecap="round"/>
+</svg>

@@ -299,3 +299,8 @@ main {
 @media (min-width: 40rem) {
   main { padding-block: var(--espaco-10) var(--espaco-12); }
 }
+
+/* Avisos do modo app: versão nova e sem internet. Somem quando vazios. */
+.avisos-app > :not(:empty) { margin-bottom: var(--espaco-6); }
+.avisos-app .alerta .linha { margin-top: var(--espaco-3); }
+.avisos-app .alerta .linha .botao { margin-top: 0; }

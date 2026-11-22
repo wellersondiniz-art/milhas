@@ -30,7 +30,7 @@ function memoria() {
 
 /**
  * @param {Storage|undefined} armazenamento  normalmente o localStorage
- * @returns {{ emMemoria: boolean, ler(dados): object|null, salvar(perfil): boolean, apagar(): void }}
+ * @returns {{ emMemoria: boolean, temAlgo(): boolean, ler(dados): object|null, salvar(perfil): boolean, apagar(): void }}
  *   salvar devolve false quando o aparelho parou de aceitar e o perfil foi
  *   para a memória (aí emMemoria vira true).
  */
@@ -51,6 +51,14 @@ export function abrirArmazem(armazenamento) {
 
   return {
     get emMemoria() { return emMemoria; },
+
+    /**
+     * Tem algum perfil guardado? Só olha se a chave existe, sem ler nem validar.
+     * Serve para desenhar a tela certa antes de os dados chegarem.
+     */
+    temAlgo() {
+      try { return alvo.getItem(CHAVE) !== null || alvo.getItem(CHAVE_V1) !== null; } catch { return false; }
+    },
 
     /** Perfil salvo, já migrado para a versão atual e limpo. null se não houver. */
     ler(dados) {

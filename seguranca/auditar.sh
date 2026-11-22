@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Auditoria de segurança do comprador de milhas.
+# Auditoria de segurança do Milhas da Vez.
 #
 # Heurística: aponta os problemas típicos, não garante que o resto está seguro.
 # Nunca imprime o valor de um segredo, só o arquivo e a linha.
@@ -97,7 +97,7 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "5. XSS e execução de código (site/)"
-xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site 2>/dev/null || true)"
+xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa 2>/dev/null || true)"
 if [ -n "$xss" ]; then
   falha "uso de innerHTML/eval ou similar (use textContent / createElement):"
   printf '%s\n' "$xss" | listar 1,2

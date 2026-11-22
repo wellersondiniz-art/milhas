@@ -169,7 +169,7 @@ export function validarImportacao(texto, dados, hoje) {
   const erros = [];
   const sobra = chavesSobrando(bruto, ['app', 'versao', 'exportado_em', 'programas', 'cartoes', 'valor_milheiro_brl']);
   if (sobra.length) erros.push(`Campo que não conhecemos: ${sobra.map(trecho).join(', ')}.`);
-  if (bruto.app !== APP) erros.push('O arquivo não foi gerado pelo comprador de milhas.');
+  if (bruto.app !== APP) erros.push('O arquivo não foi gerado pelo site Milhas da Vez.');
   if (!Number.isSafeInteger(bruto.versao) || bruto.versao < 1) {
     erros.push('Falta a versão do formato (campo "versao").');
   } else if (bruto.versao > VERSAO_ATUAL) {

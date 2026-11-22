@@ -14,4 +14,4 @@
 // "A_CONFIRMAR" desliga canônico, og:url e sitemap.
 export const URL_BASE = 'https://milhasdavez.pages.dev';
 
-export const NOME_DO_SITE = 'comprador de milhas';
+export const NOME_DO_SITE = 'Milhas da Vez';

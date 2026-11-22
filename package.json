@@ -7,10 +7,11 @@
   "scripts": {
     "test": "node --test",
     "validar": "node scripts/validar-dados.js",
-    "servir": "node scripts/copiar-dados.js && node scripts/gerar-paginas.js && python3 -m http.server 8080 --bind 127.0.0.1 --directory site",
+    "servir": "node scripts/copiar-dados.js && node scripts/gerar-paginas.js && node scripts/gerar-sw.js && python3 -m http.server 8080 --bind 127.0.0.1 --directory site",
     "auditar": "bash seguranca/auditar.sh",
     "dados": "node scripts/copiar-dados.js",
     "paginas": "node scripts/gerar-paginas.js",
-    "build": "node scripts/copiar-dados.js && node scripts/gerar-paginas.js"
+    "build": "node scripts/copiar-dados.js && node scripts/gerar-paginas.js && node scripts/gerar-sw.js",
+    "sw": "node scripts/gerar-sw.js"
   }
 }
