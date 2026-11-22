@@ -159,6 +159,18 @@ test('armazém: salva com versão, lê de volta e apaga', () => {
   assert.equal(armazem.ler(DADOS), null);
 });
 
+test('armazém: temAlgo diz se há perfil guardado (chave nova ou da versão 1), sem ler', () => {
+  const a = armazenamentoFalso();
+  const armazem = abrirArmazem(a);
+  assert.equal(armazem.temAlgo(), false);
+  armazem.salvar(PERFIL_CHEIO);
+  assert.equal(armazem.temAlgo(), true);
+  armazem.apagar();
+  assert.equal(armazem.temAlgo(), false);
+  a.setItem(CHAVE_V1, '{}');
+  assert.equal(armazem.temAlgo(), true);
+});
+
 test('armazém: migra o perfil da versão 1 para a chave nova e tira a velha', () => {
   const a = armazenamentoFalso();
   a.setItem(CHAVE_V1, JSON.stringify({ programas: [{ programa_id: 'prog-a', clube_ativo: false }], cartoes: ['cartao-a'], valor_milheiro_brl: {} }));
@@ -250,8 +262,8 @@ test('importar: arquivo grande demais nem é lido', () => {
   assert.deepEqual(erros(' '.repeat(TAMANHO_MAXIMO) + '{}'), ['O arquivo é grande demais para ser um perfil.']);
 });
 
-test('importar: precisa ser do comprador de milhas e de versão conhecida', () => {
-  assert.ok(erros(arquivo({ app: 'outro-site' })).includes('O arquivo não foi gerado pelo comprador de milhas.'));
+test('importar: precisa ser do Milhas da Vez e de versão conhecida', () => {
+  assert.ok(erros(arquivo({ app: 'outro-site' })).includes('O arquivo não foi gerado pelo site Milhas da Vez.'));
   assert.ok(erros(arquivo({ versao: undefined })).includes('Falta a versão do formato (campo "versao").'));
   assert.ok(erros(arquivo({ versao: 99 })).some((e) => /versão mais nova/.test(e)));
   assert.ok(erros(arquivo({ exportado_em: 'ontem' })).includes('A data de exportação está fora do formato.'));

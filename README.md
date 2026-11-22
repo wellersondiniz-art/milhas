@@ -1,4 +1,4 @@
-# comprador de milhas
+# Milhas da Vez
 
 Comparador de milhas e pontos para o Brasil. Você informa seus cartões e programas de fidelidade, escolhe a loja e o valor da compra, e o site mostra qual combinação rende mais pontos e quanto isso vale em reais.
 

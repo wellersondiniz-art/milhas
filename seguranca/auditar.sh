@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Auditoria de segurança do comprador de milhas.
+# Auditoria de segurança do Milhas da Vez.
 #
 # Heurística: aponta os problemas típicos, não garante que o resto está seguro.
 # Nunca imprime o valor de um segredo, só o arquivo e a linha.

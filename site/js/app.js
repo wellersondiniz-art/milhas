@@ -132,16 +132,19 @@ function hojeLocal() {
   return agoraLocal(new Date()).slice(0, 10);
 }
 
+// O convite aparece logo no começo, antes dos dados chegarem, para o formulário
+// não pular para baixo quando eles chegam (CLS). Sem dados ainda, só dá para
+// saber SE há perfil guardado; o resumo ("2 programas e 1 cartão") vem depois.
 function mostrarConvite() {
-  if (!dados) return;
   convite.hidden = false;
-  if (ehVazio(perfilSalvo)) {
+  const vazio = dados ? ehVazio(perfilSalvo) : !armazem.temAlgo();
+  if (vazio) {
     convite.replaceChildren(alerta('info', 'Ainda não sabemos quais cartões você tem',
       el('p', {}, 'Tudo bem: a conta funciona assim mesmo, com as melhores opções entre todos os cartões e programas que conhecemos. Para ver só o que é seu, cadastre os seus cartões. Leva um minuto.'),
       el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Cadastrar meus cartões')));
   } else {
     convite.replaceChildren(el('p', { class: 'texto-suave convite' },
-      `A conta usa o seu perfil: ${resumoDoPerfil(perfilSalvo)}. `,
+      dados ? `A conta usa o seu perfil: ${resumoDoPerfil(perfilSalvo)}. ` : 'A conta usa o seu perfil. ',
       el('a', { href: '#/perfil' }, 'Mudar meu perfil')));
   }
 }
@@ -172,7 +175,7 @@ function mostrarTela(rota, { focar }) {
     if (link.dataset.rota === rota) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
-  document.title = perfil ? 'Meu perfil · comprador de milhas' : 'comprador de milhas';
+  document.title = perfil ? 'Meu perfil · Milhas da Vez' : 'Milhas da Vez';
   if (perfil && telaDoPerfil) telaDoPerfil.abrir(armazem.emMemoria);
   if (focar) (perfil ? $('perfil-titulo') : document.querySelector('#tela-inicio h1')).focus();
 }
@@ -254,5 +257,6 @@ async function carregar() {
 
 const pwa = iniciarPwa({ avisoVersao: $('aviso-versao'), avisoConexao: $('aviso-conexao') });
 
+mostrarConvite();
 aoMudarRota();
 carregar();
