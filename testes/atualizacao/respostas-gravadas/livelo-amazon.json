@@ -1,0 +1,18 @@
+{
+  "_nota": "Resposta ESCRITA À MÃO para o teste, no formato da API de mensagens. Não veio do modelo: o teste roda sem chave. Tem dois erros de propósito na fonte azul-magalu (credito_prazo_dias 45 e exige_cupom com trecho inventado) para mostrar a conferência recusando.",
+  "id": "msg_exemplo_livelo_amazon",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"ofertas\": [{\"regras\": [{\"pontos_por_real\": {\"valor\": \"60\", \"trecho\": \"ganhe 60 pontos por real em compras na Amazon\"}, \"exige_clube\": {\"valor\": \"\", \"trecho\": \"\"}, \"cartao\": {\"valor\": \"\", \"trecho\": \"\"}}], \"escopo\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"categorias_incluidas\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"pontos_fora_do_escopo_por_real\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"acumula_com_cartao\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"clube_ativo_ha_horas\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"exige_cupom\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"cupom\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"inicio\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"fim\": {\"valor\": \"30/11\", \"trecho\": \"até 30/11\"}, \"credito_prazo_dias\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"link_oferta\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}}]}"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 520,
+    "output_tokens": 330
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "_nota": "Resposta ESCRITA À MÃO para o teste, no formato da API de mensagens. Não veio do modelo: o teste roda sem chave. Tem dois erros de propósito na fonte azul-magalu (credito_prazo_dias 45 e exige_cupom com trecho inventado) para mostrar a conferência recusando.",
+  "id": "msg_exemplo_azul_magalu",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"ofertas\": [{\"regras\": [{\"pontos_por_real\": {\"valor\": \"14\", \"trecho\": \"Assinante do Clube Azul com cartão Azul Itaú Infinite | 14 pontos por real\"}, \"exige_clube\": {\"valor\": \"sim\", \"trecho\": \"Assinante do Clube Azul com cartão Azul Itaú Infinite\"}, \"cartao\": {\"valor\": \"Azul Itaú Infinite\", \"trecho\": \"cartão Azul Itaú Infinite\"}}, {\"pontos_por_real\": {\"valor\": \"12\", \"trecho\": \"Assinante do Clube Azul | 12 pontos por real\"}, \"exige_clube\": {\"valor\": \"sim\", \"trecho\": \"Assinante do Clube Azul\"}, \"cartao\": {\"valor\": \"\", \"trecho\": \"\"}}, {\"pontos_por_real\": {\"valor\": \"8\", \"trecho\": \"Cliente com cartão Azul Itaú Infinite | 8 pontos por real\"}, \"exige_clube\": {\"valor\": \"\", \"trecho\": \"\"}, \"cartao\": {\"valor\": \"Azul Itaú Infinite\", \"trecho\": \"Cliente com cartão Azul Itaú Infinite\"}}, {\"pontos_por_real\": {\"valor\": \"6\", \"trecho\": \"Demais clientes | 6 pontos por real\"}, \"exige_clube\": {\"valor\": \"\", \"trecho\": \"\"}, \"cartao\": {\"valor\": \"\", \"trecho\": \"\"}}], \"escopo\": {\"valor\": \"vendido_e_entregue_pela_loja\", \"trecho\": \"Válido apenas para produtos vendidos e entregues pelo Magalu.\"}, \"categorias_incluidas\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"pontos_fora_do_escopo_por_real\": {\"valor\": \"1\", \"trecho\": \"Produtos de lojas parceiras do marketplace acumulam 1 ponto por real.\"}, \"acumula_com_cartao\": {\"valor\": \"sim\", \"trecho\": \"Os pontos desta campanha somam-se aos pontos do seu cartão de crédito.\"}, \"clube_ativo_ha_horas\": {\"valor\": \"24\", \"trecho\": \"O Clube Azul precisa estar ativo há pelo menos 24 horas antes da compra.\"}, \"exige_cupom\": {\"valor\": \"sim\", \"trecho\": \"Use o cupom AZUL10 no carrinho.\"}, \"cupom\": {\"valor\": \"\", \"trecho\": \"A_CONFIRMAR\"}, \"inicio\": {\"valor\": \"20/11/2026\", \"trecho\": \"Campanha válida de 20/11/2026 a 30/11/2026.\"}, \"fim\": {\"valor\": \"30/11/2026\", \"trecho\": \"Campanha válida de 20/11/2026 a 30/11/2026.\"}, \"credito_prazo_dias\": {\"valor\": \"45\", \"trecho\": \"Os pontos serão creditados em até 30 dias após a entrega do pedido.\"}, \"link_oferta\": {\"valor\": \"https://www.voeazul.com.br/br/pt/programa-fidelidade/parceiros/magalu-exemplo\", \"trecho\": \"ir para o Magalu [link: https://www.voeazul.com.br/br/pt/programa-fidelidade/parceiros/magalu-exemplo]\"}}]}"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 1650,
+    "output_tokens": 900
+  }
+}

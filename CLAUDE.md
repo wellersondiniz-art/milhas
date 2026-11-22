@@ -81,3 +81,4 @@ Vamos preenchendo conforme o projeto cresce.
 | Montar o que vai para o ar | `npm run build` (gera `dist/`, a pasta publicada na Cloudflare Pages) |
 | Servir localmente | `npm run servir` (serve `dist/`) |
 | Auditar segurança | `seguranca/auditar.sh` *(a criar)* |
+| Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |
