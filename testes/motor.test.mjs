@@ -180,11 +180,11 @@ test('cliente sem clube: regra do nível dele e, separado, o que ganharia', () =
   assert.equal(melhor.total_pontos, 1100);
   assert.deepEqual(melhor.o_que_voce_ganharia_se, [
     {
-      condicoes: ['assinasse o clube Azul Fidelidade pelo menos 24 h antes da compra'],
+      condicoes: ['assinasse o clube Azul Fidelidade pelo menos 24 horas antes da compra'],
       pontos_por_real: 15,
       pontos_do_programa: 1500, // 100 × 15
       valor_estimado_em_reais: { bilionesimos_de_centavo: reais(3000), texto: 'R$ 30,00' }, // 1500 × 2
-      texto: 'Se você assinasse o clube Azul Fidelidade pelo menos 24 h antes da compra: 15 pontos por real = 1.500 pontos do programa (R$ 30,00), em vez de 900. Isso não está somado ao resultado acima.',
+      texto: 'Se você assinasse o clube Azul Fidelidade pelo menos 24 horas antes da compra: 15 pontos por real = 1.500 pontos do programa (R$ 30,00), em vez de 900. Isso não está somado ao resultado acima.',
     },
   ]);
 });
@@ -196,7 +196,7 @@ test('cliente sem clube e sem cartão vê as três faixas melhores', () => {
     [15, 1500], [13, 1300], [9, 900],
   ]);
   assert.deepEqual(melhor.o_que_voce_ganharia_se[0].condicoes, [
-    'assinasse o clube Azul Fidelidade pelo menos 24 h antes da compra',
+    'assinasse o clube Azul Fidelidade pelo menos 24 horas antes da compra',
     'tivesse e usasse o cartão Azul Itaú',
   ]);
 });
@@ -205,7 +205,7 @@ test('clube assinado ontem (sem hora) ainda não conta as 24 h; anteontem conta'
   const ontem = { ...COM_CLUBE, clube_ativo_desde: '2026-11-09' };
   const [a] = calcular(perfil([ontem], ['azul-itau']), compra(10000), dadosDeTeste(), HOJE);
   assert.equal(a.pontos_do_programa, 900); // fica no degrau do cartão
-  assert.match(a.o_que_voce_ganharia_se[0].texto, /ativo há pelo menos 24 h na hora da compra \(ele está ativo desde 09\/11\/2026\)/);
+  assert.match(a.o_que_voce_ganharia_se[0].texto, /ativo há pelo menos 24 horas na hora da compra \(ele está ativo desde 09\/11\/2026\)/);
 
   const anteontem = { ...COM_CLUBE, clube_ativo_desde: '2026-11-08' };
   const [b] = calcular(perfil([anteontem], ['azul-itau']), compra(10000), dadosDeTeste(), HOJE);
@@ -361,6 +361,21 @@ test('dado verificado há mais de 14 dias gera aviso', () => {
   const [melhor] = calcular(perfil([COM_CLUBE], ['azul-itau']), compra(10000), dados, HOJE);
   // 20/10 → 10/11 = 21 dias
   assert.ok(melhor.avisos.includes('Dado verificado há mais de 14 dias (21 dias): oferta Azul Fidelidade na Magalu.'));
+  assert.equal(melhor.tem_dado_antigo, true);
+  const daOfertaConferida = melhor.conferido_em.find((c) => c.rotulo === 'oferta Azul Fidelidade na Magalu');
+  assert.deepEqual(daOfertaConferida, {
+    rotulo: 'oferta Azul Fidelidade na Magalu', verificado_em: '2026-10-20', dias: 21, antigo: true,
+  });
+});
+
+test('conferido_em lista a data de verificação de cada dado usado, sem repetir', () => {
+  const [melhor] = calcular(perfil([COM_CLUBE], ['azul-itau']), compra(10000), dadosDeTeste(), HOJE);
+  assert.equal(melhor.tem_dado_antigo, false);
+  const rotulos = melhor.conferido_em.map((c) => c.rotulo);
+  assert.ok(rotulos.includes('oferta Azul Fidelidade na Magalu'));
+  assert.ok(rotulos.some((r) => r.startsWith('cartão ')));
+  assert.equal(new Set(rotulos).size, rotulos.length);
+  for (const c of melhor.conferido_em) assert.match(c.verificado_em, /^\d{4}-\d{2}-\d{2}$/);
 });
 
 test('cupom exigido vira condição, e some quando já foi aplicado', () => {

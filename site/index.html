@@ -5,14 +5,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>comprador de milhas</title>
   <meta name="description" content="Descubra onde comprar e com qual cartão para ganhar mais milhas e pontos.">
+  <meta name="theme-color" content="#1f6b3a">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/estilo.css">
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
-  <main id="conteudo">
-    <h1>comprador de milhas</h1>
-    <p>Em construção. Em breve você vai poder comparar quantos pontos ganha em cada loja, com cada cartão.</p>
+  <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <div class="container">
+      <p class="topo__marca">comprador de milhas</p>
+    </div>
+  </header>
+
+  <main id="conteudo" class="container pilha--lg">
+    <section class="pilha--sm">
+      <h1>Onde e com qual cartão comprar para ganhar mais pontos</h1>
+      <p class="texto-suave">Diga a loja e o valor. A gente faz a conta e mostra o melhor jeito de comprar.</p>
+    </section>
+
+    <form id="formulario" class="card pilha passos" novalidate autocomplete="off">
+      <div class="passo">
+        <span class="passo__numero" aria-hidden="true">1</span>
+        <div class="campo passo__corpo">
+          <label class="campo__rotulo" for="loja">Em qual loja você vai comprar?</label>
+          <div class="busca">
+          <input class="campo__entrada" id="loja" type="text" role="combobox" aria-autocomplete="list"
+            aria-expanded="false" aria-controls="loja-lista" aria-describedby="loja-erro"
+            autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="Comece a digitar o nome">
+          <ul id="loja-lista" class="busca__lista" role="listbox" aria-label="Lojas" hidden></ul>
+          </div>
+          <span id="loja-status" class="visualmente-oculto" role="status"></span>
+          <span class="campo__erro" id="loja-erro"></span>
+        </div>
+      </div>
+
+      <div class="passo" id="passo-valor" hidden>
+        <span class="passo__numero" aria-hidden="true">2</span>
+        <div class="campo passo__corpo">
+          <label class="campo__rotulo" for="valor">Quanto vai custar?</label>
+          <div class="campo__moeda">
+            <input class="campo__entrada campo__entrada--valor" id="valor" type="text" inputmode="numeric"
+              autocomplete="off" enterkeyhint="go" placeholder="0,00" aria-describedby="valor-ajuda valor-erro">
+          </div>
+          <span class="campo__ajuda" id="valor-ajuda"></span>
+          <span class="campo__erro" id="valor-erro"></span>
+        </div>
+      </div>
+
+      <button class="botao botao--bloco" id="ver-resultado" type="submit">Ver o resultado</button>
+    </form>
+
+    <section id="passo-resultado" class="pilha" aria-labelledby="resultado-titulo" hidden>
+      <div class="passo passo--titulo">
+        <span class="passo__numero" aria-hidden="true">3</span>
+        <h2 id="resultado-titulo" tabindex="-1">Resultado</h2>
+      </div>
+      <div id="resultado"></div>
+    </section>
+
+    <details id="perfil" class="card perfil">
+      <summary class="perfil__resumo">Seus cartões e programas <span class="texto-suave">(opcional)</span></summary>
+      <div id="perfil-conteudo" class="perfil__conteudo"></div>
+    </details>
   </main>
+
+  <footer class="container rodape">
+    <p class="texto-suave texto-pequeno">Não pedimos número de cartão nem CPF. O que você marca fica só neste aparelho. Os números são estimativas a partir das regras publicadas pelas lojas e programas: confira sempre antes de comprar.</p>
+  </footer>
 </body>
 </html>

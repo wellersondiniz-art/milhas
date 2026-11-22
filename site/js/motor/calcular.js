@@ -194,10 +194,10 @@ function descreverCondicao(regra, ctx, nomeProg) {
 }
 
 function textoClubeQueFalta(clube, nomeProg) {
-  const horas = clube.exigidas && clube.exigidas !== A_CONFIRMAR ? ` pelo menos ${clube.exigidas} h antes da compra` : '';
+  const horas = clube.exigidas && clube.exigidas !== A_CONFIRMAR ? ` pelo menos ${clube.exigidas} horas antes da compra` : '';
   if (clube.falta === 'assinar') return `assinasse o clube ${nomeProg}${horas}`;
-  if (clube.falta === 'data') return `confirmasse que o seu clube ${nomeProg} está ativo há pelo menos ${clube.exigidas} h (informe desde quando)`;
-  return `estivesse com o clube ${nomeProg} ativo há pelo menos ${clube.exigidas} h na hora da compra (ele está ativo desde ${formatarData(clube.desde)})`;
+  if (clube.falta === 'data') return `confirmasse que o seu clube ${nomeProg} está ativo há pelo menos ${clube.exigidas} horas (informe desde quando)`;
+  return `estivesse com o clube ${nomeProg} ativo há pelo menos ${clube.exigidas} horas na hora da compra (ele está ativo desde ${formatarData(clube.desde)})`;
 }
 
 /** "O que você ganharia se…": faixas melhores que a atual, cuja condição o perfil não cumpre. */
@@ -250,10 +250,25 @@ function montarHipotese(ctx, regra, indice, faltas, pontosAtuaisEsc, milheiro) {
 // ---------------------------------------------------------------------------
 // Peças comuns
 
+/** Lista de avisos que também guarda as datas de verificação dos dados usados. */
+function novosAvisos() {
+  const avisos = [];
+  avisos.conferidos = [];
+  return avisos;
+}
+
+/**
+ * Anota a data de verificação do registro (vai para `conferido_em` na saída)
+ * e avisa se o dado está antigo.
+ */
 function avisarDadoAntigo(ctx, registro, rotulo, avisos) {
   if (!registro?.verificado_em) return;
   const dias = diasEntre(registro.verificado_em, ctx.dataHoje);
-  if (dias > DIAS_DADO_ANTIGO) avisos.push(`Dado verificado há mais de ${DIAS_DADO_ANTIGO} dias (${dias} dias): ${rotulo}.`);
+  const antigo = dias > DIAS_DADO_ANTIGO;
+  if (!avisos.conferidos.some((c) => c.rotulo === rotulo)) {
+    avisos.conferidos.push({ rotulo, verificado_em: registro.verificado_em, dias, antigo });
+  }
+  if (antigo) avisos.push(`Dado verificado há mais de ${DIAS_DADO_ANTIGO} dias (${dias} dias): ${rotulo}.`);
 }
 
 /** Pontos do cartão: { esc, programaId }. */
@@ -327,7 +342,7 @@ function descreverCompra(ctx) {
 // Jeitos de comprar
 
 function jeitoComOferta(ctx, oferta, cartao) {
-  const avisos = [];
+  const avisos = novosAvisos();
   const condicoes = [];
   const passos = [descreverCompra(ctx)];
   const nomeProg = ctx.nomePrograma(oferta.programa_id);
@@ -449,7 +464,7 @@ function jeitoComOferta(ctx, oferta, cartao) {
 }
 
 function jeitoSemOferta(ctx, cartao) {
-  const avisos = [];
+  const avisos = novosAvisos();
   const condicoes = [];
   const passos = [descreverCompra(ctx), 'Sem oferta da loja: só os pontos do cartão.'];
   const cart = pontosDoCartao(ctx, cartao, avisos, passos, condicoes);
@@ -509,6 +524,8 @@ function paraSaida(ctx, j) {
     validade_da_oferta: j.validade,
     prazo_de_credito: j.prazo,
     avisos: [...new Set(j.avisos)],
+    conferido_em: j.avisos.conferidos,
+    tem_dado_antigo: j.avisos.conferidos.some((c) => c.antigo),
     o_que_voce_ganharia_se: j.hipoteses,
     explicacao: j.passos,
   };

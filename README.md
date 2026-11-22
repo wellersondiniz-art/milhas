@@ -12,14 +12,17 @@ Não precisa instalar nada além do Node 22 (para os testes) e do Python 3 (para
 | --- | --- |
 | Rodar os testes | `npm test` (ou `node --test`) |
 | Validar os dados | `npm run validar` |
-| Servir localmente | `npm run servir` e abra http://localhost:8080 |
+| Servir localmente | `npm run servir` e abra http://localhost:8080 (copia `dados/` para `site/dados/` antes) |
+| Copiar os dados para o site | `npm run dados` |
 | Auditar segurança | `npm run auditar` |
 
-Sem npm? Use direto: `python3 -m http.server 8080 --directory site`.
+Sem npm? Use direto: `node scripts/copiar-dados.js && python3 -m http.server 8080 --directory site`.
+
+Na Cloudflare Pages, o comando de build é `node scripts/copiar-dados.js` e a pasta de saída é `site`. A pasta `site/dados/` é gerada e fica fora do Git: a fonte dos dados continua sendo `dados/`.
 
 ## Pastas
 
-- `site/`: tudo que vai para a internet (`js/motor/` guarda o cálculo puro, sem interface; `_headers` define os cabeçalhos de segurança).
+- `site/`: tudo que vai para a internet (`js/motor/` guarda o cálculo puro, sem interface; `js/tela/` monta a tela inicial e só exibe o que o motor devolve; `_headers` define os cabeçalhos de segurança).
 - `dados/`: programas, cartões, lojas e ofertas em JSON, com os schemas (JSON Schema 2020-12) em `dados/schemas/`. Valores em reais (`valor_milheiro_brl`, `anuidade_brl`) ficam em centavos inteiros. O que não se sabe fica `"A_CONFIRMAR"` e não entra no cálculo. `npm run validar` aponta arquivo, registro e campo de cada erro.
 - `testes/`: testes com `node --test`.
 - `scripts/`: validação dos dados e geração de páginas por loja.
