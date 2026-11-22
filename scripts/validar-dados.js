@@ -192,6 +192,18 @@ function regrasExtras(dados, hoje) {
     }
   };
 
+  (dados.programas ?? []).forEach((p, i) => {
+    if (typeof p.valor_milheiro_brl !== 'number') return;
+    for (const campo of ['valor_milheiro_origem', 'valor_milheiro_fonte_url']) {
+      if (p[campo] === undefined) {
+        erros.push({ arquivo: 'programas', indice: i, caminho: [campo], mensagem: 'obrigatório quando valor_milheiro_brl é um número' });
+      }
+    }
+    if (p.valor_milheiro_origem === 'estimativa_editavel') {
+      avisos.push(`programa ${JSON.stringify(p.id)}: valor do milheiro é estimativa editável, não valor confirmado`);
+    }
+  });
+
   (dados.cartoes ?? []).forEach((c, i) => existe('cartoes', i, ['programa_id'], 'programas', c.programa_id));
 
   (dados.ofertas ?? []).forEach((o, i) => {

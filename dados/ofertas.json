@@ -4,9 +4,9 @@
     "loja_id": "magalu",
     "programa_id": "azul-fidelidade",
     "regras": [
-      { "condicao": { "clube_ativo": true, "cartao_id": "azul-itau" }, "pontos_por_real": 15 },
+      { "condicao": { "clube_ativo": true, "cartao_id": "azul-itau-infinite" }, "pontos_por_real": 15 },
       { "condicao": { "clube_ativo": true }, "pontos_por_real": 13 },
-      { "condicao": { "cartao_id": "azul-itau" }, "pontos_por_real": 9 },
+      { "condicao": { "cartao_id": "azul-itau-infinite" }, "pontos_por_real": 9 },
       { "condicao": {}, "pontos_por_real": 7 }
     ],
     "escopo": "vendido_e_entregue_pela_loja",

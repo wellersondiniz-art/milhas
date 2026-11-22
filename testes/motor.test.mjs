@@ -342,12 +342,13 @@ test('oferta de exemplo do repositório (vários campos A_CONFIRMAR)', async () 
     dados[nome] = JSON.parse(await readFile(new URL(`../dados/${nome}.json`, import.meta.url), 'utf8'));
   }
   // Hoje dentro da validade: a oferta de exemplo termina em 12/11/2026.
-  const lista = calcular(perfil([COM_CLUBE], ['azul-itau']), compra(10000), dados, HOJE);
+  const lista = calcular(perfil([COM_CLUBE], ['azul-itau-infinite']), compra(10000), dados, HOJE);
   const [melhor] = lista;
   // 100 × 15 = 1500; cartão A_CONFIRMAR = 0; acumula A_CONFIRMAR → vale o maior (1500)
   assert.equal(melhor.tipo, 'oferta');
   assert.equal(melhor.total_pontos, 1500);
-  assert.equal(melhor.valor_estimado_em_reais, null); // milheiro A_CONFIRMAR
+  // milheiro Azul = estimativa editável de R$ 17,00: 1500 × 1700 ÷ 1000 = 2550 centavos
+  assert.equal(melhor.valor_estimado_em_reais.texto, 'R$ 25,50');
   assert.ok(melhor.avisos.includes('A data de início da oferta não está confirmada.'));
   assert.ok(melhor.avisos.includes('Não está confirmado se a oferta exige cupom.'));
   assert.equal(melhor.prazo_de_credito.dias, 30);

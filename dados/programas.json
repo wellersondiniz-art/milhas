@@ -3,9 +3,55 @@
     "id": "azul-fidelidade",
     "nome": "Azul Fidelidade",
     "tipo": "pontos",
-    "valor_milheiro_brl": "A_CONFIRMAR",
-    "url": "A_CONFIRMAR",
-    "fonte_url": "https://passageirodeprimeira.com/?p=581107",
+    "valor_milheiro_brl": 1700,
+    "valor_milheiro_origem": "estimativa_editavel",
+    "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
+    "url": "https://www.voeazul.com.br/br/pt/programa-fidelidade",
+    "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "livelo",
+    "nome": "Livelo",
+    "tipo": "pontos",
+    "valor_milheiro_brl": 1700,
+    "valor_milheiro_origem": "estimativa_editavel",
+    "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
+    "url": "https://www.livelo.com.br",
+    "fonte_url": "https://www.livelo.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "smiles",
+    "nome": "Smiles",
+    "tipo": "milhas",
+    "valor_milheiro_brl": 1700,
+    "valor_milheiro_origem": "estimativa_editavel",
+    "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
+    "url": "https://www.smiles.com.br",
+    "fonte_url": "https://www.smiles.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "esfera",
+    "nome": "Esfera",
+    "tipo": "pontos",
+    "valor_milheiro_brl": 1700,
+    "valor_milheiro_origem": "estimativa_editavel",
+    "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
+    "url": "https://www.esfera.com.vc",
+    "fonte_url": "https://www.esfera.com.vc",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "latam-pass",
+    "nome": "LATAM Pass",
+    "tipo": "pontos",
+    "valor_milheiro_brl": 1700,
+    "valor_milheiro_origem": "estimativa_editavel",
+    "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
+    "url": "https://latampass.latam.com/br/pt",
+    "fonte_url": "https://latampass.latam.com/br/pt",
     "verificado_em": "2026-11-22"
   }
 ]

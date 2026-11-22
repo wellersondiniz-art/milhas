@@ -2,11 +2,91 @@
   {
     "id": "magalu",
     "nome": "Magalu",
-    "dominio": "A_CONFIRMAR",
+    "dominio": "magazineluiza.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Página inicial mostra produtos de vendedores parceiros e cupons de desconto.",
+    "fonte_url": "https://www.magazineluiza.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "amazon",
+    "nome": "Amazon",
+    "dominio": "amazon.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Rodapé tem \"Venda na Amazon\"; página inicial tem seção de cupons.",
+    "fonte_url": "https://www.amazon.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "mercado-livre",
+    "nome": "Mercado Livre",
+    "dominio": "mercadolivre.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Site tem área \"Vender\" para terceiros; página inicial mostra preços com cupom.",
+    "fonte_url": "https://www.mercadolivre.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "casas-bahia",
+    "nome": "Casas Bahia",
+    "dominio": "casasbahia.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Página inicial mostra produtos de lojistas parceiros e cupons de desconto.",
+    "fonte_url": "https://www.casasbahia.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "shopee",
+    "nome": "Shopee",
+    "dominio": "shopee.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": "A_CONFIRMAR",
+    "observacoes": "A página inicial pediu verificação anti-robô; cupom não conferido. Marketplace conferido pela Central do Vendedor Shopee Brasil.",
+    "fonte_url": "https://seller.shopee.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "americanas",
+    "nome": "Americanas",
+    "dominio": "americanas.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Página inicial mostra loja de parceiro e página de cupons de desconto.",
+    "fonte_url": "https://www.americanas.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "kabum",
+    "nome": "KaBuM!",
+    "dominio": "kabum.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Site tem \"Venda no KaBuM!\" e página de cupons.",
+    "fonte_url": "https://www.kabum.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "fast-shop",
+    "nome": "Fast Shop",
+    "dominio": "fastshop.com.br",
     "categoria": "A_CONFIRMAR",
     "aceita_cupom": "A_CONFIRMAR",
-    "observacoes": "",
-    "fonte_url": "https://passageirodeprimeira.com/?p=581107",
+    "observacoes": "O endereço abre em site.fastshop.com.br. A página inicial não mostra vendedores parceiros nem cupons; não deu para confirmar.",
+    "fonte_url": "https://www.fastshop.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "nike",
+    "nome": "Nike",
+    "dominio": "nike.com.br",
+    "categoria": "varejo",
+    "aceita_cupom": "A_CONFIRMAR",
+    "observacoes": "Loja oficial da marca. A página inicial não mostra cupons; não deu para confirmar.",
+    "fonte_url": "https://www.nike.com.br",
     "verificado_em": "2026-11-22"
   }
 ]
