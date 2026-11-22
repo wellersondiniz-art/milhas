@@ -61,6 +61,10 @@ const pares = [
   ['cor-borda-campo', 'cor-superficie', 3],
   ['cor-foco', 'cor-fundo', 3],
   ['cor-foco', 'cor-superficie', 3],
+  ['cor-foco', 'cor-superficie-2', 3],
+  ['cor-foco-topo', 'cor-primaria', 3],
+  ['cor-aviso-texto', 'cor-superficie', 4.5],
+  ['cor-perigo-texto', 'cor-fundo', 4.5],
 ];
 
 for (const [tema, cores] of Object.entries(temas)) {
