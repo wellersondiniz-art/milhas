@@ -78,5 +78,6 @@ Vamos preenchendo conforme o projeto cresce.
 | --- | --- |
 | Rodar testes | `node --test` *(a confirmar quando houver testes)* |
 | Validar dados | *a definir* |
-| Servir localmente | *a definir* |
+| Montar o que vai para o ar | `npm run build` (gera `dist/`, a pasta publicada na Cloudflare Pages) |
+| Servir localmente | `npm run servir` (serve `dist/`) |
 | Auditar segurança | `seguranca/auditar.sh` *(a criar)* |
