@@ -76,10 +76,12 @@ Vamos preenchendo conforme o projeto cresce.
 
 | Para quê | Comando |
 | --- | --- |
-| Rodar testes | `npm test` (unitários, dados e navegador) |
+| Rodar testes | `npm test` (unitários, dados, navegador e extensão) |
 | Validar dados | `npm run validar` |
 | Montar o que vai para o ar | `npm run build` (gera `dist/`, a pasta publicada na Cloudflare Pages) |
 | Servir localmente | `npm run servir` (serve `dist/`) |
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |
+| Montar a extensão de navegador | `npm run extensao` (gera `extensao/pacote/`; seletores em `extensao/seletores.json`) |
+| Testar a extensão | `npm run test:extensao` (Playwright, páginas de exemplo locais) |

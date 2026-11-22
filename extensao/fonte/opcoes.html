@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Milhas da Vez: seus cartões e programas</title>
+  <link rel="stylesheet" href="opcoes.css">
+  <script type="module" src="opcoes.js"></script>
+</head>
+<body>
+  <main>
+    <h1>Seus cartões e programas</h1>
+    <p>A extensão usa esta lista para dizer, na página do produto, qual cartão e qual programa rendem mais pontos.</p>
+    <p class="nota">Tudo fica guardado só neste navegador. A extensão não tem conta, não pede número de cartão nem CPF e não envia nada para servidor nenhum.</p>
+
+    <p id="aviso" class="aviso" role="status" aria-live="polite"></p>
+
+    <section aria-labelledby="t-importar">
+      <h2 id="t-importar">Trazer o perfil do site</h2>
+      <p>No site Milhas da Vez, abra <strong>Meu perfil</strong> e use <strong>Exportar perfil</strong>. Depois escolha aqui o arquivo que foi baixado.</p>
+      <label class="arquivo" for="arquivo">Escolher arquivo do perfil (.json)</label>
+      <input id="arquivo" type="file" accept=".json,application/json">
+      <ul id="erros" class="erros"></ul>
+    </section>
+
+    <form id="formulario">
+      <section aria-labelledby="t-programas">
+        <h2 id="t-programas">Programas de pontos</h2>
+        <p class="nota"><strong>Clube</strong> é a assinatura mensal de um programa. Quem assina costuma ganhar pontos a mais nas ofertas das lojas.</p>
+        <ul id="programas" class="lista"></ul>
+      </section>
+
+      <section aria-labelledby="t-cartoes">
+        <h2 id="t-cartoes">Cartões</h2>
+        <p class="nota">Só o nome do cartão. Nunca digite o número.</p>
+        <ul id="cartoes" class="lista"></ul>
+      </section>
+
+      <div class="acoes">
+        <button type="submit">Salvar</button>
+        <button type="button" id="apagar" class="secundario">Apagar tudo</button>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

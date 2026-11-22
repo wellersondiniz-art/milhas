@@ -1,0 +1,40 @@
+{
+  "versao": 1,
+  "leia_antes": "Onde a extensão acha o preço em cada loja. Só entram no pacote (e no pedido de permissão) as lojas com status \"verificado\". Os seletores com status A_CONFIRMAR são candidatos: ainda não foram conferidos numa página real da loja. Para conferir: npm run extensao:conferir, carregue extensao/pacote no Chrome, abra uma página de produto da loja e veja se o selo aparece com o preço certo. Se aparecer, troque status para \"verificado\", ponha em fonte_url a página de produto usada e em verificado_em a data. Passo a passo em extensao/README.md.",
+  "lojas": [
+    {
+      "loja_id": "magalu",
+      "status": "A_CONFIRMAR",
+      "hosts": ["www.magazineluiza.com.br"],
+      "caminho_produto": "/p/[a-z0-9]+/",
+      "seletores_preco": [
+        { "css": "[data-testid=\"price-value\"]", "formato": "texto" }
+      ],
+      "fonte_url": "A_CONFIRMAR",
+      "verificado_em": "A_CONFIRMAR"
+    },
+    {
+      "loja_id": "amazon",
+      "status": "A_CONFIRMAR",
+      "hosts": ["www.amazon.com.br"],
+      "caminho_produto": "/(dp|gp/product)/[A-Z0-9]{10}",
+      "seletores_preco": [
+        { "css": "#corePrice_feature_div .a-price .a-offscreen", "formato": "texto" },
+        { "css": "#corePriceDisplay_desktop_feature_div .priceToPay .a-offscreen", "formato": "texto" }
+      ],
+      "fonte_url": "A_CONFIRMAR",
+      "verificado_em": "A_CONFIRMAR"
+    },
+    {
+      "loja_id": "mercado-livre",
+      "status": "A_CONFIRMAR",
+      "hosts": ["www.mercadolivre.com.br", "produto.mercadolivre.com.br"],
+      "caminho_produto": "MLB-?\\d+",
+      "seletores_preco": [
+        { "css": ".ui-pdp-price__second-line meta[itemprop=\"price\"]", "atributo": "content", "formato": "decimal" }
+      ],
+      "fonte_url": "A_CONFIRMAR",
+      "verificado_em": "A_CONFIRMAR"
+    }
+  ]
+}

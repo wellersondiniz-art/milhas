@@ -118,8 +118,8 @@ if [ -d dist ]; then
 fi
 
 # ---------------------------------------------------------------------------
-secao "5. XSS e execução de código (site/)"
-xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa 2>/dev/null || true)"
+secao "5. XSS e execução de código (site/ e extensao/)"
+xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa extensao/fonte 2>/dev/null || true)"
 if [ -n "$xss" ]; then
   falha "uso de innerHTML/eval ou similar (use textContent / createElement):"
   printf '%s\n' "$xss" | listar 1,2
@@ -204,7 +204,7 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "9. Debug, cookies, hash fraco e SQL"
-debug="$(git grep -nIE '\bdebugger\b|console\.(log|debug)\(' -- site 2>/dev/null || true)"
+debug="$(git grep -nIE '\bdebugger\b|console\.(log|debug)\(' -- site extensao/fonte 2>/dev/null || true)"
 if [ -n "$debug" ]; then
   alerta "debugger ou console.log no código publicado:"
   printf '%s\n' "$debug" | listar 1,2

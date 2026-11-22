@@ -5,9 +5,10 @@
   "description": "Comparador de milhas e pontos para o Brasil.",
   "type": "module",
   "scripts": {
-    "test": "npm run test:unidade && npm run validar && npm run test:navegador",
-    "test:unidade": "node --test --experimental-test-coverage --test-coverage-include=\"site/js/**\" --test-coverage-include=\"scripts/**\" --test-coverage-lines=95 --test-coverage-branches=88 --test-coverage-functions=95",
+    "test": "npm run test:unidade && npm run validar && npm run test:navegador && npm run test:extensao",
+    "test:unidade": "node --test --experimental-test-coverage --test-coverage-include=\"site/js/**\" --test-coverage-include=\"scripts/**\" --test-coverage-include=\"extensao/fonte/**\" --test-coverage-lines=95 --test-coverage-branches=88 --test-coverage-functions=95",
     "test:navegador": "playwright test",
+    "test:extensao": "playwright test -c playwright.extensao.config.mjs",
     "test:fotos": "docker run --rm --ipc=host -v \"$PWD\":/trabalho -w /trabalho -e FOTOS=1 mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test fotos",
     "test:fotos:atualizar": "docker run --rm --ipc=host -v \"$PWD\":/trabalho -w /trabalho -e FOTOS=1 mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test fotos --update-snapshots",
     "test:relatorio": "playwright show-report testes/navegador/relatorio",
@@ -24,8 +25,9 @@
     "extrair": "node scripts/extrair.js",
     "propor": "node scripts/propor-mudancas.js",
     "aprovar": "node scripts/aprovar-mudancas.js",
-    "atualizacao:demo": "node testes/atualizacao/demo.mjs"
-
+    "atualizacao:demo": "node testes/atualizacao/demo.mjs",
+    "extensao": "node scripts/extensao/montar.js",
+    "extensao:conferir": "node scripts/extensao/montar.js --conferir"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0"
