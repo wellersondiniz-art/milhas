@@ -68,13 +68,13 @@ test('reprova fim antes do início', async () => {
 
 test('reprova id que não existe em outra tabela', async () => {
   const { erros } = await validarCom((d) => {
-    d.ofertas[0].loja_id = 'americanas';
+    d.ofertas[0].loja_id = 'loja-inexistente';
     d.ofertas[0].regras[0].condicao.cartao_id = 'outro-cartao';
-    d.cartoes[0].programa_id = 'smiles';
+    d.cartoes[0].programa_id = 'programa-inexistente';
   });
   assert.equal(erros.length, 3);
-  assert.ok(erros.some((e) => e.includes('cartoes.json › registro 0 (id "azul-itau") › campo programa_id: id "smiles" não existe em programas.json')));
-  assert.ok(erros.some((e) => e.includes('campo loja_id: id "americanas" não existe em lojas.json')));
+  assert.ok(erros.some((e) => e.includes('cartoes.json › registro 0 (id "azul-itau-infinite") › campo programa_id: id "programa-inexistente" não existe em programas.json')));
+  assert.ok(erros.some((e) => e.includes('campo loja_id: id "loja-inexistente" não existe em lojas.json')));
   assert.ok(erros.some((e) => e.includes('campo regras[0].condicao.cartao_id: id "outro-cartao" não existe em cartoes.json')));
 });
 
@@ -120,7 +120,7 @@ test('reprova campo desconhecido, inclusive dentro da condição', async () => {
 test('reprova id repetido', async () => {
   const { erros } = await validarCom((d) => { d.lojas.push({ ...d.lojas[0] }); });
   assert.equal(erros.length, 1);
-  assert.match(erros[0], /lojas\.json › registro 1 .*id repetido/);
+  assert.match(erros[0], /lojas\.json › registro \d+ \(id "magalu"\) .*id repetido/);
 });
 
 test('reprova valor fora da lista (enum)', async () => {
@@ -157,4 +157,29 @@ test('reprova JSON quebrado com o nome do arquivo', async () => {
 
 test('para se o schema usar palavra-chave que o validador não conhece', () => {
   assert.throws(() => validarSchema(1, { oneOf: [] }), /não suportada.*oneOf/);
+});
+
+test('milheiro com número exige origem e fonte; A_CONFIRMAR não exige', async () => {
+  const { erros } = await validarCom((d) => {
+    delete d.programas[0].valor_milheiro_origem;
+    delete d.programas[0].valor_milheiro_fonte_url;
+    d.programas[1].valor_milheiro_brl = 'A_CONFIRMAR';
+    delete d.programas[1].valor_milheiro_origem;
+    delete d.programas[1].valor_milheiro_fonte_url;
+  });
+  assert.deepEqual(erros.sort(), [
+    'programas.json › registro 0 (id "azul-fidelidade") › campo valor_milheiro_fonte_url: obrigatório quando valor_milheiro_brl é um número',
+    'programas.json › registro 0 (id "azul-fidelidade") › campo valor_milheiro_origem: obrigatório quando valor_milheiro_brl é um número',
+  ]);
+});
+
+test('avisa quando o milheiro é estimativa editável', async () => {
+  const { avisos } = await validarDados(DADOS, { hoje: HOJE });
+  assert.ok(avisos.some((a) => a.includes('estimativa editável')));
+});
+
+test('reprova origem do milheiro fora da lista', async () => {
+  const { erros } = await validarCom((d) => { d.programas[0].valor_milheiro_origem = 'chute'; });
+  assert.equal(erros.length, 1);
+  assert.match(erros[0], /valor_milheiro_origem/);
 });

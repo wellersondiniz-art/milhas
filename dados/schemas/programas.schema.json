@@ -7,29 +7,77 @@
   "items": {
     "type": "object",
     "additionalProperties": false,
-    "required": ["id", "nome", "tipo", "valor_milheiro_brl", "url", "fonte_url", "verificado_em"],
+    "required": [
+      "id",
+      "nome",
+      "tipo",
+      "valor_milheiro_brl",
+      "url",
+      "fonte_url",
+      "verificado_em"
+    ],
     "properties": {
-      "id": { "$ref": "#/$defs/id" },
-      "nome": { "type": "string", "minLength": 1 },
+      "id": {
+        "$ref": "#/$defs/id"
+      },
+      "nome": {
+        "type": "string",
+        "minLength": 1
+      },
       "tipo": {
         "anyOf": [
-          { "enum": ["milhas", "pontos", "cashback"] },
-          { "$ref": "#/$defs/a_confirmar" }
+          {
+            "enum": [
+              "milhas",
+              "pontos",
+              "cashback"
+            ]
+          },
+          {
+            "$ref": "#/$defs/a_confirmar"
+          }
         ]
       },
       "valor_milheiro_brl": {
         "description": "Quanto valem 1.000 pontos, em CENTAVOS inteiros (2000 = R$ 20,00). O usuário poderá editar.",
         "anyOf": [
-          { "type": "integer", "minimum": 0 },
-          { "$ref": "#/$defs/a_confirmar" }
+          {
+            "type": "integer",
+            "minimum": 0
+          },
+          {
+            "$ref": "#/$defs/a_confirmar"
+          }
         ]
+      },
+      "valor_milheiro_origem": {
+        "description": "De onde vem o valor do milheiro. \"estimativa_editavel\" = valor provisório, que o usuário pode trocar na tela. Obrigatório quando valor_milheiro_brl é um número.",
+        "enum": [
+          "estimativa_editavel",
+          "confirmado"
+        ]
+      },
+      "valor_milheiro_fonte_url": {
+        "description": "Link da fonte do valor do milheiro. Obrigatório quando valor_milheiro_brl é um número.",
+        "$ref": "#/$defs/url"
       },
       "url": {
         "description": "Site do programa.",
-        "anyOf": [{ "$ref": "#/$defs/url" }, { "$ref": "#/$defs/a_confirmar" }]
+        "anyOf": [
+          {
+            "$ref": "#/$defs/url"
+          },
+          {
+            "$ref": "#/$defs/a_confirmar"
+          }
+        ]
       },
-      "fonte_url": { "$ref": "#/$defs/url" },
-      "verificado_em": { "$ref": "#/$defs/data" }
+      "fonte_url": {
+        "$ref": "#/$defs/url"
+      },
+      "verificado_em": {
+        "$ref": "#/$defs/data"
+      }
     }
   },
   "$defs": {
@@ -38,8 +86,17 @@
       "type": "string",
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
-    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
-    "data": { "type": "string", "format": "date" },
-    "a_confirmar": { "const": "A_CONFIRMAR" }
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "a_confirmar": {
+      "const": "A_CONFIRMAR"
+    }
   }
 }
