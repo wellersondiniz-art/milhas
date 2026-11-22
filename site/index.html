@@ -14,16 +14,23 @@
   <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
 
   <header class="topo">
-    <div class="container">
-      <p class="topo__marca">comprador de milhas</p>
+    <div class="container topo__linha">
+      <a class="topo__marca" href="#/">comprador de milhas</a>
+      <nav class="topo__menu" aria-label="Principal">
+        <a class="topo__link" href="#/" data-rota="inicio">Comparar</a>
+        <a class="topo__link" href="#/perfil" data-rota="perfil">Meu perfil</a>
+      </nav>
     </div>
   </header>
 
-  <main id="conteudo" class="container pilha--lg">
+  <main id="conteudo" class="container">
+   <div id="tela-inicio" class="pilha--lg">
     <section class="pilha--sm">
       <h1>Onde e com qual cartão comprar para ganhar mais pontos</h1>
       <p class="texto-suave">Diga a loja e o valor. A gente faz a conta e mostra o melhor jeito de comprar.</p>
     </section>
+
+    <div id="convite-perfil" hidden></div>
 
     <form id="formulario" class="card pilha passos" novalidate autocomplete="off">
       <div class="passo">
@@ -65,10 +72,48 @@
       <div id="resultado"></div>
     </section>
 
-    <details id="perfil" class="card perfil">
-      <summary class="perfil__resumo">Seus cartões e programas <span class="texto-suave">(opcional)</span></summary>
-      <div id="perfil-conteudo" class="perfil__conteudo"></div>
-    </details>
+   </div>
+
+   <div id="tela-perfil" class="pilha--lg" hidden>
+    <section class="pilha--sm">
+      <h1 id="perfil-titulo" tabindex="-1">Meu perfil</h1>
+      <p class="texto-suave">Marque os programas de pontos e os cartões que você tem. A conta da tela inicial passa a usar só o que é seu.</p>
+    </section>
+
+    <p class="privacidade"><span class="privacidade__icone" aria-hidden="true">🔒</span> Esses dados ficam só no seu aparelho. Não pedimos número de cartão.</p>
+
+    <div id="perfil-aviso" hidden></div>
+
+    <form id="perfil-formulario" class="card pilha" novalidate autocomplete="off" aria-labelledby="perfil-titulo"></form>
+
+    <p id="perfil-status" class="perfil__status" role="status"></p>
+
+    <section class="card pilha" aria-labelledby="copia-titulo">
+      <h2 id="copia-titulo" class="perfil__subtitulo">Levar para outro aparelho</h2>
+      <p class="texto-suave">Exporte o perfil para um arquivo e importe no outro celular ou computador. Importar substitui o que está marcado aqui.</p>
+      <div class="linha">
+        <button id="perfil-exportar" class="botao botao--secundario" type="button">Exportar perfil</button>
+        <button id="perfil-importar" class="botao botao--secundario" type="button">Importar perfil</button>
+        <input id="perfil-arquivo" type="file" accept=".json,application/json" hidden>
+      </div>
+      <div id="perfil-importacao"></div>
+    </section>
+
+    <section class="card pilha" aria-labelledby="apagar-titulo">
+      <h2 id="apagar-titulo" class="perfil__subtitulo">Apagar tudo</h2>
+      <p class="texto-suave">Tira deste aparelho os programas, clubes, cartões e valores que você marcou.</p>
+      <div>
+        <button id="perfil-apagar" class="botao botao--perigo" type="button" aria-expanded="false" aria-controls="perfil-confirmar">Apagar tudo</button>
+      </div>
+      <div id="perfil-confirmar" class="confirmar pilha--sm" hidden>
+        <p><strong>Tem certeza?</strong> Não dá para desfazer. Se quiser guardar uma cópia, exporte antes.</p>
+        <div class="linha">
+          <button id="perfil-sim-apagar" class="botao botao--perigo" type="button">Sim, apagar tudo</button>
+          <button id="perfil-nao-apagar" class="botao botao--fantasma" type="button">Cancelar</button>
+        </div>
+      </div>
+    </section>
+   </div>
   </main>
 
   <footer class="container rodape">

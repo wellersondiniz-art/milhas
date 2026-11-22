@@ -104,7 +104,7 @@ export function montarResultado(jeitos, contexto) {
   if (semPerfil) {
     partes.push(alerta('info', 'Mostrando com todos os cartões e programas',
       'Você ainda não disse quais cartões e programas tem. Por isso a conta usa todos os que conhecemos, sem clube. ',
-      el('a', { href: '#perfil', 'data-abrir-perfil': '' }, 'Dizer os meus')));
+      el('a', { href: '#/perfil' }, 'Cadastrar os meus')));
   }
   if (!temOferta) {
     partes.push(alerta('info', `A ${loja.nome} não tem oferta de pontos valendo hoje`,
