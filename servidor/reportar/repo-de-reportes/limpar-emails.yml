@@ -1,0 +1,67 @@
+# Robô que apaga o e-mail dos reportes.
+#
+# ESTE ARQUIVO NÃO RODA NESTE REPOSITÓRIO. Copie-o para o repositório
+# PRIVADO de reportes, no caminho .github/workflows/limpar-emails.yml
+# (passo a passo no README, seção "Avisos de erro (reportes)").
+#
+# O e-mail de quem pede resposta fica num comentário à parte, marcado com
+# <!-- reporte:email -->. Este robô apaga esse comentário:
+#   - assim que o reporte é fechado;
+#   - todo dia, em qualquer reporte com o comentário há mais de 90 dias.
+# Apagar o comentário (e não editar) é o que tira o e-mail do histórico.
+#
+# Não usa nenhuma action de terceiros: só o gh e o jq que já vêm no runner.
+
+name: limpar-emails
+
+on:
+  issues:
+    types: [closed]
+  schedule:
+    - cron: '17 9 * * *' # todo dia, 06:17 em São Paulo
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: limpar-emails
+  cancel-in-progress: false
+
+jobs:
+  limpar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      MARCA: '<!-- reporte:email -->'
+      DIAS: '90'
+    steps:
+      - name: Apagar o e-mail do reporte fechado
+        if: github.event_name == 'issues'
+        env:
+          NUMERO: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/issues/$NUMERO/comments" \
+            --jq ".[] | select(.body | startswith(env.MARCA)) | .id" |
+          while read -r id; do
+            gh api -X DELETE "repos/$REPO/issues/comments/$id"
+            echo "apagado o comentário $id do reporte #$NUMERO"
+          done
+
+      - name: Apagar e-mails com mais de 90 dias ou de reportes já fechados
+        if: github.event_name != 'issues'
+        run: |
+          set -euo pipefail
+          limite="$(date -u -d "-$DIAS days" +%Y-%m-%dT%H:%M:%SZ)"
+          gh api --paginate "repos/$REPO/issues/comments?per_page=100" \
+            --jq '.[] | select(.body | startswith(env.MARCA)) | [.id, .created_at, (.issue_url | split("/") | last)] | @tsv' |
+          while IFS=$'\t' read -r id criado numero; do
+            estado="$(gh api "repos/$REPO/issues/$numero" --jq .state)"
+            if [ "$estado" = "closed" ] || [[ "$criado" < "$limite" ]]; then
+              gh api -X DELETE "repos/$REPO/issues/comments/$id"
+              echo "apagado o comentário $id do reporte #$numero ($estado, de $criado)"
+            fi
+          done

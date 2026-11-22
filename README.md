@@ -184,6 +184,63 @@ Cada passo usa a data de hoje (Brasília); para outra data, passe `--data AAAA-M
 
 Para ver o fluxo inteiro sem internet e sem chave: `npm run atualizacao:demo`. Ele usa duas páginas fictícias e respostas do modelo escritas à mão (`testes/atualizacao/`), roda numa cópia temporária do projeto e só simula os comandos de Git.
 
+## Avisos de erro (reportes)
+
+Cada resultado pode ter o botão **"Essa informação está errada?"**. Ele abre um formulário curto (o que está errado, link da prova e e-mail opcional; a loja vem do resultado) e envia para a função `functions/api/reportar.js`, que roda na própria Cloudflare Pages, no mesmo endereço do site. A função confere tudo de novo (`servidor/reportar/`), barra robô (campo escondido e envio rápido demais) e abuso (5 avisos por hora por conexão, 50 por dia no total) e abre uma **issue num repositório privado do GitHub**. Aviso sobre oferta que vale hoje ganha a etiqueta `prioridade: oferta ativa`.
+
+O que fica guardado (é o que a página Privacidade diz):
+
+- Na issue: loja, oferta, programa e cartão do resultado (ids dos nossos dados), o texto e o link, os dois dentro de bloco de código (o GitHub não monta link, imagem nem menção). Nada de IP.
+- O e-mail, se a pessoa der um, vai num **comentário à parte**, que o robô `limpar-emails.yml` apaga quando a issue é fechada ou depois de 90 dias. Apagar o comentário (e não editar) tira o e-mail do histórico. Cuidado: se você recebe notificação por e-mail do GitHub, o endereço também chega na sua caixa; apague a notificação depois de responder.
+- No Workers KV: um resumo embaralhado (HMAC) do IP com um contador, que some sozinho em 1 hora, e um contador do dia, sem nada da pessoa.
+
+O botão vem **desligado** (`REPORTE_LIGADO = false` em `site/js/reporte/config.js`). Com ele desligado, a função continua no ar, mas sem configuração responde 503 e não grava nada. Para ligar, siga os passos abaixo uma vez. Os nomes dos botões dos painéis são de memória: se algum estiver diferente, procure o mais parecido.
+
+### Passo 1. Repositório privado para os avisos (GitHub)
+
+O repositório do site é público, e issue de repositório público qualquer pessoa lê. Por isso os avisos vão para outro, privado.
+
+1. Abra <https://github.com/new>. Nome: `milhas-reportes`. Marque **Private** e **Add a README file**. Clique em **Create repository**.
+2. Em **Issues** → **Labels** → **New label**, crie duas etiquetas: `reporte` e `prioridade: oferta ativa` (escreva igual, com os dois-pontos e o espaço; a cor é livre, vermelho para a de prioridade ajuda).
+3. Ainda no `milhas-reportes`: **Add file** → **Create new file**. Nome do arquivo: `.github/workflows/limpar-emails.yml`. Cole o conteúdo de [`servidor/reportar/repo-de-reportes/limpar-emails.yml`](servidor/reportar/repo-de-reportes/limpar-emails.yml) e clique em **Commit changes**. Na aba **Actions**, ele aparece como `limpar-emails`; dá para rodar à mão com **Run workflow**.
+
+Para triar: em **Issues**, filtre por `label:"prioridade: oferta ativa"` primeiro. Corrija em `dados/` (com `fonte_url` e `verificado_em`) e feche a issue; fechar apaga o e-mail.
+
+### Passo 2. Token só para criar issues (GitHub)
+
+1. Abra <https://github.com/settings/personal-access-tokens/new> (fine-grained token).
+2. **Token name**: `milhasdavez-reportes`. **Expiration**: 1 ano (anote a data para trocar antes de vencer).
+3. **Repository access**: **Only select repositories** → escolha só `milhas-reportes`.
+4. **Permissions** → **Repository permissions** → **Issues**: **Read and write**. Não marque mais nada (o "Metadata: Read-only" entra sozinho).
+5. **Generate token** e copie o valor. Ele aparece uma vez só. Não cole em arquivo, chat nem commit: ele vai direto para o passo 4.
+
+### Passo 3. KV para o limite (Cloudflare)
+
+No painel da Cloudflare: **Storage & Databases** → **Workers KV** → **Create** (namespace). Nome: `milhasdavez-reportes-limite`.
+
+### Passo 4. Ligar a função ao token, ao repositório e ao KV (Cloudflare)
+
+Em **Workers & Pages** → `milhasdavez` → **Settings**, no ambiente **Production**:
+
+1. **Bindings** → **Add** → **KV namespace**. Variable name: `REPORTES_LIMITE`. KV namespace: `milhasdavez-reportes-limite`. Salve.
+2. **Variables and Secrets** → **Add**:
+   - Type **Secret**, nome `GITHUB_TOKEN`, valor: o token do passo 2.
+   - Type **Text**, nome `REPORTES_REPO`, valor: `wellersondiniz-art/milhas-reportes`.
+3. Não configure nada disso no ambiente **Preview**: assim os previews dos PRs nunca abrem issue de verdade (respondem 503).
+4. Em **Deployments**, na publicação mais recente da `main`: **...** → **Retry deployment**, para a função pegar as configurações.
+
+### Passo 5. Segunda trava contra abuso (opcional, Cloudflare, só com o domínio próprio)
+
+Depois do domínio `milhasdavez.com.br` ativo na Cloudflare: **Security** → **WAF** → **Rate limiting rules** → **Create rule**. Quando: **URI Path** igual a `/api/reportar`. Limite: 5 pedidos a cada 10 segundos, contando por IP. Ação: **Block** por 10 segundos. O plano gratuito dá uma regra dessas.
+
+### Passo 6. Ligar o botão e testar
+
+1. Troque `REPORTE_LIGADO` para `true` em `site/js/reporte/config.js` (num PR; isso também acrescenta a seção "Quando você avisa de um erro" em Privacidade e a dica em Contato).
+2. Depois do merge, no celular: faça uma conta, toque em "Essa informação está errada?", envie um aviso de teste com o seu e-mail. Espere uns 5 segundos antes de enviar (envio rápido demais é tratado como robô e some em silêncio).
+3. Confira no `milhas-reportes`: a issue apareceu, com o comentário do e-mail. Feche a issue e veja em **Actions** o `limpar-emails` apagar o comentário.
+
+Para desligar de novo: `REPORTE_LIGADO = false`, ou apague o segredo `GITHUB_TOKEN` (a função passa a responder 503 na hora).
+
 ## Pastas
 
 - `site/`: o código do site, legível (`js/motor/` guarda o cálculo puro, sem interface; `js/tela/` monta a tela inicial e só exibe o que o motor devolve; `_headers` define os cabeçalhos de segurança).
@@ -192,6 +249,8 @@ Para ver o fluxo inteiro sem internet e sem chave: `npm run atualizacao:demo`. E
 - `testes/`: testes com `node --test`.
 - `scripts/`: validação dos dados, geração de páginas por loja, montagem de `dist/` (`scripts/publicar/`) e o fluxo semanal de ofertas (`coletar.js`, `extrair.js`, `propor-mudancas.js`, `aprovar-mudancas.js` e `scripts/atualizacao/`).
 - `coleta/`: gerada pelo fluxo semanal, fica fora do Git.
+- `functions/`: funções da Cloudflare Pages (hoje só `api/reportar.js`). `site/_routes.json` faz só `/api/*` passar por elas; o resto do site continua estático.
+- `servidor/`: o código dessas funções, testado com `node --test` (`servidor/reportar/`).
 - `seguranca/`: auditoria de segurança e checklist.
 
 ## Testes
