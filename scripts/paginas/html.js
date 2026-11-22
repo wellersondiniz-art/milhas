@@ -58,11 +58,13 @@ export function h(tag, atributos = {}, ...filhos) {
 }
 
 /**
- * Link só para endereço http(s). Qualquer outro esquema vira texto sem link.
+ * Link só para endereço https://. Qualquer outro esquema (http:, javascript:,
+ * data:...) vira texto sem link. O schema dos dados já exige https://; esta é
+ * a segunda trava, para o caso de um dado escapar da validação.
  * Esses links ficam soltos (fora de frase), então ganham alvo de toque de 44px.
  */
 export function linkExterno(url, ...filhos) {
-  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return juntar(...filhos);
+  if (typeof url !== 'string' || !/^https:\/\/[^\s]+$/i.test(url)) return juntar(...filhos);
   return h('a', { href: url, rel: 'noopener noreferrer nofollow', class: 'alvo-toque' }, ...filhos);
 }
 

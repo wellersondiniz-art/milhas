@@ -70,3 +70,5 @@ site/contato/
 
 # Service worker gerado a partir de scripts/pwa/sw-modelo.js (npm run sw)
 site/sw.js
+testes/navegador/resultados/
+testes/navegador/relatorio/

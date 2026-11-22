@@ -416,7 +416,7 @@ function sitemap(urlBase, caminhos, hoje) {
 }
 
 function robots(urlBase) {
-  const linhas = ['User-agent: *', 'Allow: /', 'Disallow: /estilo.html'];
+  const linhas = ['User-agent: *', 'Allow: /'];
   if (urlBase) linhas.push('', `Sitemap: ${urlBase}/sitemap.xml`);
   return `${linhas.join('\n')}\n`;
 }

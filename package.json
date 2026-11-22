@@ -5,7 +5,12 @@
   "description": "Comparador de milhas e pontos para o Brasil.",
   "type": "module",
   "scripts": {
-    "test": "node --test",
+    "test": "npm run test:unidade && npm run validar && npm run test:navegador",
+    "test:unidade": "node --test --experimental-test-coverage --test-coverage-include=\"site/js/**\" --test-coverage-include=\"scripts/**\" --test-coverage-lines=95 --test-coverage-branches=88 --test-coverage-functions=95",
+    "test:navegador": "playwright test",
+    "test:fotos": "docker run --rm --ipc=host -v \"$PWD\":/trabalho -w /trabalho -e FOTOS=1 mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test fotos",
+    "test:fotos:atualizar": "docker run --rm --ipc=host -v \"$PWD\":/trabalho -w /trabalho -e FOTOS=1 mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test fotos --update-snapshots",
+    "test:relatorio": "playwright show-report testes/navegador/relatorio",
     "validar": "node scripts/validar-dados.js",
     "servir": "npm run build && python3 -m http.server 8080 --bind 127.0.0.1 --directory dist",
     "auditar": "bash seguranca/auditar.sh",
@@ -15,5 +20,8 @@
     "sw": "node scripts/gerar-sw.js",
     "servir:fonte": "node scripts/copiar-dados.js && node scripts/gerar-paginas.js && node scripts/gerar-sw.js && python3 -m http.server 8080 --bind 127.0.0.1 --directory site",
     "dist": "node scripts/publicar/montar-dist.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
   }
 }

@@ -9,9 +9,10 @@ const ler = (caminho) => readFile(new URL(`../${caminho}`, import.meta.url), 'ut
 const css = (await Promise.all(['site/css/base.css', 'site/css/estilo.css', 'site/css/paginas.css'].map(ler))).join('\n');
 const html = await ler('site/index.html');
 const offline = await ler('site/offline.html');
+const naoEncontrada = await ler('site/404.html');
 
 test('páginas fixas em pt-BR e sem travar o zoom', () => {
-  for (const pagina of [html, offline]) {
+  for (const pagina of [html, offline, naoEncontrada]) {
     assert.match(pagina, /<html lang="pt-BR">/);
     assert.doesNotMatch(pagina, /maximum-scale|user-scalable\s*=\s*no/i);
   }
