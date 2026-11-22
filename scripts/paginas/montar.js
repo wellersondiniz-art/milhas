@@ -9,7 +9,8 @@ import { calcularJeitosDeComprar, formatarData } from '../../site/js/motor/index
 import { formatarNumero, pontosPorReal } from '../../site/js/motor/formatar.js';
 import { fraseDoJeito } from '../../site/js/tela/textos.js';
 import { NOME_DO_SITE } from './config.js';
-import { escaparXml, h, juntar, linkExterno } from './html.js';
+import { escaparXml, h, juntar, linkDeSaida, linkExterno } from './html.js';
+import { montarLinkDeSaida, siteTemLinkDeAfiliado } from '../../site/js/saida/links.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 import { paginasInstitucionais } from './institucionais.js';
 
@@ -219,8 +220,11 @@ function respostaDaLoja(loja, melhor, ativas) {
 function cartaoDaResposta(dados, loja, melhor, resposta, raiz) {
   const j = melhor?.porReal;
   const cem = melhor?.porCem;
-  const botao = h('a', { class: 'botao botao--bloco', href: `${raiz}?loja=${encodeURIComponent(loja.id)}` },
-    `Calcular a minha compra ${naLoja(loja)}`);
+  // A conta já foi feita acima; o link de saída só entra depois, sem mudar nada nela.
+  const botao = juntar(
+    h('a', { class: 'botao botao--bloco', href: `${raiz}?loja=${encodeURIComponent(loja.id)}` },
+      `Calcular a minha compra ${naLoja(loja)}`),
+    linkDeSaida(montarLinkDeSaida(loja.id, dados), `Ir para a loja ${loja.nome}`, 'aviso-comissao'));
   if (!resposta.rende) {
     return h('section', { class: 'card pilha', 'aria-label': 'Resposta' },
       h('p', { class: 'resposta' }, resposta.frase),
@@ -444,7 +448,7 @@ export function gerarPaginas(dados, { hoje, urlBase = null }) {
   }
   const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
-  const institucionais = paginasInstitucionais({ hoje, urlBase: base });
+  const institucionais = paginasInstitucionais({ urlBase: base, temAfiliado: siteTemLinkDeAfiliado(dados) });
   const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {

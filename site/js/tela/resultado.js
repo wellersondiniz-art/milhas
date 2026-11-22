@@ -132,7 +132,23 @@ export function montarResultado(jeitos, contexto) {
     partes.push(el('div', { class: 'pilha resultado__demais' }, demais.map((j, i) => card(j, i + 1, loja.nome))));
   }
 
+  const botaoDeSaida = linkDeSaida(contexto.saida, loja.nome);
+  if (botaoDeSaida) partes.push(botaoDeSaida);
+
   return el('div', { class: 'pilha', 'data-resumo': `${valorTexto} na ${loja.nome}` }, partes);
+}
+
+/**
+ * "Ir para a loja", depois do resultado. `saida` vem de montarLinkDeSaida
+ * (js/saida/links.js); a lista acima já está pronta e não muda por causa dele.
+ * Link de afiliado leva rel="sponsored noopener noreferrer" e o aviso de comissão.
+ */
+export function linkDeSaida(saida, nomeLoja) {
+  if (!saida || typeof saida.url !== 'string' || !/^https:\/\/[^\s]+$/i.test(saida.url)) return null;
+  const idAviso = 'resultado-aviso-comissao';
+  return el('div', { class: 'pilha--sm' },
+    el('a', { class: 'botao botao--secundario botao--bloco', href: saida.url, rel: saida.rel, 'aria-describedby': saida.aviso ? idAviso : null }, `Ir para a loja ${nomeLoja}`),
+    saida.aviso ? el('p', { id: idAviso, class: 'texto-suave texto-pequeno' }, saida.aviso) : null);
 }
 
 /** Esqueleto enquanto os dados carregam. */
