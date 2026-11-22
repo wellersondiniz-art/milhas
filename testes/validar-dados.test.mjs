@@ -73,7 +73,7 @@ test('reprova id que não existe em outra tabela', async () => {
     d.cartoes[0].programa_id = 'programa-inexistente';
   });
   assert.equal(erros.length, 3);
-  assert.ok(erros.some((e) => e.includes('cartoes.json › registro 0 (id "azul-itau") › campo programa_id: id "programa-inexistente" não existe em programas.json')));
+  assert.ok(erros.some((e) => e.includes('cartoes.json › registro 0 (id "azul-itau-infinite") › campo programa_id: id "programa-inexistente" não existe em programas.json')));
   assert.ok(erros.some((e) => e.includes('campo loja_id: id "loja-inexistente" não existe em lojas.json')));
   assert.ok(erros.some((e) => e.includes('campo regras[0].condicao.cartao_id: id "outro-cartao" não existe em cartoes.json')));
 });

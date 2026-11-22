@@ -342,7 +342,7 @@ test('oferta de exemplo do repositório (vários campos A_CONFIRMAR)', async () 
     dados[nome] = JSON.parse(await readFile(new URL(`../dados/${nome}.json`, import.meta.url), 'utf8'));
   }
   // Hoje dentro da validade: a oferta de exemplo termina em 12/11/2026.
-  const lista = calcular(perfil([COM_CLUBE], ['azul-itau']), compra(10000), dados, HOJE);
+  const lista = calcular(perfil([COM_CLUBE], ['azul-itau-infinite']), compra(10000), dados, HOJE);
   const [melhor] = lista;
   // 100 × 15 = 1500; cartão A_CONFIRMAR = 0; acumula A_CONFIRMAR → vale o maior (1500)
   assert.equal(melhor.tipo, 'oferta');
