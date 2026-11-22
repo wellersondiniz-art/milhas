@@ -8,7 +8,6 @@ import { pathToFileURL } from 'node:url';
 
 import { aplicarMascara, erroDoValor, MAX_DIGITOS, VALOR_MAXIMO_CENTAVOS } from '../site/js/tela/moeda.js';
 import { filtrarLojas, lojaPeloNome, normalizar } from '../site/js/tela/lojas.js';
-import { CHAVE, apagarDoAparelho, lerDoAparelho, limparPerfil, perfilDeTodos, salvarNoAparelho } from '../site/js/tela/perfil.js';
 import {
   agoraLocal, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
 } from '../site/js/tela/textos.js';
@@ -83,80 +82,6 @@ test('filtrar: vazio mostra todas em ordem alfabética, com limite', () => {
 test('loja pelo nome exato, sem ligar para acento e maiúscula', () => {
   assert.equal(lojaPeloNome(LOJAS, ' magalu ').id, 'magalu');
   assert.equal(lojaPeloNome(LOJAS, 'Maga'), null);
-});
-
-// ---------------------------------------------------------------------------
-// Perfil
-
-const DADOS = {
-  programas: [{ id: 'prog-a', nome: 'Programa A' }, { id: 'prog-b', nome: 'Programa B' }],
-  cartoes: [{ id: 'cartao-a', nome: 'Cartão A' }, { id: 'cartao-b', nome: 'Cartão B' }],
-};
-
-test('perfil de todos: todos os programas sem clube e todos os cartões', () => {
-  assert.deepEqual(perfilDeTodos(DADOS), {
-    programas: [{ programa_id: 'prog-a', clube_ativo: false }, { programa_id: 'prog-b', clube_ativo: false }],
-    cartoes: ['cartao-a', 'cartao-b'],
-    valor_milheiro_brl: {},
-  });
-});
-
-test('limpar perfil: tira ids desconhecidos, repetidos, datas ruins e valores quebrados', () => {
-  const bruto = {
-    programas: [
-      { programa_id: 'prog-a', clube_ativo: true, clube_ativo_desde: '2026-11-01', extra: 'x' },
-      { programa_id: 'prog-a', clube_ativo: false },
-      { programa_id: 'nao-existe', clube_ativo: true },
-      { programa_id: 'prog-b', clube_ativo: 'sim', clube_ativo_desde: 'ontem' },
-      null,
-    ],
-    cartoes: ['cartao-b', 'cartao-b', 'outro'],
-    valor_milheiro_brl: { 'prog-a': 2000, 'prog-b': 12.5, 'nao-existe': 100 },
-    cpf: 'nunca guardamos isso',
-  };
-  assert.deepEqual(limparPerfil(bruto, DADOS), {
-    programas: [
-      { programa_id: 'prog-a', clube_ativo: true, clube_ativo_desde: '2026-11-01' },
-      { programa_id: 'prog-b', clube_ativo: false },
-    ],
-    cartoes: ['cartao-b'],
-    valor_milheiro_brl: { 'prog-a': 2000 },
-  });
-});
-
-test('limpar perfil: lixo vira null', () => {
-  assert.equal(limparPerfil(null, DADOS), null);
-  assert.equal(limparPerfil({ programas: 'x', cartoes: [] }, DADOS), null);
-});
-
-function armazenamentoFalso() {
-  const mapa = new Map();
-  return {
-    getItem: (k) => (mapa.has(k) ? mapa.get(k) : null),
-    setItem: (k, v) => mapa.set(k, String(v)),
-    removeItem: (k) => mapa.delete(k),
-    mapa,
-  };
-}
-
-test('salvar, ler e apagar do aparelho', () => {
-  const a = armazenamentoFalso();
-  const perfil = { programas: [{ programa_id: 'prog-a', clube_ativo: false }], cartoes: ['cartao-a'], valor_milheiro_brl: {} };
-  assert.equal(salvarNoAparelho(perfil, a), true);
-  assert.ok(a.mapa.has(CHAVE));
-  assert.deepEqual(lerDoAparelho(DADOS, a), perfil);
-  assert.equal(apagarDoAparelho(a), true);
-  assert.equal(lerDoAparelho(DADOS, a), null);
-});
-
-test('aparelho que não deixa salvar ou tem JSON quebrado não derruba a tela', () => {
-  const bloqueado = { getItem() { throw new Error('bloqueado'); }, setItem() { throw new Error('cheio'); }, removeItem() { throw new Error('x'); } };
-  assert.equal(lerDoAparelho(DADOS, bloqueado), null);
-  assert.equal(salvarNoAparelho({ programas: [], cartoes: [] }, bloqueado), false);
-  assert.equal(apagarDoAparelho(bloqueado), false);
-  const quebrado = armazenamentoFalso();
-  quebrado.setItem(CHAVE, '{nao é json');
-  assert.equal(lerDoAparelho(DADOS, quebrado), null);
 });
 
 // ---------------------------------------------------------------------------
@@ -248,7 +173,10 @@ test('textos da tela não usam "conforme"', async () => {
 });
 
 test('tela não usa innerHTML, outerHTML, insertAdjacentHTML nem document.write', async () => {
-  const arquivos = ['../site/js/app.js', ...(await readdir(new URL('../site/js/tela/', import.meta.url))).map((n) => `../site/js/tela/${n}`)];
+  const arquivos = ['../site/js/app.js'];
+  for (const pasta of ['tela', 'perfil']) {
+    arquivos.push(...(await readdir(new URL(`../site/js/${pasta}/`, import.meta.url))).map((n) => `../site/js/${pasta}/${n}`));
+  }
   for (const arquivo of arquivos) {
     const texto = await readFile(new URL(arquivo, import.meta.url), 'utf8');
     assert.doesNotMatch(texto, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/, arquivo);

@@ -1,12 +1,16 @@
+// Duas telas na mesma página: a inicial (#/) e "Meu perfil" (#/perfil).
 // Tela inicial: 1) loja, 2) valor, 3) resultado.
 // A conta vem sempre do motor (js/motor/). Aqui só se lê o formulário,
 // chama o motor e mostra o que ele devolveu.
+// Ficar numa página só deixa o perfil vivo na memória quando o navegador
+// não deixa salvar (modo privado): trocar de tela não perde nada.
 
 import { calcularJeitosDeComprar, formatarCentavos } from './motor/index.js';
 import { criarBuscaDeLoja } from './tela/busca-loja.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
-import { apagarDoAparelho, lerDoAparelho, perfilDeTodos, salvarNoAparelho } from './tela/perfil.js';
-import { montarPerfil } from './tela/perfil-tela.js';
+import { abrirArmazem } from './perfil/armazem.js';
+import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
+import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
 import { agoraLocal } from './tela/textos.js';
 import { el } from './tela/dom.js';
@@ -25,12 +29,15 @@ const botaoVer = $('ver-resultado');
 const passoResultado = $('passo-resultado');
 const titulo = $('resultado-titulo');
 const resultado = $('resultado');
-const perfilCaixa = $('perfil');
-const perfilConteudo = $('perfil-conteudo');
+const convite = $('convite-perfil');
+const telaInicio = $('tela-inicio');
+const telaPerfil = $('tela-perfil');
 
 let dados = null;
 let perfilSalvo = null;
 let mostrandoResultado = false;
+let telaDoPerfil = null;
+const armazem = abrirArmazem((() => { try { return globalThis.localStorage; } catch { return undefined; } })());
 
 // ---------------------------------------------------------------------------
 // Passo 1: loja
@@ -67,9 +74,10 @@ function marcarErro(campo, caixa, mensagem) {
 // ---------------------------------------------------------------------------
 // Passo 3: resultado
 
-function perfilParaConta() {
-  const vazio = !perfilSalvo || (!perfilSalvo.programas.length && !perfilSalvo.cartoes.length);
-  return vazio ? { perfil: perfilDeTodos(dados), semPerfil: true } : { perfil: perfilSalvo, semPerfil: false };
+function perfilDaConta() {
+  return ehVazio(perfilSalvo)
+    ? { perfil: perfilDeTodos(dados), semPerfil: true }
+    : { perfil: perfilParaConta(perfilSalvo), semPerfil: false };
 }
 
 function mostrarErro(tituloAlerta, mensagem, aoTentar) {
@@ -94,7 +102,7 @@ function calcular({ focar } = { focar: true }) {
   passoResultado.hidden = false;
   mostrandoResultado = true;
   titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} na ${loja.nome}`;
-  const { perfil, semPerfil } = perfilParaConta();
+  const { perfil, semPerfil } = perfilDaConta();
   try {
     const jeitos = calcularJeitosDeComprar(
       perfil,
@@ -115,30 +123,69 @@ formulario.addEventListener('submit', (evento) => {
   calcular();
 });
 
-resultado.addEventListener('click', (evento) => {
-  const link = evento.target.closest('[data-abrir-perfil]');
-  if (!link) return;
-  evento.preventDefault();
-  perfilCaixa.open = true;
-  perfilCaixa.querySelector('summary').focus();
-  perfilCaixa.scrollIntoView({ block: 'start' });
-});
+// ---------------------------------------------------------------------------
+// Perfil: convite na tela inicial e tela "Meu perfil"
+
+function hojeLocal() {
+  return agoraLocal(new Date()).slice(0, 10);
+}
+
+function mostrarConvite() {
+  if (!dados) return;
+  convite.hidden = false;
+  if (ehVazio(perfilSalvo)) {
+    convite.replaceChildren(alerta('info', 'Ainda não sabemos quais cartões você tem',
+      el('p', {}, 'Tudo bem: a conta funciona assim mesmo, com as melhores opções entre todos os cartões e programas que conhecemos. Para ver só o que é seu, cadastre os seus cartões. Leva um minuto.'),
+      el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Cadastrar meus cartões')));
+  } else {
+    convite.replaceChildren(el('p', { class: 'texto-suave convite' },
+      `A conta usa o seu perfil: ${resumoDoPerfil(perfilSalvo)}. `,
+      el('a', { href: '#/perfil' }, 'Mudar meu perfil')));
+  }
+}
+
+function definirPerfil(novo) {
+  perfilSalvo = novo;
+  const salvou = novo === null ? (armazem.apagar(), !armazem.emMemoria) : armazem.salvar(novo);
+  mostrarConvite();
+  if (mostrandoResultado) calcular({ focar: false });
+  return { salvou, emMemoria: armazem.emMemoria };
+}
 
 // ---------------------------------------------------------------------------
-// Perfil opcional
+// Telas: #/ (inicial) e #/perfil. Outros "#" (como #conteudo) não trocam de tela.
 
-function aoMudarPerfil(novo) {
-  let salvou;
-  if (novo === null || (!novo.programas.length && !novo.cartoes.length)) {
-    perfilSalvo = null;
-    salvou = apagarDoAparelho();
-  } else {
-    perfilSalvo = novo;
-    salvou = salvarNoAparelho(novo);
-  }
-  if (mostrandoResultado) calcular({ focar: false });
-  return salvou;
+function rotaAtual() {
+  const h = location.hash;
+  if (h === '#/perfil') return 'perfil';
+  if (h === '' || h === '#' || h === '#/') return 'inicio';
+  return null;
 }
+
+function mostrarTela(rota, { focar }) {
+  const perfil = rota === 'perfil';
+  telaInicio.hidden = perfil;
+  telaPerfil.hidden = !perfil;
+  for (const link of document.querySelectorAll('[data-rota]')) {
+    if (link.dataset.rota === rota) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  }
+  document.title = perfil ? 'Meu perfil · comprador de milhas' : 'comprador de milhas';
+  if (perfil && telaDoPerfil) telaDoPerfil.abrir(armazem.emMemoria);
+  if (focar) (perfil ? $('perfil-titulo') : document.querySelector('#tela-inicio h1')).focus();
+}
+
+let primeiraVez = true;
+function aoMudarRota() {
+  const rota = rotaAtual();
+  if (!rota) return;
+  // Sem dados ainda, a tela do perfil espera a carga terminar.
+  if (rota === 'perfil' && !dados) return;
+  mostrarTela(rota, { focar: !primeiraVez });
+  primeiraVez = false;
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', aoMudarRota);
 
 // ---------------------------------------------------------------------------
 // Carregar os dados
@@ -166,14 +213,35 @@ async function carregar() {
     return;
   }
   busca.definirLojas(dados.lojas);
-  perfilSalvo = lerDoAparelho(dados);
-  montarPerfil(perfilConteudo, dados, perfilSalvo, aoMudarPerfil);
+  perfilSalvo = armazem.ler(dados);
+  telaDoPerfil = montarTelaPerfil({
+    elementos: {
+      formulario: $('perfil-formulario'),
+      aviso: $('perfil-aviso'),
+      status: $('perfil-status'),
+      exportar: $('perfil-exportar'),
+      importar: $('perfil-importar'),
+      arquivo: $('perfil-arquivo'),
+      resultadoImportacao: $('perfil-importacao'),
+      apagar: $('perfil-apagar'),
+      confirmarApagar: $('perfil-confirmar'),
+      simApagar: $('perfil-sim-apagar'),
+      naoApagar: $('perfil-nao-apagar'),
+    },
+    dados,
+    hoje: hojeLocal,
+    obterPerfil: () => perfilSalvo,
+    definirPerfil,
+  });
+  mostrarConvite();
   campoLoja.disabled = false;
   botaoVer.disabled = false;
   resultado.removeAttribute('aria-busy');
   resultado.replaceChildren();
   passoResultado.hidden = true;
   ajudaValor.textContent = 'Só números. Os centavos entram sozinhos: para R$ 1.299,00, digite 129900.';
+  aoMudarRota();
 }
 
+aoMudarRota();
 carregar();
