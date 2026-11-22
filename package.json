@@ -7,7 +7,8 @@
   "scripts": {
     "test": "node --test",
     "validar": "node scripts/validar-dados.js",
-    "servir": "python3 -m http.server 8080 --bind 127.0.0.1 --directory site",
-    "auditar": "bash seguranca/auditar.sh"
+    "servir": "node scripts/copiar-dados.js && python3 -m http.server 8080 --bind 127.0.0.1 --directory site",
+    "auditar": "bash seguranca/auditar.sh",
+    "dados": "node scripts/copiar-dados.js"
   }
 }
