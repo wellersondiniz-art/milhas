@@ -1,0 +1,53 @@
+# Segredos e variáveis de ambiente
+.env
+.env.*
+!.env.exemplo
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+*.gpg
+secrets.*
+segredos.*
+credentials*.json
+service-account*.json
+.npmrc
+.dev.vars
+.wrangler/
+
+# Planilhas e documentos (dados de origem ficam fora do repo)
+*.xls
+*.xlsx
+*.xlsm
+*.ods
+*.csv
+*.pdf
+*.doc
+*.docx
+
+# Dependências e build
+node_modules/
+dist/
+build/
+.cache/
+coverage/
+
+# Logs e temporários
+*.log
+npm-debug.log*
+*.tmp
+*.bak
+*.swp
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

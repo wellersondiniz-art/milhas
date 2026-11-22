@@ -1,0 +1,13 @@
+{
+  "name": "comprador-de-milhas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Comparador de milhas e pontos para o Brasil.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "validar": "node scripts/validar-dados.mjs",
+    "servir": "python3 -m http.server 8080 --bind 127.0.0.1 --directory site",
+    "auditar": "bash seguranca/auditar.sh"
+  }
+}
