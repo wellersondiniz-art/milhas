@@ -78,6 +78,7 @@ Vamos preenchendo conforme o projeto cresce.
 | --- | --- |
 | Rodar testes | `npm test` (unitários, dados e navegador) |
 | Validar dados | `npm run validar` |
-| Servir localmente | *a definir* |
+| Montar o que vai para o ar | `npm run build` (gera `dist/`, a pasta publicada na Cloudflare Pages) |
+| Servir localmente | `npm run servir` (serve `dist/`) |
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |

@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { aplicarMascara, erroDoValor, MAX_DIGITOS, VALOR_MAXIMO_CENTAVOS } from '../site/js/tela/moeda.js';
 import { filtrarLojas, lojaPeloNome, normalizar } from '../site/js/tela/lojas.js';
 import {
-  agoraLocal, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  agoraLocal, anuncioDoResultado, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
 } from '../site/js/tela/textos.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
 import { copiarDados, ARQUIVOS } from '../scripts/copiar-dados.js';
@@ -137,6 +137,21 @@ test('destaque: reais quando o motor dá o valor; pontos quando falta o milheiro
   assert.equal(destaqueDoJeito(vazio).principal, 'Nenhum ponto');
 });
 
+test('anúncio para leitor de tela: valor, pontos, como comprar e quantos jeitos há', () => {
+  const jeitos = calc(PERFIL);
+  const texto = anuncioDoResultado(jeitos, { nomeLoja: 'Loja A', valorTexto: 'R$ 100,00' });
+  assert.match(texto, /^Resultado para R\$ 100,00 na Loja A\. O melhor jeito rende /);
+  assert.match(texto, /Compre na Loja A pela oferta do Programa B e pague com o cartão Cartão A\./);
+  assert.match(texto, /Há mais 1 jeito logo abaixo\.$/);
+  const [semOferta] = calc({ programas: [{ programa_id: 'prog-a', clube_ativo: false }], cartoes: ['cartao-a'] }, 10000)
+    .filter((j) => j.tipo !== 'oferta');
+  assert.equal(
+    anuncioDoResultado([semOferta], { nomeLoja: 'Loja A', valorTexto: 'R$ 100,00' }),
+    'Resultado para R$ 100,00 na Loja A. A Loja A não tem oferta de pontos valendo hoje. O melhor jeito rende R$ 4,00 em pontos (200 pontos). ' +
+    'Compre direto na Loja A e pague com o cartão Cartão A. Os pontos vão para o Programa A.',
+  );
+});
+
 test('validade: da oferta, ou explica que é ponto de sempre do cartão', () => {
   const [comOferta, semOferta] = calc(PERFIL);
   assert.equal(textoValidade(comOferta), 'Validade da oferta: de 01/11/2026 até 30/11/2026.');
@@ -186,12 +201,22 @@ test('tela não usa innerHTML, outerHTML, insertAdjacentHTML nem document.write'
 // ---------------------------------------------------------------------------
 // Cópia dos dados para o site
 
-test('copiar dados leva os 4 arquivos para a pasta do site', async () => {
+test('copiar dados leva os 5 arquivos para a pasta do site', async () => {
   const destino = await mkdtemp(join(tmpdir(), 'dados-'));
   const n = await copiarDados(new URL('../dados/', import.meta.url), pathToFileURL(`${destino}/`));
-  assert.equal(n, 4);
+  assert.equal(n, 5);
   for (const nome of ARQUIVOS) {
     const original = await readFile(new URL(`../dados/${nome}`, import.meta.url), 'utf8');
     assert.equal(await readFile(join(destino, nome), 'utf8'), original);
   }
+});
+
+test('máscara da cotação do dólar: 4 casas, jeito caixa eletrônico', async () => {
+  const { mascaraCotacao } = await import('../site/js/tela/moeda.js');
+  assert.deepEqual(mascaraCotacao(''), { valor: null, texto: '' });
+  assert.deepEqual(mascaraCotacao('000'), { valor: null, texto: '' });
+  assert.deepEqual(mascaraCotacao('5'), { valor: 5, texto: '0,0005' });
+  assert.deepEqual(mascaraCotacao('5,3456'), { valor: 53456, texto: '5,3456' });
+  assert.deepEqual(mascaraCotacao('R$ 12.3456x'), { valor: 123456, texto: '12,3456' });
+  assert.deepEqual(mascaraCotacao('99999999'), { valor: 999999, texto: '99,9999' }); // corta no máximo
 });

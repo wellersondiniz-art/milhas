@@ -12,12 +12,12 @@ import { abrirArmazem } from './perfil/armazem.js';
 import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
 import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
-import { agoraLocal } from './tela/textos.js';
+import { agoraLocal, anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { maisAntiga } from './pwa/textos.js';
 
-const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas'];
+const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
 
 const $ = (id) => document.getElementById(id);
 const formulario = $('formulario');
@@ -31,6 +31,7 @@ const botaoVer = $('ver-resultado');
 const passoResultado = $('passo-resultado');
 const titulo = $('resultado-titulo');
 const resultado = $('resultado');
+const anuncio = $('resultado-anuncio');
 const convite = $('convite-perfil');
 const telaInicio = $('tela-inicio');
 const telaPerfil = $('tela-perfil');
@@ -76,9 +77,19 @@ function marcarErro(campo, caixa, mensagem) {
 // ---------------------------------------------------------------------------
 // Passo 3: resultado
 
+// Região role="status": o leitor de tela lê o texto quando ele muda.
+// Esvazia antes e escreve depois de um instante, para repetir o aviso
+// mesmo quando o texto é igual ao anterior.
+let esperaAnuncio = 0;
+function anunciar(texto) {
+  clearTimeout(esperaAnuncio);
+  anuncio.textContent = '';
+  if (texto) esperaAnuncio = setTimeout(() => { anuncio.textContent = texto; }, 150);
+}
+
 function perfilDaConta() {
   return ehVazio(perfilSalvo)
-    ? { perfil: perfilDeTodos(dados), semPerfil: true }
+    ? { perfil: perfilDeTodos(dados, perfilSalvo?.cotacao_dolar), semPerfil: true }
     : { perfil: perfilParaConta(perfilSalvo), semPerfil: false };
 }
 
@@ -100,6 +111,15 @@ function calcular({ focar } = { focar: true }) {
   if (passoValor.hidden) { passoValor.hidden = false; campoValor.focus(); return; }
   if (problemaValor) { if (focar) campoValor.focus(); return; }
 
+  // Lojas já chegaram, mas programas, cartões ou ofertas ainda não:
+  // mostra "carregando" e faz a conta assim que chegarem.
+  if (!dados) {
+    calcularQuandoChegar = true;
+    mostrarCarregando('Só um instante, buscando as ofertas…');
+    if (focar) titulo.focus();
+    return;
+  }
+
   const valorTexto = formatarCentavos(centavos);
   passoResultado.hidden = false;
   mostrandoResultado = true;
@@ -113,7 +133,9 @@ function calcular({ focar } = { focar: true }) {
       agoraLocal(new Date()),
     );
     resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil }));
+    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
   } catch (erro) {
+    anunciar('');
     console.error(erro);
     mostrarErro('Não deu para calcular', 'Algo nos dados ou no valor não fechou. Confira o valor e tente de novo. Se continuar, o problema é nosso.', () => calcular());
   }
@@ -194,34 +216,51 @@ window.addEventListener('hashchange', aoMudarRota);
 
 // ---------------------------------------------------------------------------
 // Carregar os dados
+//
+// Os quatro arquivos são pedidos juntos, mas a tela não espera todos:
+// com dados/lojas.json o campo da loja já fica liberado (passo 1). Programas,
+// cartões e ofertas chegam por trás e só fazem falta na hora da conta ou na
+// tela do perfil. Em rede lenta, a pessoa vai digitando enquanto o resto chega.
+// O index.html já pede dados/lojas.json com <link rel="preload">, junto com o JS.
 
-async function carregar() {
-  campoLoja.disabled = true;
-  botaoVer.disabled = true;
+/** Busca dados/<nome>.json. Devolve { lista, salvoEm }. */
+async function buscarLista(nome) {
+  const resposta = await fetch(`dados/${nome}.json`, { cache: 'no-cache' });
+  if (!resposta.ok) throw new Error(`dados/${nome}.json respondeu ${resposta.status}`);
+  // Veio da cópia guardada pelo service worker? Ele marca a hora em X-Salvo-Em.
+  const salvoEm = resposta.headers.get('X-Salvo-Em');
+  const lista = await resposta.json();
+  if (!Array.isArray(lista)) throw new Error(`dados/${nome}.json não é uma lista`);
+  return { lista, salvoEm };
+}
+
+let calcularQuandoChegar = false;
+
+function mostrarCarregando(texto) {
   passoResultado.hidden = false;
-  titulo.textContent = 'Carregando as lojas e ofertas…';
+  titulo.textContent = texto;
   resultado.setAttribute('aria-busy', 'true');
   resultado.replaceChildren(montarCarregando());
-  try {
-    const salvosEm = [];
-    const listas = await Promise.all(ARQUIVOS.map(async (nome) => {
-      const resposta = await fetch(`dados/${nome}.json`, { cache: 'no-cache' });
-      if (!resposta.ok) throw new Error(`dados/${nome}.json respondeu ${resposta.status}`);
-      // Veio da cópia guardada pelo service worker? Ele marca a hora em X-Salvo-Em.
-      salvosEm.push(resposta.headers.get('X-Salvo-Em'));
-      const lista = await resposta.json();
-      if (!Array.isArray(lista)) throw new Error(`dados/${nome}.json não é uma lista`);
-      return lista;
-    }));
-    dados = Object.fromEntries(ARQUIVOS.map((nome, i) => [nome, listas[i]]));
-    pwa.definirDadosSalvosEm(maisAntiga(salvosEm));
-  } catch (erro) {
-    console.error(erro);
-    titulo.textContent = 'Não deu para carregar';
-    mostrarErro('A internet falhou ou o site está fora do ar', 'Não conseguimos buscar as lojas e ofertas. Confira a sua internet e tente de novo.', () => carregar());
-    return;
-  }
-  busca.definirLojas(dados.lojas);
+}
+
+function esconderCarregando() {
+  resultado.removeAttribute('aria-busy');
+  resultado.replaceChildren();
+  passoResultado.hidden = true;
+}
+
+function falhouCarga(erro) {
+  console.error(erro);
+  calcularQuandoChegar = false;
+  passoResultado.hidden = false;
+  titulo.textContent = 'Não deu para carregar';
+  mostrarErro('A internet falhou ou o site está fora do ar', 'Não conseguimos buscar as lojas e ofertas. Confira a sua internet e tente de novo.', () => carregar());
+}
+
+/** Programas, cartões e ofertas chegaram: monta perfil e conta. */
+function aoChegaremOsDados(pedidos) {
+  dados = Object.fromEntries(ARQUIVOS.map((nome, i) => [nome, pedidos[i].lista]));
+  pwa.definirDadosSalvosEm(maisAntiga(pedidos.map((p) => p.salvoEm)));
   perfilSalvo = armazem.ler(dados);
   telaDoPerfil = montarTelaPerfil({
     elementos: {
@@ -243,16 +282,44 @@ async function carregar() {
     definirPerfil,
   });
   mostrarConvite();
+  if (calcularQuandoChegar) {
+    calcularQuandoChegar = false;
+    calcular();
+  }
+  // Quem abriu direto em "Meu perfil" estava esperando os dados. Na tela
+  // inicial não mexe: a pessoa pode estar digitando no campo da loja.
+  if (rotaAtual() === 'perfil') aoMudarRota();
+}
+
+async function carregar() {
+  campoLoja.disabled = true;
+  botaoVer.disabled = true;
+  mostrarCarregando('Carregando as lojas e ofertas…');
+  const pedidos = ARQUIVOS.map((nome) => buscarLista(nome));
+  // Quem falhar é tratado abaixo; isto só evita o aviso de "promessa sem catch".
+  for (const p of pedidos) p.catch(() => {});
+
+  let lojas;
+  try {
+    lojas = await pedidos[ARQUIVOS.indexOf('lojas')];
+  } catch (erro) {
+    falhouCarga(erro);
+    return;
+  }
+  busca.definirLojas(lojas.lista);
   campoLoja.disabled = false;
   botaoVer.disabled = false;
-  resultado.removeAttribute('aria-busy');
-  resultado.replaceChildren();
-  passoResultado.hidden = true;
+  esconderCarregando();
   ajudaValor.textContent = 'Só números. Os centavos entram sozinhos: para R$ 1.299,00, digite 129900.';
   // Vindo de uma página de loja ("?loja=magalu"), a loja já chega escolhida.
   const lojaDaUrl = new URLSearchParams(location.search).get('loja');
   if (lojaDaUrl && rotaAtual() === 'inicio') busca.escolherPorId(lojaDaUrl);
-  aoMudarRota();
+
+  try {
+    aoChegaremOsDados(await Promise.all(pedidos));
+  } catch (erro) {
+    falhouCarga(erro);
+  }
 }
 
 const pwa = iniciarPwa({ avisoVersao: $('aviso-versao'), avisoConexao: $('aviso-conexao') });

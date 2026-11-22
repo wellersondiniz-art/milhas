@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Servidor estático só para os testes no navegador (não vai para o site).
 //
-// Serve a pasta do site (padrão: site/; com PASTA_DO_SITE=dist serve o build
-// minificado) e aplica os cabeçalhos de site/_headers, como a Cloudflare
-// Pages faz. Assim os testes pegam erro de CSP. Fora do HTTPS, tira só o que
+// Serve a pasta publicada (padrão: dist/, a mesma da Cloudflare Pages; com
+// PASTA_DO_SITE=site serve os arquivos-fonte) e aplica os cabeçalhos de
+// _headers, como a Cloudflare Pages faz. Assim os testes pegam erro de CSP. Fora do HTTPS, tira só o que
 // obriga HTTPS (HSTS e upgrade-insecure-requests).
 //
 // Uso: node testes/navegador/servidor.mjs   (porta: PORTA, padrão 4173)
@@ -14,7 +14,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
-const PASTA = resolve(RAIZ, process.env.PASTA_DO_SITE || 'site');
+const PASTA = resolve(RAIZ, process.env.PASTA_DO_SITE || 'dist');
 const PORTA = Number(process.env.PORTA || 4173);
 
 const TIPOS = {

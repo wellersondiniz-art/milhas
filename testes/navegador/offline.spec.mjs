@@ -1,9 +1,13 @@
 // Fluxo 3: instalar e usar sem internet (PWA).
 // Usa o site montado de verdade (npm run build), com o service worker ligado
 // e os dados reais do repositório.
+import { readdir } from 'node:fs/promises';
 import { abrirInicio, cartoesDoResultado, expect, test } from './apoio.mjs';
 
 /** Abre o site e espera o service worker assumir a página e guardar os dados. */
+/** Quantos arquivos de dados o site publica (dist/dados/*.json). */
+const arquivosDeDados = async () => (await readdir(new URL('../../dist/dados/', import.meta.url))).filter((n) => n.endsWith('.json')).length;
+
 async function abrirComServiceWorker(page) {
   await abrirInicio(page);
   await page.evaluate(async () => { await navigator.serviceWorker.ready; });
@@ -16,7 +20,7 @@ async function abrirComServiceWorker(page) {
     const nomes = await caches.keys();
     const dados = nomes.find((n) => n === 'milhas-dados');
     return dados ? (await (await caches.open(dados)).keys()).length : 0;
-  })).toBe(4);
+  })).toBe(await arquivosDeDados());
 }
 
 test('dá para instalar: manifesto, ícones e service worker do jeito que o Chrome pede', async ({ page, request }) => {

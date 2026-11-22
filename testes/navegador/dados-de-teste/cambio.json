@@ -1,0 +1,12 @@
+[
+  {
+    "id": "usd-brl",
+    "moeda": "USD",
+    "reais_por_dolar": "A_CONFIRMAR",
+    "origem": "ptax",
+    "data_referencia": "A_CONFIRMAR",
+    "observacoes": "Dado de teste. Os cartões de teste usam pontos por real, então a cotação não entra na conta.",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05"
+  }
+]

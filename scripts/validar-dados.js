@@ -10,7 +10,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas'];
+export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const PASTA_DADOS = new URL('../dados/', import.meta.url);
 
@@ -201,6 +201,12 @@ function regrasExtras(dados, hoje) {
     }
     if (p.valor_milheiro_origem === 'estimativa_editavel') {
       avisos.push(`programa ${JSON.stringify(p.id)}: valor do milheiro é estimativa editável, não valor confirmado`);
+    }
+  });
+
+  (dados.cambio ?? []).forEach((c) => {
+    if (c.reais_por_dolar === A_CONFIRMAR) {
+      avisos.push(`câmbio ${JSON.stringify(c.id)}: cotação está "A_CONFIRMAR"; cartões com pontos por dólar só contam se a pessoa informar a cotação`);
     }
   });
 

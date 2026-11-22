@@ -82,3 +82,19 @@ export function palavrasQueAparecem(jeitos) {
   const tudo = JSON.stringify(jeitos.map((j) => [j.condicoes_a_cumprir, j.explicacao, j.avisos, j.o_que_voce_ganharia_se.map((h) => h.texto)]));
   return { clube: /clube/i.test(tudo), milheiro: /milheiro/i.test(tudo) };
 }
+
+/**
+ * Frase curta para o leitor de tela quando o resultado fica pronto:
+ * o número do melhor jeito e como comprar. O resto está na tela, em ordem.
+ */
+export function anuncioDoResultado(jeitos, { nomeLoja, valorTexto }) {
+  const [melhor] = jeitos;
+  if (!melhor) return `Resultado para ${valorTexto} na ${nomeLoja}: nenhum jeito de comprar encontrado.`;
+  const destaque = destaqueDoJeito(melhor);
+  const numero = destaque.emReais
+    ? `${destaque.principal} em pontos (${pontos(melhor.total_pontos_texto)})`
+    : destaque.principal.toLowerCase();
+  const semOferta = jeitos.some((j) => j.tipo === 'oferta') ? '' : ` A ${nomeLoja} não tem oferta de pontos valendo hoje.`;
+  const outros = jeitos.length > 1 ? ` Há mais ${jeitos.length - 1} ${jeitos.length === 2 ? 'jeito' : 'jeitos'} logo abaixo.` : '';
+  return `Resultado para ${valorTexto} na ${nomeLoja}.${semOferta} O melhor jeito rende ${numero}. ${fraseDoJeito(melhor, nomeLoja)}${outros}`;
+}

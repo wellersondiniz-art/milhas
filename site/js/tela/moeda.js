@@ -3,7 +3,8 @@
 // Funciona como caixa eletrônico: cada dígito entra pela direita
 // ("1" → 0,01; "12" → 0,12; "129900" → 1.299,00).
 
-import { formatarCentavos } from '../motor/index.js';
+import { formatarCentavos, formatarCotacao } from '../motor/index.js';
+import { COTACAO_MAXIMA } from '../perfil/formato.js';
 
 /** Até 11 dígitos: R$ 999.999.999,99. Bem abaixo do limite do motor. */
 export const MAX_DIGITOS = 11;
@@ -33,4 +34,18 @@ export function erroDoValor(centavos) {
   if (centavos === null) return 'Digite quanto vai custar a compra.';
   if (centavos === 0) return 'O valor precisa ser maior que zero.';
   return '';
+}
+
+const DIGITOS_COTACAO = String(COTACAO_MAXIMA).length;
+
+/**
+ * Máscara da cotação do dólar, no mesmo jeito caixa eletrônico, com 4 casas:
+ * "5" → 0,0005; "53456" → 5,3456. Devolve { valor (reais × 10.000) | null, texto }.
+ * Vazio ou só zeros dá null: sem cotação.
+ */
+export function mascaraCotacao(texto) {
+  const digitos = String(texto ?? '').replace(/\D/g, '').replace(/^0+/, '').slice(0, DIGITOS_COTACAO);
+  if (!digitos) return { valor: null, texto: '' };
+  const valor = Number(digitos);
+  return { valor, texto: formatarCotacao(valor).replace(/^R\$\s/, '') };
 }

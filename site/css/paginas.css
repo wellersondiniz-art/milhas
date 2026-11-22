@@ -34,12 +34,18 @@
 }
 
 .pagina__lojas > li {
-  padding: var(--espaco-3) var(--espaco-4);
+  padding: var(--espaco-1) var(--espaco-4);
   border-bottom: 1px solid var(--cor-borda);
 }
 
 .pagina__lojas > li:last-child { border-bottom: 0; }
-.pagina__lojas a { font-weight: var(--peso-forte); }
+.pagina__lojas a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--alvo-minimo);
+  min-width: var(--alvo-minimo);
+  font-weight: var(--peso-forte);
+}
 
 .card .tabela tr { background: var(--cor-superficie-2); }
 .lista-conta dd { overflow-wrap: anywhere; }

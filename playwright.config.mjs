@@ -4,8 +4,9 @@
 // - Regressão visual (fotos de referência): testes/navegador/fotos.spec.mjs
 //
 // Cada teste roda duas vezes: no "celular" (tela de 412 px, toque) e no
-// "computador" (1280 × 800). O site é montado (npm run build) e servido por
-// testes/navegador/servidor.mjs, com os cabeçalhos de site/_headers.
+// "computador" (1280 × 800). O site é montado (npm run build) e a pasta dist/,
+// a mesma que vai para o ar, é servida por testes/navegador/servidor.mjs, com
+// os cabeçalhos de _headers.
 import { defineConfig, devices } from '@playwright/test';
 
 const PORTA = Number(process.env.PORTA || 4173);

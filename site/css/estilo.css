@@ -46,7 +46,7 @@ main {
 
 .topo__marca:focus-visible,
 .topo__link:focus-visible {
-  outline: 3px solid var(--cor-destaque);
+  outline: 3px solid var(--cor-foco-topo);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
@@ -72,7 +72,7 @@ main {
 
 .topo__link[aria-current="page"] {
   font-weight: var(--peso-extra);
-  border-bottom-color: var(--cor-destaque);
+  border-bottom-color: var(--cor-foco-topo);
 }
 
 .rodape {
@@ -149,6 +149,11 @@ main {
 .busca__opcao[aria-selected="true"] {
   background: var(--cor-primaria);
   color: var(--cor-sobre-primaria);
+}
+
+/* No alto contraste do sistema o fundo some: a opção ativa ganha contorno. */
+@media (forced-colors: active) {
+  .busca__opcao[aria-selected="true"] { outline: 3px solid Highlight; outline-offset: -3px; }
 }
 
 .busca__vazio { color: var(--cor-texto-suave); }
@@ -243,7 +248,11 @@ main {
 
 .perfil__termos { padding-bottom: var(--espaco-2); }
 
-/* Fica à vista no pé da tela enquanto a pessoa marca, até o fim do formulário. */
+/* Fica à vista no pé da tela enquanto a pessoa marca, até o fim do formulário.
+   Para não cobrir o campo com foco (zoom alto, tela baixa), a página deixa
+   uma folga no pé ao rolar até o foco; em tela baixa, o aviso não gruda. */
+html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
+
 .perfil__status {
   position: sticky;
   z-index: 2;
@@ -255,6 +264,10 @@ main {
   color: var(--cor-sucesso-texto);
   font-weight: var(--peso-forte);
   box-shadow: var(--sombra-2);
+}
+
+@media (max-height: 30rem) {
+  .perfil__status { position: static; }
 }
 
 .privacidade {

@@ -73,7 +73,7 @@ test('html: nome de tag ou atributo vindo de dado é recusado', () => {
 
 test('html: link externo só para http(s)', () => {
   assert.equal(linkExterno('javascript:alert(1)', 'fonte').toString(), 'fonte');
-  assert.match(linkExterno('https://a.com', 'fonte').toString(), /^<a href="https:\/\/a.com" rel="noopener noreferrer nofollow">/);
+  assert.match(linkExterno('https://a.com', 'fonte').toString(), /^<a href="https:\/\/a.com" rel="noopener noreferrer nofollow" class="alvo-toque">/);
 });
 
 test('html: JSON-LD não fecha a tag script mesmo com dado malicioso', () => {

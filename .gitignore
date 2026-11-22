@@ -33,6 +33,7 @@ service-account*.json
 
 # Dependências e build
 node_modules/
+# dist/ é a pasta publicada, gerada por npm run build (scripts/publicar/montar-dist.js)
 dist/
 build/
 .cache/
