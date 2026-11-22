@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "azul-itau",
+    "nome": "Azul Itaú",
+    "emissor": "Itaú",
+    "bandeira": "A_CONFIRMAR",
+    "programa_id": "azul-fidelidade",
+    "pontos_por_real": "A_CONFIRMAR",
+    "anuidade_brl": "A_CONFIRMAR",
+    "observacoes": "Registro genérico, criado para a oferta de exemplo. A fonte cita as versões Visa Infinite, Mastercard Skyline e Visa Platinum.",
+    "fonte_url": "https://passageirodeprimeira.com/?p=581107",
+    "verificado_em": "2026-11-22",
+    "status": "A_CONFIRMAR"
+  }
+]

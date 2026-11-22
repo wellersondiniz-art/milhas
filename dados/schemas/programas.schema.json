@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "programas.schema.json",
+  "title": "Programas de fidelidade",
+  "description": "Lista de programas de fidelidade (milhas, pontos ou cashback).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "nome", "tipo", "valor_milheiro_brl", "url", "fonte_url", "verificado_em"],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "nome": { "type": "string", "minLength": 1 },
+      "tipo": {
+        "anyOf": [
+          { "enum": ["milhas", "pontos", "cashback"] },
+          { "$ref": "#/$defs/a_confirmar" }
+        ]
+      },
+      "valor_milheiro_brl": {
+        "description": "Quanto valem 1.000 pontos, em CENTAVOS inteiros (2000 = R$ 20,00). O usuário poderá editar.",
+        "anyOf": [
+          { "type": "integer", "minimum": 0 },
+          { "$ref": "#/$defs/a_confirmar" }
+        ]
+      },
+      "url": {
+        "description": "Site do programa.",
+        "anyOf": [{ "$ref": "#/$defs/url" }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Letras minúsculas, números e hífen (ex.: azul-fidelidade).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" }
+  }
+}

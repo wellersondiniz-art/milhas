@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cartoes.schema.json",
+  "title": "Cartões de crédito",
+  "description": "Lista de cartões, escolhidos pelo nome (nunca pelo número).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id", "nome", "emissor", "bandeira", "programa_id", "pontos_por_real",
+      "anuidade_brl", "observacoes", "fonte_url", "verificado_em", "status"
+    ],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "nome": { "type": "string", "minLength": 1 },
+      "emissor": { "$ref": "#/$defs/texto" },
+      "bandeira": { "$ref": "#/$defs/texto" },
+      "programa_id": {
+        "description": "id de um registro de programas.json.",
+        "$ref": "#/$defs/id"
+      },
+      "pontos_por_real": {
+        "description": "Pontos por real em compra nacional.",
+        "$ref": "#/$defs/pontos_ou_a_confirmar"
+      },
+      "pontos_por_dolar": {
+        "description": "Opcional. Pontos por dólar.",
+        "$ref": "#/$defs/pontos_ou_a_confirmar"
+      },
+      "anuidade_brl": {
+        "description": "Anuidade em CENTAVOS inteiros (12990 = R$ 129,90).",
+        "anyOf": [
+          { "type": "integer", "minimum": 0 },
+          { "$ref": "#/$defs/a_confirmar" }
+        ]
+      },
+      "observacoes": { "type": "string" },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" },
+      "status": { "enum": ["confirmado", "A_CONFIRMAR"] }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Letras minúsculas, números e hífen (ex.: azul-itau).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" },
+    "texto": { "type": "string", "minLength": 1 },
+    "pontos_ou_a_confirmar": {
+      "anyOf": [
+        { "type": "number", "minimum": 0 },
+        { "$ref": "#/$defs/a_confirmar" }
+      ]
+    }
+  }
+}

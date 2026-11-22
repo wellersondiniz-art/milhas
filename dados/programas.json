@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "azul-fidelidade",
+    "nome": "Azul Fidelidade",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "A_CONFIRMAR",
+    "fonte_url": "https://passageirodeprimeira.com/?p=581107",
+    "verificado_em": "2026-11-22"
+  }
+]
