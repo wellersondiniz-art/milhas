@@ -22,6 +22,19 @@ import { minificarCss, minificarHtml, minificarJs } from './minificar.js';
 
 const RAIZ = new URL('../../', import.meta.url);
 
+/**
+ * Arquivos de site/ que não vão para o ar. A vitrine de estilo é só para quem
+ * desenvolve (abra com npm run servir:fonte); publicada, só aumentaria o que
+ * fica exposto sem servir a ninguém.
+ */
+export const FORA_DO_AR = ['estilo.html', 'js/vitrine.js', 'css/vitrine.css'];
+
+/** O arquivo (caminho dentro de site/, com "/") fica fora de dist/? */
+export function ficaForaDoAr(caminho) {
+  return caminho.endsWith('/sw.js') || caminho === 'sw.js' || caminho.endsWith('.gitkeep')
+    || FORA_DO_AR.some((f) => caminho === f || caminho.endsWith(`/${f}`));
+}
+
 async function listar(pasta) {
   const itens = await readdir(pasta, { withFileTypes: true, recursive: true });
   const base = fileURLToPath(pasta);
@@ -125,7 +138,8 @@ export async function prepararPagina(pasta, paginaRel, html) {
 
 export async function montarDist(origem = new URL('site/', RAIZ), destino = new URL('dist/', RAIZ)) {
   await rm(destino, { recursive: true, force: true });
-  await cp(origem, destino, { recursive: true, filter: (f) => !f.endsWith('/sw.js') && !f.endsWith('.gitkeep') });
+  const base = fileURLToPath(origem).replace(/\/+$/, '');
+  await cp(origem, destino, { recursive: true, filter: (f) => !ficaForaDoAr(f.slice(base.length).replace(/^\/+/, '')) });
   const arquivos = await listar(destino);
 
   // Primeiro o JS, porque o grafo de módulos é lido dos arquivos já minificados.
