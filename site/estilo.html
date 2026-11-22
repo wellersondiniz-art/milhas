@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Guia de estilo · comprador de milhas</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/vitrine.css">
+  <script type="module" src="js/vitrine.js"></script>
+</head>
+<body>
+  <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="vitrine-topo">
+    <div class="container container--largo linha vitrine-topo__linha">
+      <p class="vitrine-marca">comprador de milhas <span class="texto-suave">· guia de estilo</span></p>
+      <button type="button" class="botao botao--secundario" id="trocar-tema">Ver tema escuro</button>
+    </div>
+  </header>
+
+  <main id="conteudo" class="container container--largo pilha--lg">
+    <section class="pilha">
+      <h1>Componentes do site</h1>
+      <p class="texto-suave">Página de vitrine. Os nomes de loja, programa e cartão abaixo são exemplos, não ofertas reais.</p>
+    </section>
+
+    <!-- Cores -->
+    <section class="pilha" aria-labelledby="t-cores">
+      <h2 id="t-cores">Cores</h2>
+      <ul class="vitrine-cores">
+        <li><span class="vitrine-amostra vitrine-amostra--primaria"></span>Primária</li>
+        <li><span class="vitrine-amostra vitrine-amostra--destaque"></span>Destaque</li>
+        <li><span class="vitrine-amostra vitrine-amostra--fundo"></span>Fundo</li>
+        <li><span class="vitrine-amostra vitrine-amostra--superficie"></span>Superfície</li>
+        <li><span class="vitrine-amostra vitrine-amostra--texto"></span>Texto</li>
+        <li><span class="vitrine-amostra vitrine-amostra--sucesso"></span>Sucesso</li>
+        <li><span class="vitrine-amostra vitrine-amostra--aviso"></span>Aviso</li>
+        <li><span class="vitrine-amostra vitrine-amostra--perigo"></span>Perigo</li>
+      </ul>
+    </section>
+
+    <!-- Tipografia -->
+    <section class="pilha" aria-labelledby="t-tipo">
+      <h2 id="t-tipo">Tipografia</h2>
+      <div class="card pilha--sm">
+        <p class="card__valor">R$ 1.234,56</p>
+        <h1>Título da página</h1>
+        <h2>Título de seção</h2>
+        <h3>Título de card</h3>
+        <p>Texto corrido. Frases curtas, falando com você, com foco no dinheiro que volta.</p>
+        <p class="texto-suave texto-pequeno">Texto de apoio, para datas e fontes.</p>
+      </div>
+    </section>
+
+    <!-- Card de resultado -->
+    <section class="pilha" aria-labelledby="t-card">
+      <h2 id="t-card">Card de resultado</h2>
+      <div class="grade grade--2">
+        <article class="card card--destaque" aria-labelledby="r1-valor">
+          <div class="card__topo">
+            <span class="selo selo--destaque">★ Melhor escolha</span>
+            <span class="selo selo--aviso">Vence em 2 dias</span>
+          </div>
+          <p class="card__valor" id="r1-valor">R$ 259,80</p>
+          <p class="card__legenda">de volta em milhas nesta compra</p>
+          <div class="card__bloco">
+            <p>Compre na <strong>Loja Exemplo</strong> pelo <strong>Programa A</strong>, pagando com o <strong>Cartão B Platinum</strong>.</p>
+            <p class="texto-suave texto-pequeno numeros">12.990 pontos · 10 pontos por real</p>
+          </div>
+          <details class="termo vitrine-termo">
+            <summary>Como chegamos nesse valor?</summary>
+            <dl class="lista-conta termo__texto">
+              <div><dt>Valor da compra</dt><dd>R$ 1.299,00</dd></div>
+              <div><dt>Pontos por real</dt><dd>10</dd></div>
+              <div><dt>Pontos ganhos</dt><dd>12.990</dd></div>
+              <div><dt>Valor do milheiro</dt><dd>R$ 20,00</dd></div>
+              <div><dt>Vale em reais</dt><dd>R$ 259,80</dd></div>
+            </dl>
+          </details>
+          <div class="card__acoes">
+            <a class="botao botao--bloco" href="#t-card">Ver como ganhar</a>
+          </div>
+        </article>
+
+        <article class="card" aria-labelledby="r2-valor">
+          <div class="card__topo">
+            <span class="selo">2ª opção</span>
+            <span class="selo selo--info">Precisa de clube</span>
+          </div>
+          <p class="card__valor" id="r2-valor">R$ 194,85</p>
+          <p class="card__legenda">de volta em milhas nesta compra</p>
+          <div class="card__bloco">
+            <p>Compre na <strong>Loja Exemplo</strong> pelo <strong>Programa C</strong>, pagando com o <strong>Cartão D Gold</strong>.</p>
+            <p class="texto-suave texto-pequeno numeros">9.742 pontos · 7,5 pontos por real</p>
+          </div>
+          <div class="card__acoes">
+            <a class="botao botao--secundario botao--bloco" href="#t-card">Ver como ganhar</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Termos -->
+    <section class="pilha" aria-labelledby="t-termos">
+      <h2 id="t-termos">Termo explicado</h2>
+      <p class="texto-suave">Para milheiro, clube e bônus na primeira vez que aparecem na tela.</p>
+      <details class="termo">
+        <summary>O que é milheiro?</summary>
+        <p class="termo__texto">É o preço de 1.000 milhas. Se o milheiro vale R$ 20,00, cada 1.000 pontos que você ganha valem R$ 20,00.</p>
+      </details>
+      <details class="termo">
+        <summary>O que é clube?</summary>
+        <p class="termo__texto">É uma assinatura mensal do programa de fidelidade. Quem assina costuma ganhar mais pontos por real nas lojas parceiras.</p>
+      </details>
+    </section>
+
+    <!-- Botões -->
+    <section class="pilha" aria-labelledby="t-botoes">
+      <h2 id="t-botoes">Botões</h2>
+      <div class="linha">
+        <button type="button" class="botao">Comparar</button>
+        <button type="button" class="botao botao--secundario">Mudar cartões</button>
+        <button type="button" class="botao botao--fantasma">Limpar</button>
+        <button type="button" class="botao" disabled>Indisponível</button>
+      </div>
+    </section>
+
+    <!-- Campos -->
+    <section class="pilha" aria-labelledby="t-campos">
+      <h2 id="t-campos">Campos</h2>
+      <form class="card pilha vitrine-form" action="#" novalidate>
+        <div class="campo">
+          <label class="campo__rotulo" for="c-loja">Loja</label>
+          <select class="campo__entrada" id="c-loja" aria-describedby="c-loja-ajuda">
+            <option>Loja Exemplo</option>
+            <option>Outra loja</option>
+          </select>
+          <span class="campo__ajuda" id="c-loja-ajuda">Onde você vai comprar.</span>
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="c-valor">Valor da compra</label>
+          <div class="campo__moeda">
+            <input class="campo__entrada" id="c-valor" inputmode="decimal" autocomplete="off" placeholder="0,00" value="1.299,00">
+          </div>
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="c-erro">Valor da compra (com erro)</label>
+          <div class="campo__moeda">
+            <input class="campo__entrada" id="c-erro" inputmode="decimal" autocomplete="off" value="abc" aria-invalid="true" aria-describedby="c-erro-msg">
+          </div>
+          <span class="campo__erro" id="c-erro-msg">Digite só números, como 129,90.</span>
+        </div>
+        <fieldset class="grupo">
+          <legend class="campo__rotulo">Seus cartões</legend>
+          <label class="opcao"><input type="checkbox" checked> Cartão B Platinum</label>
+          <label class="opcao"><input type="checkbox"> Cartão D Gold</label>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- Selos -->
+    <section class="pilha" aria-labelledby="t-selos">
+      <h2 id="t-selos">Selos</h2>
+      <div class="linha">
+        <span class="selo selo--destaque">★ Melhor escolha</span>
+        <span class="selo selo--aviso">Vence em 2 dias</span>
+        <span class="selo selo--perigo">Vence hoje</span>
+        <span class="selo selo--sucesso">Bônus de 20%</span>
+        <span class="selo selo--info">Precisa de clube</span>
+        <span class="selo">Conferido em 20/11</span>
+      </div>
+    </section>
+
+    <!-- Alertas -->
+    <section class="pilha" aria-labelledby="t-alertas">
+      <h2 id="t-alertas">Alertas</h2>
+      <div class="alerta" role="note">
+        <span class="alerta__icone" aria-hidden="true">i</span>
+        <div class="alerta__corpo"><strong class="alerta__titulo">Dica</strong>Os pontos podem levar até 30 dias para cair na sua conta.</div>
+      </div>
+      <div class="alerta alerta--sucesso" role="status">
+        <span class="alerta__icone" aria-hidden="true">✓</span>
+        <div class="alerta__corpo"><strong class="alerta__titulo">Preferências salvas</strong>Elas ficam só neste aparelho.</div>
+      </div>
+      <div class="alerta alerta--aviso" role="note">
+        <span class="alerta__icone" aria-hidden="true">!</span>
+        <div class="alerta__corpo"><strong class="alerta__titulo">Oferta acaba em breve</strong>Esta oferta vence em 2 dias.</div>
+      </div>
+      <div class="alerta alerta--perigo" role="alert">
+        <span class="alerta__icone" aria-hidden="true">×</span>
+        <div class="alerta__corpo"><strong class="alerta__titulo">Não deu para calcular</strong>Confira o valor da compra e tente de novo.</div>
+      </div>
+    </section>
+
+    <!-- Tabela -->
+    <section class="pilha" aria-labelledby="t-tabela">
+      <h2 id="t-tabela">Tabela responsiva</h2>
+      <p class="texto-suave">No celular, cada linha vira um bloco. Em telas maiores, vira tabela.</p>
+      <table class="tabela">
+        <caption>Comparação para R$ 1.299,00 na Loja Exemplo</caption>
+        <thead>
+          <tr>
+            <th scope="col">Programa</th>
+            <th scope="col">Cartão</th>
+            <th scope="col" class="numero">Pontos</th>
+            <th scope="col" class="numero">Vale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="tabela__melhor">
+            <td data-rotulo="Programa">Programa A</td>
+            <td data-rotulo="Cartão">Cartão B Platinum</td>
+            <td data-rotulo="Pontos" class="numero">12.990</td>
+            <td data-rotulo="Vale" class="numero">R$ 259,80</td>
+          </tr>
+          <tr>
+            <td data-rotulo="Programa">Programa C</td>
+            <td data-rotulo="Cartão">Cartão D Gold</td>
+            <td data-rotulo="Pontos" class="numero">9.742</td>
+            <td data-rotulo="Vale" class="numero">R$ 194,85</td>
+          </tr>
+          <tr>
+            <td data-rotulo="Programa">Programa E</td>
+            <td data-rotulo="Cartão">Cartão B Platinum</td>
+            <td data-rotulo="Pontos" class="numero">3.897</td>
+            <td data-rotulo="Vale" class="numero">só pontos</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Esqueleto -->
+    <section class="pilha" aria-labelledby="t-esqueleto">
+      <h2 id="t-esqueleto">Esqueleto de carregamento</h2>
+      <div class="card pilha--sm" aria-busy="true" aria-label="Calculando resultado">
+        <span class="esqueleto esqueleto--curta"></span>
+        <span class="esqueleto esqueleto--valor"></span>
+        <span class="esqueleto esqueleto--linha"></span>
+        <span class="esqueleto esqueleto--linha esqueleto--curta"></span>
+        <span class="esqueleto esqueleto--botao"></span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container container--largo vitrine-rodape">
+    <p class="texto-suave texto-pequeno">Fontes do sistema, sem nada de terceiros.</p>
+  </footer>
+</body>
+</html>

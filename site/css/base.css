@@ -1,0 +1,805 @@
+/*
+ * base.css: identidade visual "Cofrinho" do comprador de milhas.
+ *
+ * Mobile-first: os estilos sem media query são os do celular.
+ * Tema: segue o aparelho (prefers-color-scheme). Para forçar um tema,
+ * use <html data-tema="claro"> ou <html data-tema="escuro">.
+ * Fontes: só as do sistema, sem nada de terceiros.
+ * Contraste: todo par texto/fundo dos tokens passa AA (4,5:1; bordas de
+ * campo e foco passam 3:1). Conferido nos dois temas.
+ */
+
+/* 1. Tokens -------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* Cores: tema claro */
+  --cor-fundo: #fbf6ec;            /* creme */
+  --cor-superficie: #ffffff;
+  --cor-superficie-2: #f1f7f0;     /* verde bem claro, para blocos internos */
+  --cor-borda: #e6dcc8;            /* decorativa */
+  --cor-borda-campo: #7a857c;      /* campos: 3:1 sobre branco e creme */
+  --cor-texto: #1f2a22;
+  --cor-texto-suave: #4a564d;
+
+  --cor-primaria: #1f6b3a;         /* verde cofrinho */
+  --cor-primaria-forte: #17542d;   /* hover/pressionado */
+  --cor-sobre-primaria: #ffffff;
+  --cor-primaria-suave: #e2f0e4;
+
+  --cor-destaque: #ffd25e;         /* amarelo-manga */
+  --cor-sobre-destaque: #4a3300;
+
+  --cor-sucesso-fundo: #e2f0e4;
+  --cor-sucesso-texto: #1a5c32;
+  --cor-aviso-fundo: #ffead6;
+  --cor-aviso-texto: #803600;
+  --cor-perigo-fundo: #fde4e1;
+  --cor-perigo-texto: #a3231a;
+  --cor-info-fundo: #e3eef9;
+  --cor-info-texto: #1e4e86;
+
+  --cor-foco: #1e4e86;
+  --cor-esqueleto: #ece4d3;
+  --cor-esqueleto-brilho: #f7f1e5;
+
+  /* Tipografia */
+  --fonte-texto: ui-rounded, "SF Pro Rounded", system-ui, -apple-system,
+    "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --fonte-numeros: var(--fonte-texto);
+
+  --texto-xs: 0.8125rem;   /* 13px */
+  --texto-sm: 0.9375rem;   /* 15px */
+  --texto-md: 1rem;        /* 16px: nunca menos em campos (evita zoom no iPhone) */
+  --texto-lg: 1.125rem;    /* 18px */
+  --texto-xl: clamp(1.375rem, 1.2rem + 0.8vw, 1.625rem);
+  --texto-2xl: clamp(1.75rem, 1.4rem + 1.6vw, 2.25rem);
+  --texto-valor: clamp(2.5rem, 2rem + 2.4vw, 3.25rem);
+
+  --peso-normal: 400;
+  --peso-medio: 600;
+  --peso-forte: 700;
+  --peso-extra: 800;
+
+  --altura-linha: 1.5;
+  --altura-linha-titulo: 1.2;
+
+  /* Espaços (escala de 4px) */
+  --espaco-1: 0.25rem;
+  --espaco-2: 0.5rem;
+  --espaco-3: 0.75rem;
+  --espaco-4: 1rem;
+  --espaco-5: 1.25rem;
+  --espaco-6: 1.5rem;
+  --espaco-8: 2rem;
+  --espaco-10: 2.5rem;
+  --espaco-12: 3rem;
+
+  /* Raios */
+  --raio-sm: 0.5rem;
+  --raio-md: 0.875rem;
+  --raio-lg: 1.375rem;
+  --raio-pilula: 999px;
+
+  /* Sombras */
+  --sombra-1: 0 1px 2px rgb(31 74 46 / 0.08);
+  --sombra-2: 0 6px 18px rgb(31 74 46 / 0.12);
+  --sombra-3: 0 12px 32px rgb(31 74 46 / 0.16);
+
+  /* Medidas */
+  --largura-conteudo: 42rem;
+  --largura-larga: 64rem;
+  --altura-toque: 3rem;   /* 48px: alvo de toque confortável */
+  --anel-foco: 0 0 0 3px var(--cor-fundo), 0 0 0 6px var(--cor-foco);
+  --transicao: 150ms ease;
+}
+
+/* Cores: tema escuro (usadas pelo aparelho ou forçadas com data-tema) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    color-scheme: dark;
+    --cor-fundo: #131915;
+    --cor-superficie: #1b231e;
+    --cor-superficie-2: #223029;
+    --cor-borda: #33423a;
+    --cor-borda-campo: #7f9185;
+    --cor-texto: #eef2ec;
+    --cor-texto-suave: #b4c0b7;
+    --cor-primaria: #6fcf8e;
+    --cor-primaria-forte: #8edca6;
+    --cor-sobre-primaria: #0e2316;
+    --cor-primaria-suave: #203a2a;
+    --cor-destaque: #ffd25e;
+    --cor-sobre-destaque: #3a2800;
+    --cor-sucesso-fundo: #1d3526;
+    --cor-sucesso-texto: #9be3b2;
+    --cor-aviso-fundo: #3a2614;
+    --cor-aviso-texto: #ffc48f;
+    --cor-perigo-fundo: #3b1a17;
+    --cor-perigo-texto: #ffa59a;
+    --cor-info-fundo: #16273a;
+    --cor-info-texto: #9cc6f2;
+    --cor-foco: #9cc6f2;
+    --cor-esqueleto: #26302a;
+    --cor-esqueleto-brilho: #313d35;
+    --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --sombra-2: 0 6px 18px rgb(0 0 0 / 0.45);
+    --sombra-3: 0 12px 32px rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --cor-fundo: #131915;
+  --cor-superficie: #1b231e;
+  --cor-superficie-2: #223029;
+  --cor-borda: #33423a;
+  --cor-borda-campo: #7f9185;
+  --cor-texto: #eef2ec;
+  --cor-texto-suave: #b4c0b7;
+  --cor-primaria: #6fcf8e;
+  --cor-primaria-forte: #8edca6;
+  --cor-sobre-primaria: #0e2316;
+  --cor-primaria-suave: #203a2a;
+  --cor-destaque: #ffd25e;
+  --cor-sobre-destaque: #3a2800;
+  --cor-sucesso-fundo: #1d3526;
+  --cor-sucesso-texto: #9be3b2;
+  --cor-aviso-fundo: #3a2614;
+  --cor-aviso-texto: #ffc48f;
+  --cor-perigo-fundo: #3b1a17;
+  --cor-perigo-texto: #ffa59a;
+  --cor-info-fundo: #16273a;
+  --cor-info-texto: #9cc6f2;
+  --cor-foco: #9cc6f2;
+  --cor-esqueleto: #26302a;
+  --cor-esqueleto-brilho: #313d35;
+  --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --sombra-2: 0 6px 18px rgb(0 0 0 / 0.45);
+  --sombra-3: 0 12px 32px rgb(0 0 0 / 0.5);
+}
+
+/* 2. Base ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--fonte-texto);
+  font-size: var(--texto-md);
+  line-height: var(--altura-linha);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 var(--espaco-3);
+  line-height: var(--altura-linha-titulo);
+  font-weight: var(--peso-extra);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--texto-2xl); }
+h2 { font-size: var(--texto-xl); }
+h3 { font-size: var(--texto-lg); font-weight: var(--peso-forte); }
+
+p { margin: 0 0 var(--espaco-4); }
+
+a {
+  color: var(--cor-primaria);
+  text-underline-offset: 0.15em;
+}
+
+a:hover { color: var(--cor-primaria-forte); }
+
+img, svg { max-width: 100%; height: auto; }
+
+:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 3px;
+}
+
+/* Números alinhados em colunas (valores, pontos, datas). */
+.numeros,
+.tabela td,
+.card__valor {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 3. Layout -------------------------------------------------------------- */
+
+.container {
+  width: 100%;
+  max-width: var(--largura-conteudo);
+  margin-inline: auto;
+  padding-inline: var(--espaco-4);
+}
+
+.container--largo { max-width: var(--largura-larga); }
+
+/* Empilha os filhos com espaço entre eles. */
+.pilha > * + * { margin-top: var(--espaco-4); }
+.pilha--sm > * + * { margin-top: var(--espaco-2); }
+.pilha--lg > * + * { margin-top: var(--espaco-8); }
+
+/* Lado a lado, quebrando linha quando não cabe. */
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-3);
+  align-items: center;
+}
+
+/* Grade que vira colunas quando há espaço. */
+.grade {
+  display: grid;
+  gap: var(--espaco-4);
+  align-items: start;
+}
+
+@media (min-width: 48rem) {
+  .grade--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grade--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.texto-suave { color: var(--cor-texto-suave); }
+.texto-pequeno { font-size: var(--texto-sm); }
+
+/* Esconde da tela, mas não do leitor de tela. */
+.visualmente-oculto {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pular-para-conteudo {
+  position: absolute;
+  left: var(--espaco-4);
+  top: -10rem;
+  z-index: 10;
+  padding: var(--espaco-3) var(--espaco-4);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  border-radius: var(--raio-sm);
+  box-shadow: var(--sombra-2);
+}
+
+.pular-para-conteudo:focus { top: var(--espaco-4); }
+
+/* 4. Botão --------------------------------------------------------------- */
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-2);
+  min-height: var(--altura-toque);
+  padding: var(--espaco-3) var(--espaco-6);
+  border: 2px solid transparent;
+  border-radius: var(--raio-pilula);
+  background: var(--cor-primaria);
+  color: var(--cor-sobre-primaria);
+  font: inherit;
+  font-weight: var(--peso-forte);
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--transicao), border-color var(--transicao),
+    transform var(--transicao);
+}
+
+.botao:hover {
+  background: var(--cor-primaria-forte);
+  color: var(--cor-sobre-primaria);
+}
+
+.botao:active { transform: translateY(1px); }
+
+.botao:focus-visible {
+  outline: none;
+  box-shadow: var(--anel-foco);
+}
+
+.botao--secundario {
+  background: transparent;
+  color: var(--cor-primaria);
+  border-color: var(--cor-primaria);
+}
+
+.botao--secundario:hover {
+  background: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.botao--fantasma {
+  background: transparent;
+  color: var(--cor-primaria);
+  padding-inline: var(--espaco-3);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.botao--fantasma:hover {
+  background: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.botao--bloco {
+  display: flex;
+  width: 100%;
+}
+
+.botao:disabled,
+.botao[aria-disabled="true"] {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+  border-color: var(--cor-borda);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 5. Campo --------------------------------------------------------------- */
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+}
+
+.campo__rotulo {
+  font-weight: var(--peso-forte);
+}
+
+.campo__ajuda {
+  font-size: var(--texto-sm);
+  color: var(--cor-texto-suave);
+}
+
+.campo__erro {
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-medio);
+  color: var(--cor-perigo-texto);
+}
+
+.campo__erro:empty { display: none; }
+
+.campo__entrada {
+  width: 100%;
+  min-height: var(--altura-toque);
+  padding: var(--espaco-3) var(--espaco-4);
+  border: 2px solid var(--cor-borda-campo);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: var(--texto-md);
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+
+.campo__entrada::placeholder {
+  color: var(--cor-texto-suave);
+  opacity: 1;
+}
+
+.campo__entrada:hover { border-color: var(--cor-texto-suave); }
+
+.campo__entrada:focus-visible {
+  outline: none;
+  border-color: var(--cor-foco);
+  box-shadow: 0 0 0 3px var(--cor-foco);
+}
+
+.campo__entrada[aria-invalid="true"] {
+  border-color: var(--cor-perigo-texto);
+}
+
+.campo__entrada:disabled {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto-suave);
+  cursor: not-allowed;
+}
+
+select.campo__entrada {
+  appearance: none;
+  padding-right: var(--espaco-10);
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 1.375rem) 55%, calc(100% - 1rem) 55%;
+  background-size: 0.375rem 0.375rem;
+  background-repeat: no-repeat;
+}
+
+/* Campo de valor em R$, com o prefixo dentro da caixa. */
+.campo__moeda {
+  position: relative;
+}
+
+.campo__moeda::before {
+  content: "R$";
+  position: absolute;
+  left: var(--espaco-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--cor-texto-suave);
+  font-weight: var(--peso-medio);
+  pointer-events: none;
+}
+
+.campo__moeda .campo__entrada {
+  padding-left: 2.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grupo de opções com título (fieldset + legend). */
+.grupo {
+  border: 0;
+  margin-inline: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.grupo > legend {
+  padding: 0;
+  margin-bottom: var(--espaco-1);
+}
+
+/* Caixa de seleção e opção. */
+.opcao {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  min-height: var(--altura-toque);
+  cursor: pointer;
+}
+
+.opcao input {
+  width: 1.375rem;
+  height: 1.375rem;
+  margin: 0;
+  accent-color: var(--cor-primaria);
+  flex: none;
+}
+
+/* 6. Card ---------------------------------------------------------------- */
+
+.card {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-lg);
+  padding: var(--espaco-5);
+  box-shadow: var(--sombra-1);
+}
+
+.card > :last-child { margin-bottom: 0; }
+
+.card--destaque {
+  box-shadow: var(--sombra-2);
+  border-color: var(--cor-destaque);
+  border-width: 2px;
+}
+
+.card__topo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+  align-items: center;
+  margin-bottom: var(--espaco-3);
+}
+
+.card__titulo {
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-forte);
+  margin: 0 0 var(--espaco-2);
+}
+
+/* O valor em reais é o herói do card de resultado. */
+.card__valor {
+  margin: 0;
+  color: var(--cor-primaria);
+  font-size: var(--texto-valor);
+  font-weight: var(--peso-extra);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.card__legenda {
+  margin: var(--espaco-2) 0 0;
+  font-weight: var(--peso-medio);
+  color: var(--cor-texto-suave);
+}
+
+.card__bloco {
+  margin-top: var(--espaco-4);
+  padding: var(--espaco-3) var(--espaco-4);
+  background: var(--cor-superficie-2);
+  border-radius: var(--raio-md);
+}
+
+.card__bloco > :last-child { margin-bottom: 0; }
+
+.card__acoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-2);
+  margin-top: var(--espaco-5);
+}
+
+/* Lista "rótulo: valor" usada no detalhe do cálculo. */
+.lista-conta {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.lista-conta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-4);
+  padding: var(--espaco-2) 0;
+  border-bottom: 1px dashed var(--cor-borda);
+}
+
+.lista-conta > div:last-child { border-bottom: 0; }
+.lista-conta dt { color: var(--cor-texto-suave); }
+.lista-conta dd { margin: 0; font-weight: var(--peso-medio); text-align: right; }
+
+/* 7. Selo ---------------------------------------------------------------- */
+
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-1);
+  padding: 0.1875rem var(--espaco-3);
+  border-radius: var(--raio-pilula);
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.selo--destaque { background: var(--cor-destaque); color: var(--cor-sobre-destaque); }
+.selo--sucesso { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso-texto); }
+.selo--aviso { background: var(--cor-aviso-fundo); color: var(--cor-aviso-texto); }
+.selo--perigo { background: var(--cor-perigo-fundo); color: var(--cor-perigo-texto); }
+.selo--info { background: var(--cor-info-fundo); color: var(--cor-info-texto); }
+
+/* 8. Alerta -------------------------------------------------------------- */
+
+.alerta {
+  display: flex;
+  gap: var(--espaco-3);
+  padding: var(--espaco-4);
+  border-radius: var(--raio-md);
+  border-left: 0.375rem solid currentColor;
+  background: var(--cor-info-fundo);
+  color: var(--cor-info-texto);
+}
+
+.alerta__icone {
+  flex: none;
+  width: 1.25rem;
+  text-align: center;
+  font-weight: var(--peso-extra);
+  line-height: var(--altura-linha);
+}
+
+.alerta__corpo > :last-child { margin-bottom: 0; }
+
+.alerta__titulo {
+  display: block;
+  font-weight: var(--peso-forte);
+  margin-bottom: var(--espaco-1);
+}
+
+.alerta--sucesso { background: var(--cor-sucesso-fundo); color: var(--cor-sucesso-texto); }
+.alerta--aviso { background: var(--cor-aviso-fundo); color: var(--cor-aviso-texto); }
+.alerta--perigo { background: var(--cor-perigo-fundo); color: var(--cor-perigo-texto); }
+
+/* 9. Termo explicado (milheiro, clube, bônus...) ------------------------ */
+
+.termo {
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie-2);
+}
+
+.termo > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  min-height: var(--altura-toque);
+  padding: var(--espaco-2) var(--espaco-4);
+  font-weight: var(--peso-forte);
+  color: var(--cor-primaria);
+  cursor: pointer;
+  list-style: none;
+}
+
+.termo > summary::-webkit-details-marker { display: none; }
+
+.termo > summary::before {
+  content: "?";
+  display: inline-grid;
+  place-items: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  background: var(--cor-primaria);
+  color: var(--cor-sobre-primaria);
+  font-size: var(--texto-xs);
+  line-height: 1;
+  flex: none;
+}
+
+.termo[open] > summary::before { content: "−"; }
+
+.termo > summary:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--cor-foco);
+  border-radius: var(--raio-md);
+}
+
+.termo__texto {
+  padding: 0 var(--espaco-4) var(--espaco-4);
+  margin: 0;
+}
+
+/* 10. Tabela responsiva --------------------------------------------------
+ * No celular, cada linha vira um bloco e cada célula mostra o nome da
+ * coluna (atributo data-rotulo). A partir de 40rem, volta a ser tabela.
+ */
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--texto-sm);
+}
+
+.tabela caption {
+  text-align: left;
+  font-weight: var(--peso-forte);
+  font-size: var(--texto-lg);
+  margin-bottom: var(--espaco-3);
+}
+
+.tabela thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.tabela tr {
+  display: block;
+  margin-bottom: var(--espaco-3);
+  padding: var(--espaco-2) var(--espaco-4);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-md);
+}
+
+.tabela td {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-4);
+  padding: var(--espaco-2) 0;
+  border-bottom: 1px dashed var(--cor-borda);
+  text-align: right;
+}
+
+.tabela td:last-child { border-bottom: 0; }
+
+.tabela td::before {
+  content: attr(data-rotulo);
+  color: var(--cor-texto-suave);
+  font-weight: var(--peso-medio);
+  text-align: left;
+}
+
+.tabela .tabela__melhor { border: 2px solid var(--cor-destaque); }
+
+@media (min-width: 40rem) {
+  .tabela {
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio-md);
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+  }
+
+  .tabela thead {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .tabela tr {
+    display: table-row;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .tabela th,
+  .tabela td {
+    display: table-cell;
+    padding: var(--espaco-3) var(--espaco-4);
+    border-bottom: 1px solid var(--cor-borda);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .tabela th {
+    background: var(--cor-superficie-2);
+    font-weight: var(--peso-forte);
+    color: var(--cor-texto-suave);
+    font-size: var(--texto-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .tabela td:last-child { border-bottom: 1px solid var(--cor-borda); }
+  .tabela tbody tr:last-child td { border-bottom: 0; }
+  .tabela td::before { content: none; }
+  .tabela .numero { text-align: right; }
+  .tabela .tabela__melhor { border: 0; }
+  .tabela .tabela__melhor td { background: var(--cor-primaria-suave); }
+}
+
+/* 11. Esqueleto de carregamento ----------------------------------------- */
+
+.esqueleto {
+  display: block;
+  height: 1em;
+  border-radius: var(--raio-sm);
+  background: linear-gradient(90deg, var(--cor-esqueleto) 0%,
+    var(--cor-esqueleto-brilho) 50%, var(--cor-esqueleto) 100%);
+  background-size: 200% 100%;
+  animation: esqueleto-brilho 1.4s ease-in-out infinite;
+}
+
+.esqueleto--titulo { height: 1.5rem; width: 60%; }
+.esqueleto--valor { height: 3rem; width: 70%; border-radius: var(--raio-md); }
+.esqueleto--linha { height: 1rem; width: 100%; }
+.esqueleto--curta { width: 40%; }
+.esqueleto--botao { height: var(--altura-toque); border-radius: var(--raio-pilula); }
+
+@keyframes esqueleto-brilho {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* 12. Movimento reduzido ------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
