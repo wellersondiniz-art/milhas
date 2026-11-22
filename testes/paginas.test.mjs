@@ -276,7 +276,7 @@ test('gerar no disco: grava os arquivos e todo link interno leva a um arquivo', 
   const lojas = await readdir(new URL('loja/', saida));
   const dados = await lerDados(new URL('dados/', RAIZ));
   assert.deepEqual(lojas.sort(), dados.lojas.map((l) => l.id).sort());
-  assert.equal(arquivos.length, dados.lojas.length + 3);
+  assert.equal(arquivos.length, dados.lojas.length + 3 + 5);
   assert.match(await readFile(new URL('robots.txt', saida), 'utf8'), /Sitemap:/);
 });
 

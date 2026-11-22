@@ -2,11 +2,13 @@
 // Gera as páginas estáticas a partir de dados/*.json:
 //   site/loja/<id>/index.html   uma por loja
 //   site/ofertas/index.html     ofertas ativas hoje
+//   site/como-funciona/, sobre-os-dados/, privacidade/, termos/, contato/
+//                               páginas institucionais (scripts/paginas/institucionais.js)
 //   site/sitemap.xml            só quando a URL base do site estiver definida
 //   site/robots.txt
 //
 // Sem dependências. Os dados passam antes pelo validador; com erro, nada é escrito.
-// As pastas site/loja/ e site/ofertas/ são apagadas e refeitas a cada execução
+// As pastas geradas (loja/, ofertas/ e as institucionais) são apagadas e refeitas a cada execução
 // (são geradas e ficam fora do Git, como site/dados/).
 //
 // Uso:
@@ -20,6 +22,7 @@ import { ARQUIVOS, hojeEmBrasilia, validarDados } from './validar-dados.js';
 import { URL_BASE } from './paginas/config.js';
 import { conferirHtml, lerDescricao, lerTitulo } from './paginas/conferir-html.js';
 import { gerarPaginas } from './paginas/montar.js';
+import { PASTAS_INSTITUCIONAIS } from './paginas/institucionais.js';
 
 const RAIZ = new URL('../', import.meta.url);
 
@@ -43,6 +46,7 @@ export async function gerarNoDisco({ pastaDados, saida, hoje, urlBase }) {
 
   await rm(new URL('loja/', saida), { recursive: true, force: true });
   await rm(new URL('ofertas/', saida), { recursive: true, force: true });
+  for (const pasta of PASTAS_INSTITUCIONAIS) await rm(new URL(`${pasta}/`, saida), { recursive: true, force: true });
   await rm(new URL('sitemap.xml', saida), { force: true });
   for (const { caminho, conteudo } of resultado.arquivos) {
     const destino = new URL(caminho, saida);
