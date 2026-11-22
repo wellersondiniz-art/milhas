@@ -1,16 +1,17 @@
 // Tela "Meu perfil": programas (com clube e data), cartões e, se a pessoa
-// quiser, o valor do milheiro de cada programa. Salva sozinho, só neste
+// quiser, o valor do milheiro de cada programa e a cotação do dólar. Salva sozinho, só neste
 // aparelho. Também exporta, importa e apaga o perfil.
 //
 // Nenhum texto vindo do arquivo importado vira HTML: tudo entra por el()
 // (createElement + nó de texto). Ver CLAUDE.md, seção 6.
 
-import { formatarCentavos } from '../motor/index.js';
+import { ID_COTACAO_DOLAR, formatarCentavos, formatarCotacao, formatarData } from '../motor/index.js';
 import {
-  MILHEIRO_MAXIMO, TAMANHO_MAXIMO, ehVazio, nomeDoArquivo, perfilVazio, textoParaExportar, validarImportacao,
+  MILHEIRO_MAXIMO, TAMANHO_MAXIMO, ehVazio, nomeDoArquivo, perfilVazio, semNadaParaGuardar,
+  textoParaExportar, validarImportacao,
 } from '../perfil/formato.js';
 import { el } from './dom.js';
-import { aplicarMascara } from './moeda.js';
+import { aplicarMascara, mascaraCotacao } from './moeda.js';
 import { alerta, termo } from './resultado.js';
 
 const A_CONFIRMAR = 'A_CONFIRMAR';
@@ -18,6 +19,11 @@ const DIGITOS_MILHEIRO = String(MILHEIRO_MAXIMO).length;
 
 function mascaraMilheiro(texto) {
   return aplicarMascara(String(texto ?? '').replace(/\D/g, '').slice(0, DIGITOS_MILHEIRO));
+}
+
+/** O cartão entra na conta? Pontos por real, ou pontos por dólar com cotação. */
+function rendePorDolar(cartao) {
+  return typeof cartao.pontos_por_real !== 'number' && typeof cartao.pontos_por_dolar === 'number';
 }
 
 function plural(n, um, varios) {
@@ -48,6 +54,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
   const nomePrograma = new Map(dados.programas.map((p) => [p.id, p.nome]));
   let campos = [];
   let caixasCartao = [];
+  let campoCotacao = null;
 
   function mostrarAvisoMemoria(emMemoria) {
     aviso.replaceChildren(emMemoria
@@ -100,12 +107,37 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
 
   function blocoCartao(cartao, marcado) {
     const caixa = el('input', { type: 'checkbox', id: `perfil-cartao-${cartao.id}`, value: cartao.id, checked: marcado });
-    const semPontos = cartao.status === A_CONFIRMAR || typeof cartao.pontos_por_real !== 'number';
+    const confirmado = cartao.status !== A_CONFIRMAR;
+    const porDolar = confirmado && rendePorDolar(cartao);
+    const semPontos = !confirmado || (!porDolar && typeof cartao.pontos_por_real !== 'number');
+    const nota = semPontos ? ' (pontos ainda não confirmados)' : porDolar ? ' (pontos por dólar)' : '';
     caixasCartao.push(caixa);
     return el('label', { class: 'opcao' }, caixa,
       el('span', {}, cartao.nome,
         el('span', { class: 'texto-suave texto-pequeno perfil__nota' },
-          ` · junta ${nomePrograma.get(cartao.programa_id) ?? 'pontos'}${semPontos ? ' (pontos por real ainda não confirmados)' : ''}`)));
+          ` · junta ${nomePrograma.get(cartao.programa_id) ?? 'pontos'}${nota}`)));
+  }
+
+  function blocoCotacao(valorDoPerfil) {
+    campoCotacao = el('input', {
+      type: 'text', id: 'perfil-cotacao-dolar', class: 'campo__entrada', inputmode: 'numeric', autocomplete: 'off',
+      placeholder: '0,0000', value: valorDoPerfil ? mascaraCotacao(String(valorDoPerfil)).texto : null,
+      'aria-describedby': 'perfil-cotacao-dolar-ajuda',
+    });
+    campoCotacao.addEventListener('input', () => { campoCotacao.value = mascaraCotacao(campoCotacao.value).texto; });
+    const registro = (dados.cambio ?? []).find((c) => c.id === ID_COTACAO_DOLAR);
+    const doCadastro = Number.isSafeInteger(registro?.reais_por_dolar) ? registro.reais_por_dolar : null;
+    const dia = registro && registro.data_referencia !== A_CONFIRMAR ? ` de ${formatarData(registro.data_referencia)}` : '';
+    return el('fieldset', { class: 'grupo pilha--sm' },
+      el('legend', { class: 'perfil__legenda' }, 'Cotação do dólar'),
+      el('div', { class: 'campo' },
+        el('label', { class: 'campo__rotulo', for: campoCotacao.id }, 'Quanto vale 1 dólar, em reais?'),
+        el('div', { class: 'campo__moeda' }, campoCotacao),
+        el('span', { class: 'campo__ajuda', id: 'perfil-cotacao-dolar-ajuda' },
+          'Os bancos dizem quantos pontos o cartão dá por dólar gasto, mesmo em compras em reais. Usamos a cotação para converter. ',
+          doCadastro
+            ? `Opcional. Se deixar em branco, usamos ${formatarCotacao(doCadastro)}, a PTAX do Banco Central${dia}.`
+            : 'Ainda não temos a cotação do dia confirmada. Se você informar, os cartões que rendem pontos por dólar entram na conta.')));
   }
 
   /** Monta o formulário a partir do perfil (na abertura, depois de importar e de apagar). */
@@ -124,6 +156,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
         dados.cartoes.length
           ? dados.cartoes.map((c) => blocoCartao(c, perfil.cartoes.includes(c.id)))
           : el('p', { class: 'texto-suave' }, 'Ainda não temos cartões no cadastro.')),
+      blocoCotacao(perfil.cotacao_dolar),
     );
   }
 
@@ -148,6 +181,8 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
       if (centavos) novo.valor_milheiro_brl[c.programa.id] = centavos;
     }
     novo.cartoes = caixasCartao.filter((c) => c.checked).map((c) => c.value);
+    const { valor } = mascaraCotacao(campoCotacao?.value);
+    if (valor) novo.cotacao_dolar = valor;
     return novo;
   }
 
@@ -159,7 +194,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
   formulario.addEventListener('submit', (evento) => evento.preventDefault());
   formulario.addEventListener('change', () => {
     const novo = lerFormulario();
-    const r = definirPerfil(ehVazio(novo) ? null : novo);
+    const r = definirPerfil(semNadaParaGuardar(novo) ? null : novo);
     avisarSalvo(r, ehVazio(novo) ? 'Nada marcado. A conta usa todos os cartões e programas.' : 'Salvo neste aparelho.');
   });
 
@@ -204,7 +239,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
         el('ul', { class: 'resultado__lista' }, r.erros.map((t) => el('li', {}, t))));
       return;
     }
-    const salvo = definirPerfil(ehVazio(r.perfil) ? null : r.perfil);
+    const salvo = definirPerfil(semNadaParaGuardar(r.perfil) ? null : r.perfil);
     desenhar();
     avisarSalvo(salvo, 'Perfil importado.');
     mostrarImportacao('sucesso', 'Perfil importado',

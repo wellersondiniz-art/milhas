@@ -442,3 +442,57 @@ test('formatação pt-BR pelo Intl: moeda, números e datas', () => {
   assert.equal(formatarData('2026-01-05'), '05/01/2026');
   assert.equal(formatarData('2026-12-31T23:59'), '31/12/2026');
 });
+
+// ---------------------------------------------------------------------------
+// Cartão que só informa pontos por dólar (cotação em reais × 10.000)
+
+const CAMBIO = (reais_por_dolar, data_referencia = '2026-11-21') => [{
+  id: 'usd-brl', moeda: 'USD', reais_por_dolar, origem: 'ptax', data_referencia, observacoes: '', fonte_url: FONTE, verificado_em: '2026-11-05',
+}];
+const soDolar = (d) => { d.cartoes[1].pontos_por_real = 'A_CONFIRMAR'; d.cartoes[1].pontos_por_dolar = 2; };
+const SEM_OFERTA = { loja_id: 'loja-sem-oferta' };
+
+test('pontos por dólar com a cotação do cadastro (PTAX)', () => {
+  const dados = dadosCom((d) => { soDolar(d); d.cambio = CAMBIO(50000); });
+  const [j] = calcular(perfil([], ['cartao-livelo']), compra(10000, SEM_OFERTA), dados, HOJE);
+  // R$ 100,00 ÷ R$ 5,0000 = US$ 20; × 2 pontos por dólar = 40 pontos
+  assert.equal(j.pontos_do_cartao, 40);
+  assert.ok(j.avisos.some((a) => a.includes('R$ 5,0000 (PTAX de 21/11/2026)')));
+  assert.ok(j.explicacao.some((p) => p.includes('R$ 100,00 ÷ R$ 5,0000 por dólar × 2 pontos por dólar = 40 pontos')));
+});
+
+test('pontos por dólar: a cotação do perfil vence a do cadastro', () => {
+  const dados = dadosCom((d) => { soDolar(d); d.cambio = CAMBIO(50000); });
+  const [j] = calcular(perfil([], ['cartao-livelo'], { cotacao_dolar: 40000 }), compra(10000, SEM_OFERTA), dados, HOJE);
+  // R$ 100,00 ÷ R$ 4,0000 = US$ 25; × 2 = 50 pontos
+  assert.equal(j.pontos_do_cartao, 50);
+  assert.ok(j.avisos.some((a) => a.includes('R$ 4,0000 (valor que você informou)')));
+});
+
+test('pontos por dólar sem cotação nenhuma: conta 0 e pede a cotação', () => {
+  const dados = dadosCom((d) => { soDolar(d); d.cambio = CAMBIO('A_CONFIRMAR', 'A_CONFIRMAR'); });
+  const [j] = calcular(perfil([], ['cartao-livelo']), compra(10000, SEM_OFERTA), dados, HOJE);
+  assert.equal(j.pontos_do_cartao, 0);
+  assert.ok(j.avisos.some((a) => a.includes('falta a cotação do dólar')));
+});
+
+test('pontos por dólar guardam a fração até a exibição', () => {
+  const dados = dadosCom((d) => { soDolar(d); d.cambio = CAMBIO(53456); });
+  const p = perfil([], ['cartao-livelo'], { valor_milheiro_brl: { livelo: 1000000 } });
+  const [j] = calcular(p, compra(10000, SEM_OFERTA), dados, HOJE);
+  // 10000 × 20000 × 10000 ÷ 53456 = 37.413.947 (× 1.000.000, arredonda para baixo) → 37,413947 pontos
+  // valor com milheiro de R$ 10.000,00: 37,413947 × 1.000.000 ÷ 1000 = 37.413,947 centavos
+  assert.equal(j.valor_estimado_em_reais.bilionesimos_de_centavo, 37413947n * 1_000_000n);
+});
+
+test('cartão A_CONFIRMAR com pontos por dólar não entra, mesmo com cotação', () => {
+  const dados = dadosCom((d) => { soDolar(d); d.cartoes[1].status = 'A_CONFIRMAR'; d.cambio = CAMBIO(50000); });
+  const [j] = calcular(perfil([], ['cartao-livelo']), compra(10000, SEM_OFERTA), dados, HOJE);
+  assert.equal(j.pontos_do_cartao, 0);
+});
+
+test('cotação do perfil inválida é recusada', () => {
+  for (const cotacao_dolar of [0, -1, 5.3, '5,34']) {
+    assert.throws(() => calcular(perfil([], ['cartao-livelo'], { cotacao_dolar }), compra(10000, SEM_OFERTA), dadosDeTeste(), HOJE));
+  }
+});

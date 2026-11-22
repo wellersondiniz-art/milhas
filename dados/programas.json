@@ -53,5 +53,50 @@
     "url": "https://latampass.latam.com/br/pt",
     "fonte_url": "https://latampass.latam.com/br/pt",
     "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "pontos-itau",
+    "nome": "Pontos Itaú",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://www.itau.com.br/pontos-e-cashback",
+    "fonte_url": "https://www.itau.com.br/pontos-e-cashback",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "c6-atomos",
+    "nome": "C6 Átomos",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://www.c6bank.com.br/programa-de-pontos-atomos/",
+    "fonte_url": "https://www.c6bank.com.br/programa-de-pontos-atomos/",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "pontos-caixa",
+    "nome": "Pontos CAIXA",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://www.caixa.gov.br/voce/cartoes/programa-pontos/Paginas/default.aspx",
+    "fonte_url": "https://www.caixa.gov.br/voce/cartoes/programa-pontos/Paginas/default.aspx",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "portoplus",
+    "nome": "PortoPlus",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://www.portoseguro.com.br/cartao-de-credito/regulamento-porto-plus",
+    "fonte_url": "https://www.portoseguro.com.br/cartao-de-credito/regulamento-porto-plus",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "pontos-btg",
+    "nome": "Pontos BTG",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://banking.btgpactual.com/beneficios/programa-de-fidelidade",
+    "fonte_url": "https://banking.btgpactual.com/cartao-de-credito",
+    "verificado_em": "2026-11-22"
   }
 ]

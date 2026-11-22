@@ -54,6 +54,13 @@ export function pontosParaNumero(escalado) {
   return Number(escalado / ESCALA_PONTOS) + Number(escalado % ESCALA_PONTOS) / Number(ESCALA_PONTOS);
 }
 
+/** Cotação do dólar × 10.000 (53456) → "R$ 5,3456". */
+export function formatarCotacao(x10000) {
+  // Sem separador de milhar: a cotação nunca passa de R$ 99,9999.
+  const v = BigInt(x10000);
+  return `R$ ${v / 10_000n},${(v % 10_000n).toString().padStart(4, '0')}`;
+}
+
 /** Número pequeno (ex.: pontos por real) → "1,5". */
 export function formatarNumero(n) {
   return NUMERO_LIVRE.format(String(n));

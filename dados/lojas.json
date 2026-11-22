@@ -90,5 +90,68 @@
     "observacoes": "Loja oficial da marca. A página inicial não mostra cupons; não deu para confirmar.",
     "fonte_url": "https://www.nike.com.br",
     "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "ponto",
+    "nome": "Ponto",
+    "artigo": "o",
+    "dominio": "pontofrio.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Página inicial mostra produtos de lojistas parceiros (idLojista) e cupom.",
+    "fonte_url": "https://www.pontofrio.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "carrefour",
+    "nome": "Carrefour",
+    "artigo": "o",
+    "dominio": "carrefour.com.br",
+    "categoria": "marketplace",
+    "aceita_cupom": true,
+    "observacoes": "Página inicial tem \"Ofertas dos Parceiros Carrefour\" e página de cupons.",
+    "fonte_url": "https://www.carrefour.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "netshoes",
+    "nome": "Netshoes",
+    "dominio": "netshoes.com.br",
+    "categoria": "A_CONFIRMAR",
+    "aceita_cupom": true,
+    "observacoes": "Página inicial fala em cupom. Não deu para confirmar se há vendedores parceiros.",
+    "fonte_url": "https://www.netshoes.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "centauro",
+    "nome": "Centauro",
+    "dominio": "centauro.com.br",
+    "categoria": "A_CONFIRMAR",
+    "aceita_cupom": true,
+    "observacoes": "Página inicial tem cupom de primeira compra e uma seção \"achados-3p\", que pode ser de parceiros; não confirmado.",
+    "fonte_url": "https://www.centauro.com.br",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "booking",
+    "nome": "Booking.com",
+    "artigo": "o",
+    "dominio": "booking.com",
+    "categoria": "viagem",
+    "aceita_cupom": "A_CONFIRMAR",
+    "observacoes": "Hospedagem, voos, aluguel de carros e atrações. A página inicial não mostra cupom.",
+    "fonte_url": "https://www.booking.com/index.pt-br.html",
+    "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "samsung",
+    "nome": "Samsung",
+    "dominio": "samsung.com",
+    "categoria": "varejo",
+    "aceita_cupom": "A_CONFIRMAR",
+    "observacoes": "Loja oficial da marca, em samsung.com/br. A página inicial não mostra cupom.",
+    "fonte_url": "https://www.samsung.com/br/",
+    "verificado_em": "2026-11-22"
   }
 ]

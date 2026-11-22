@@ -201,12 +201,22 @@ test('tela não usa innerHTML, outerHTML, insertAdjacentHTML nem document.write'
 // ---------------------------------------------------------------------------
 // Cópia dos dados para o site
 
-test('copiar dados leva os 4 arquivos para a pasta do site', async () => {
+test('copiar dados leva os 5 arquivos para a pasta do site', async () => {
   const destino = await mkdtemp(join(tmpdir(), 'dados-'));
   const n = await copiarDados(new URL('../dados/', import.meta.url), pathToFileURL(`${destino}/`));
-  assert.equal(n, 4);
+  assert.equal(n, 5);
   for (const nome of ARQUIVOS) {
     const original = await readFile(new URL(`../dados/${nome}`, import.meta.url), 'utf8');
     assert.equal(await readFile(join(destino, nome), 'utf8'), original);
   }
+});
+
+test('máscara da cotação do dólar: 4 casas, jeito caixa eletrônico', async () => {
+  const { mascaraCotacao } = await import('../site/js/tela/moeda.js');
+  assert.deepEqual(mascaraCotacao(''), { valor: null, texto: '' });
+  assert.deepEqual(mascaraCotacao('000'), { valor: null, texto: '' });
+  assert.deepEqual(mascaraCotacao('5'), { valor: 5, texto: '0,0005' });
+  assert.deepEqual(mascaraCotacao('5,3456'), { valor: 53456, texto: '5,3456' });
+  assert.deepEqual(mascaraCotacao('R$ 12.3456x'), { valor: 123456, texto: '12,3456' });
+  assert.deepEqual(mascaraCotacao('99999999'), { valor: 999999, texto: '99,9999' }); // corta no máximo
 });

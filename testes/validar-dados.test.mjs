@@ -11,7 +11,7 @@ const HOJE = '2026-11-22';
 
 async function lerReais() {
   const dados = {};
-  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas']) {
+  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio']) {
     dados[nome] = JSON.parse(await readFile(new URL(`${nome}.json`, DADOS), 'utf8'));
   }
   return dados;
@@ -148,7 +148,7 @@ test('exige cupom quando exige_cupom é true e categorias no escopo por categori
 test('reprova JSON quebrado com o nome do arquivo', async () => {
   const pasta = await mkdtemp(join(tmpdir(), 'dados-'));
   await cp(new URL('schemas/', DADOS), join(pasta, 'schemas'), { recursive: true });
-  for (const nome of ['programas', 'cartoes', 'lojas']) await writeFile(join(pasta, `${nome}.json`), '[]');
+  for (const nome of ['programas', 'cartoes', 'lojas', 'cambio']) await writeFile(join(pasta, `${nome}.json`), '[]');
   await writeFile(join(pasta, 'ofertas.json'), '[{');
   const { erros } = await validarDados(pathToFileURL(pasta + '/'), { hoje: HOJE });
   assert.equal(erros.length, 1);
@@ -182,4 +182,24 @@ test('reprova origem do milheiro fora da lista', async () => {
   const { erros } = await validarCom((d) => { d.programas[0].valor_milheiro_origem = 'chute'; });
   assert.equal(erros.length, 1);
   assert.match(erros[0], /valor_milheiro_origem/);
+});
+
+test('cotação do dólar: aceita inteiro (reais × 10.000) e avisa quando está A_CONFIRMAR', async () => {
+  const { avisos } = await validarDados(DADOS, { hoje: HOJE });
+  assert.ok(avisos.some((a) => a.includes('câmbio "usd-brl"') && a.includes('A_CONFIRMAR')));
+  const ok = await validarCom((d) => {
+    d.cambio[0].reais_por_dolar = 53456;
+    d.cambio[0].data_referencia = '2026-11-21';
+  });
+  assert.deepEqual(ok.erros, []);
+});
+
+test('cotação do dólar: reprova número quebrado, zero e moeda desconhecida', async () => {
+  const { erros } = await validarCom((d) => {
+    d.cambio[0].reais_por_dolar = 5.34;
+    d.cambio.push({ ...d.cambio[0], id: 'outra', reais_por_dolar: 0, moeda: 'EUR' });
+  });
+  assert.ok(erros.some((e) => e.includes('cambio.json › registro 0') && e.includes('reais_por_dolar')));
+  assert.ok(erros.some((e) => e.includes('cambio.json › registro 1') && e.includes('reais_por_dolar')));
+  assert.ok(erros.some((e) => e.includes('cambio.json › registro 1') && e.includes('moeda')));
 });
