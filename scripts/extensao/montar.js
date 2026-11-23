@@ -29,6 +29,16 @@ const HOST = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 // Atributos que podem guardar um preço. Nada de value (campo) nem href.
 const ATRIBUTOS = /^(content|aria-label|data-[a-z0-9-]+)$/;
 
+/** Expressão regular válida, curta e com ao menos um grupo de captura. */
+function regexComGrupo(padrao) {
+  if (typeof padrao !== 'string' || !padrao || padrao.length > 200) return false;
+  try {
+    return new RegExp(`${padrao}|`).exec('').length > 1;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Confere o arquivo de seletores contra o cadastro de lojas.
  * @returns {{ erros: string[], ativos: object[] }} ativos = lojas que entram no pacote
@@ -68,6 +78,9 @@ export function validarSeletores(arquivo, lojas, { conferir = false } = {}) {
         const q = `${onde}, seletor ${j + 1}`;
         if (typeof s?.css !== 'string' || !s.css.trim() || s.css.length > 200) erros.push(`${q}: "css" precisa ser um seletor de até 200 caracteres`);
         if (s?.formato !== 'texto' && s?.formato !== 'decimal') erros.push(`${q}: "formato" precisa ser "texto" ou "decimal"`);
+        if (s?.extrair !== undefined && !regexComGrupo(s.extrair)) {
+          erros.push(`${q}: "extrair" precisa ser uma expressão regular válida, de até 200 caracteres, com ao menos um grupo de captura`);
+        }
         if (s?.atributo !== undefined && (typeof s.atributo !== 'string' || !ATRIBUTOS.test(s.atributo))) {
           erros.push(`${q}: "atributo" só pode ser content, aria-label ou data-*`);
         }
@@ -84,7 +97,9 @@ export function validarSeletores(arquivo, lojas, { conferir = false } = {}) {
         loja_id: loja.loja_id,
         hosts: [...loja.hosts],
         caminho_produto: loja.caminho_produto,
-        seletores_preco: loja.seletores_preco.map(({ css, formato, atributo }) => ({ css, formato, ...(atributo ? { atributo } : {}) })),
+        seletores_preco: loja.seletores_preco.map(({ css, formato, atributo, extrair }) => ({
+          css, formato, ...(atributo ? { atributo } : {}), ...(extrair ? { extrair } : {}),
+        })),
       });
     }
   });

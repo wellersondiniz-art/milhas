@@ -16,6 +16,7 @@ const PAGINAS = {
   'https://www.outra-loja.invalid/p/sem-preco': 'outra-loja-sem-preco.html',
   'https://www.outra-loja.invalid/p/login': 'outra-loja-login.html',
   'https://www.outra-loja.invalid/p/atrasado': 'outra-loja-preco-atrasado.html',
+  'https://www.outra-loja.invalid/p/parcelado': 'outra-loja-parcelado.html',
   'https://www.loja-teste.invalid/produto/fone': 'loja-teste-produto.html',
 };
 /** Tempo para o script de conteúdo passar pela página algumas vezes (ele confere a cada 1,5 s). */
@@ -157,6 +158,12 @@ test('preço que chega depois e troca de produto sem recarregar a página', asyn
   await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 750 pontos com Cartão Beta Gold');
   await pagina.getByRole('button', { name: 'Ver outro produto' }).click();
   await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 150 pontos com Cartão Beta Gold');
+});
+
+test('loja que destaca o preço no Pix: usa o preço no cartão, da linha das parcelas', async ({ pagina }) => {
+  await pagina.goto('https://www.outra-loja.invalid/p/parcelado');
+  // R$ 3.699,00 no cartão × 3 pontos por real (no Pix, R$ 3.329,10, daria 9.987,3).
+  await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 11.097 pontos com Cartão Beta Gold');
 });
 
 test('falha em silêncio: preço fora do formato', async ({ pagina }) => {

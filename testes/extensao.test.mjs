@@ -6,7 +6,7 @@ import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { lerPreco, PRECO_MAXIMO_CENTAVOS } from '../extensao/fonte/preco.js';
+import { lerPreco, PRECO_MAXIMO_CENTAVOS, recortarPreco } from '../extensao/fonte/preco.js';
 import { textoDoSelo } from '../extensao/fonte/selo-texto.js';
 import { agoraEmSaoPaulo } from '../extensao/fonte/relogio.js';
 import { lerArgumentos, montarExtensao, montarManifesto, textoDosDados, validarSeletores } from '../scripts/extensao/montar.js';
@@ -54,6 +54,27 @@ test('lerPreco respeita o teto e devolve sempre inteiro seguro', () => {
   assert.equal(lerPreco('999999999.99', 'decimal'), PRECO_MAXIMO_CENTAVOS);
   assert.equal(lerPreco('R$ 1.000.000.000,00'), null);
   assert.equal(lerPreco('000.123,00'), 12300);
+});
+
+test('recortarPreco tira o preço no cartão da linha de parcelas (textos reais da Magalu, 23/11/2026)', async () => {
+  const { lojas } = await lerJson('extensao/seletores.json');
+  const padrao = lojas.find((l) => l.loja_id === 'magalu').seletores_preco[0].extrair;
+  const casos = [
+    ['ou R$\u00a03.699,00 em 10x de R$\u00a0369,90 sem juros', '3.699,00', 369900],
+    ['ou R$ 346,32 em 8x de R$ 43,29 sem juros', '346,32', 34632],
+    ['ou R$ 735,68 em 10x de R$ 73,57 sem juros', '735,68', 73568],
+    ['Ou 1x de R$ 39,99 sem juros', '39,99', 3999],
+    ['  ou\n R$ 1,00 em 1x ', '1,00', 100],
+  ];
+  for (const [texto, recorte, centavos] of casos) {
+    assert.equal(recortarPreco(texto, padrao), recorte, texto);
+    assert.equal(lerPreco(recortarPreco(texto, padrao)), centavos, texto);
+  }
+  for (const ruim of ['R$ 329,00', 'no Pix', 'ou R$ abc em 10x', 'De R$ 5.099,00', 'x'.repeat(81), null, 42]) {
+    assert.equal(recortarPreco(ruim, padrao), null, String(ruim));
+  }
+  // O recorte não valida: quem valida é lerPreco.
+  assert.equal(lerPreco(recortarPreco('ou R$ 1.2.3,00 em 2x', padrao)), null);
 });
 
 // ---------------------------------------------------------------------------
@@ -128,9 +149,9 @@ test('o seletores.json do repositório é válido e só tem candidatos A_CONFIRM
 });
 
 test('validarSeletores: só entra loja verificada, com campos limpos', () => {
-  const { erros, ativos } = validarSeletores({ versao: 1, lojas: [lojaOk({ extra: 'x', seletores_preco: [{ css: 'meta', atributo: 'content', formato: 'decimal', lixo: 1 }] }), lojaOk({ loja_id: 'amazon', hosts: ['amazon.com.br'], status: 'A_CONFIRMAR' })] }, LOJAS);
+  const { erros, ativos } = validarSeletores({ versao: 1, lojas: [lojaOk({ extra: 'x', seletores_preco: [{ css: 'meta', atributo: 'content', formato: 'decimal', lixo: 1 }, { css: 'p', formato: 'texto', extrair: '^ou (\\S+)' }] }), lojaOk({ loja_id: 'amazon', hosts: ['amazon.com.br'], status: 'A_CONFIRMAR' })] }, LOJAS);
   assert.deepEqual(erros, []);
-  assert.deepEqual(ativos, [{ loja_id: 'magalu', hosts: ['www.magazineluiza.com.br'], caminho_produto: '/p/', seletores_preco: [{ css: 'meta', formato: 'decimal', atributo: 'content' }] }]);
+  assert.deepEqual(ativos, [{ loja_id: 'magalu', hosts: ['www.magazineluiza.com.br'], caminho_produto: '/p/', seletores_preco: [{ css: 'meta', formato: 'decimal', atributo: 'content' }, { css: 'p', formato: 'texto', extrair: '^ou (\\S+)' }] }]);
 });
 
 test('validarSeletores aponta cada problema e não ativa a loja com erro', () => {
@@ -150,6 +171,9 @@ test('validarSeletores aponta cada problema e não ativa a loja com erro', () =>
     [{ versao: 1, lojas: [lojaOk({ seletores_preco: [{ css: ' ', formato: 'texto' }] })] }, /"css"/],
     [{ versao: 1, lojas: [lojaOk({ seletores_preco: [{ css: 'a', formato: 'html' }] })] }, /"formato"/],
     [{ versao: 1, lojas: [lojaOk({ seletores_preco: [{ css: 'input', atributo: 'value', formato: 'texto' }] })] }, /"atributo"/],
+    [{ versao: 1, lojas: [lojaOk({ seletores_preco: [{ css: 'a', formato: 'texto', extrair: '(' }] })] }, /"extrair"/],
+    [{ versao: 1, lojas: [lojaOk({ seletores_preco: [{ css: 'a', formato: 'texto', extrair: 'R\\$ [\\d,]+' }] })] }, /grupo de captura/],
+    [{ versao: 1, lojas: [lojaOk({ seletores_preco: [{ css: 'a', formato: 'texto', extrair: `(${'a'.repeat(200)})` }] })] }, /"extrair"/],
     [{ versao: 1, lojas: [lojaOk({ fonte_url: 'A_CONFIRMAR' })] }, /fonte_url/],
     [{ versao: 1, lojas: [lojaOk({ verificado_em: '22/11/2026' })] }, /verificado_em/],
     [{ versao: 1, lojas: [lojaOk({ status: 'ok' })] }, /"status"/],
@@ -240,7 +264,13 @@ test('núcleo: config e selo só para o host exato de uma loja ativa', async () 
     const { DADOS, SELETORES } = await import(new URL('dados.js', saida));
     const HOJE = '2026-11-10T12:00';
 
-    assert.deepEqual(configuracaoPara('www.outra-loja.invalid', SELETORES), { caminho_produto: '^/p/', seletores: [{ css: '#preco', atributo: null }] });
+    assert.deepEqual(configuracaoPara('www.outra-loja.invalid', SELETORES), {
+      caminho_produto: '^/p/',
+      seletores: [{ css: '#preco', atributo: null }, { css: '[data-testid="price-installment"] > span[aria-hidden="true"]', atributo: null }],
+    });
+    // Preço recortado da linha de parcelas (regra "extrair" do arquivo de seletores).
+    assert.equal(calcularSelo({ texto: 'ou R$ 3.699,00 em 10x de R$ 369,90 sem juros', indice: 1 }, 'www.outra-loja.invalid', null, DADOS, SELETORES, HOJE).titulo, 'Melhor jeito: 11.097 pontos com Cartão Beta Gold');
+    assert.equal(calcularSelo({ texto: 'R$ 3.329,10', indice: 1 }, 'www.outra-loja.invalid', null, DADOS, SELETORES, HOJE), null);
     assert.deepEqual(configuracaoPara('WWW.OUTRA-LOJA.INVALID', SELETORES)?.caminho_produto, '^/p/');
     for (const host of ['outra-loja.invalid', 'www.outra-loja.invalid.golpe.com', 'golpe.com', '', null]) {
       assert.equal(configuracaoPara(host, SELETORES), null, String(host));

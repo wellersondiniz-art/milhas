@@ -34,8 +34,27 @@ function centavosDe(inteiro, fracao) {
 export function lerPreco(texto, formato = 'texto') {
   if (typeof texto !== 'string' || texto.length > TAMANHO_MAXIMO_TEXTO) return null;
   // Espaços comuns, sem quebra (U+00A0) e finos (U+202F) somem; nada mais é limpo.
-  const limpo = texto.replace(/[\s  ]+/g, '');
+  const limpo = texto.replace(/[\s\u00a0\u202f]+/g, '');
   const m = (formato === 'decimal' ? DECIMAL : TEXTO_BRL).exec(limpo);
   if (!m) return null;
   return centavosDe(m[1], m[2]);
+}
+
+/** Maior texto bruto aceito antes de recortar o preço (a página manda até 80). */
+export const TAMANHO_MAXIMO_BRUTO = 80;
+
+/**
+ * Recorta o preço de um texto maior, com a expressão regular do arquivo de
+ * seletores (ex.: "ou R$ 3.699,00 em 10x de R$ 369,90" → "3.699,00").
+ * Vale o primeiro grupo de captura que achar algo. O recorte ainda passa por
+ * lerPreco depois: a expressão só escolhe o pedaço, não valida.
+ *
+ * @param {unknown} texto
+ * @param {string} padrao  expressão regular com ao menos um grupo de captura
+ * @returns {string|null}
+ */
+export function recortarPreco(texto, padrao) {
+  if (typeof texto !== 'string' || texto.length > TAMANHO_MAXIMO_BRUTO) return null;
+  const m = new RegExp(padrao).exec(texto.replace(/[\s\u00a0\u202f]+/g, ' ').trim());
+  return m?.slice(1).find((g) => g !== undefined) ?? null;
 }

@@ -4,37 +4,61 @@
   "lojas": [
     {
       "loja_id": "magalu",
-      "status": "A_CONFIRMAR",
-      "hosts": ["www.magazineluiza.com.br"],
+      "status": "verificado",
+      "hosts": [
+        "www.magazineluiza.com.br"
+      ],
       "caminho_produto": "/p/[a-z0-9]+/",
       "seletores_preco": [
-        { "css": "[data-testid=\"price-value\"]", "formato": "texto" }
+        {
+          "css": "[data-testid=\"price-installment\"] > span[aria-hidden=\"true\"]",
+          "formato": "texto",
+          "extrair": "^[Oo]u (?:R\\$ ?([\\d.]+,\\d{2}) em \\d+x|1x de R\\$ ?([\\d.]+,\\d{2}))"
+        }
       ],
-      "fonte_url": "A_CONFIRMAR",
-      "verificado_em": "A_CONFIRMAR"
+      "fonte_url": "https://www.magazineluiza.com.br/geladeira-lg-duplex-inverter-476l-bivolt-inox/p/jh8j9ae71b/ed/ref2/",
+      "verificado_em": "2026-11-23",
+      "observacao": "Usa o preço no cartão (linha \"ou R$ X em Nx\" ou \"ou 1x de R$ X\"), não o preço no Pix em destaque: só o pagamento com cartão rende pontos do cartão. Conferido em 3 produtos (air fryer Philco R$ 346,32 no cartão / R$ 329,00 no Pix; air fryer WAP R$ 735,68 / R$ 698,90; geladeira LG R$ 3.699,00 / R$ 3.329,10) e num item de 1x (kit de canetas R$ 39,99)."
     },
     {
       "loja_id": "amazon",
       "status": "A_CONFIRMAR",
-      "hosts": ["www.amazon.com.br"],
+      "hosts": [
+        "www.amazon.com.br"
+      ],
       "caminho_produto": "/(dp|gp/product)/[A-Z0-9]{10}",
       "seletores_preco": [
-        { "css": "#corePrice_feature_div .a-price .a-offscreen", "formato": "texto" },
-        { "css": "#corePriceDisplay_desktop_feature_div .priceToPay .a-offscreen", "formato": "texto" }
+        {
+          "css": "#corePrice_feature_div .a-price .a-offscreen",
+          "formato": "texto"
+        },
+        {
+          "css": "#corePriceDisplay_desktop_feature_div .priceToPay .a-offscreen",
+          "formato": "texto"
+        }
       ],
       "fonte_url": "A_CONFIRMAR",
-      "verificado_em": "A_CONFIRMAR"
+      "verificado_em": "A_CONFIRMAR",
+      "observacao": "Em 23/11/2026 a Amazon respondeu com página de verificação anti-robô (\"Continuar comprando\") e depois erro 503 no navegador do app Claude; seletor não conferido."
     },
     {
       "loja_id": "mercado-livre",
       "status": "A_CONFIRMAR",
-      "hosts": ["www.mercadolivre.com.br", "produto.mercadolivre.com.br"],
+      "hosts": [
+        "www.mercadolivre.com.br",
+        "produto.mercadolivre.com.br"
+      ],
       "caminho_produto": "MLB-?\\d+",
       "seletores_preco": [
-        { "css": ".ui-pdp-price__second-line meta[itemprop=\"price\"]", "atributo": "content", "formato": "decimal" }
+        {
+          "css": ".ui-pdp-price__second-line meta[itemprop=\"price\"]",
+          "atributo": "content",
+          "formato": "decimal"
+        }
       ],
       "fonte_url": "A_CONFIRMAR",
-      "verificado_em": "A_CONFIRMAR"
+      "verificado_em": "A_CONFIRMAR",
+      "observacao": "Em 23/11/2026 o Mercado Livre pediu login (\"Para continuar, acesse sua conta\") antes de mostrar a busca; seletor não conferido."
     }
   ]
 }

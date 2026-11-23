@@ -83,7 +83,12 @@ Tudo é em `extensao/seletores.json`, sem mexer em código:
 
 Se o seletor parar de funcionar, a extensão simplesmente não mostra o selo naquela loja: ela nunca quebra a página.
 
-**Situação em 22/11/2026:** Magalu, Amazon e Mercado Livre têm seletores **candidatos**, ainda `A_CONFIRMAR` (não deu para abrir as lojas reais daqui). Enquanto nenhuma loja estiver verificada, o pacote normal não pede acesso a site nenhum e não faz nada.
+**Situação em 23/11/2026:**
+
+- **Magalu: verificada.** O preço em destaque na Magalu costuma ser o do Pix, e Pix não rende pontos do cartão. Por isso a extensão lê o preço **no cartão**, na linha das parcelas ("ou R$ 3.699,00 em 10x", ou "ou 1x de R$ 39,99"), recortado pela expressão em `extrair`. Se a linha não aparecer, não há selo.
+- **Amazon e Mercado Livre: ainda `A_CONFIRMAR`.** A Amazon mostrou uma tela anti-robô e depois deu erro 503, e o Mercado Livre pediu login antes de mostrar produtos. Os seletores dessas duas lojas continuam como candidatos.
+
+`extrair` (opcional) é uma expressão regular com um grupo de captura: ela só escolhe o pedaço do texto, e o pedaço ainda passa pela validação do preço.
 
 ## Publicar na Chrome Web Store
 

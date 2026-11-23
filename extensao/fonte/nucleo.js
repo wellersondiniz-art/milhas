@@ -8,7 +8,7 @@
 
 import { calcularJeitosDeComprar } from './motor/index.js';
 import { ehVazio, limparPerfil, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
-import { lerPreco } from './preco.js';
+import { lerPreco, recortarPreco } from './preco.js';
 import { textoDoSelo } from './selo-texto.js';
 
 /** A loja (do arquivo de seletores) que atende este host, ou null. Comparação exata. */
@@ -38,7 +38,9 @@ export function calcularSelo(pedido, host, perfilBruto, dados, seletores, hoje) 
   if (!loja || !pedido || typeof pedido !== 'object') return null;
   const regra = Number.isSafeInteger(pedido.indice) ? loja.seletores_preco[pedido.indice] : undefined;
   if (!regra) return null;
-  const centavos = lerPreco(pedido.texto, regra.formato ?? 'texto');
+  // Alguns preços vêm dentro de uma frase ("ou R$ 3.699,00 em 10x"): o arquivo de seletores diz como recortar.
+  const texto = regra.extrair ? recortarPreco(pedido.texto, regra.extrair) : pedido.texto;
+  const centavos = lerPreco(texto, regra.formato ?? 'texto');
   if (centavos === null) return null;
 
   const perfil = limparPerfil(perfilBruto, dados);
