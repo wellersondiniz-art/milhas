@@ -15,6 +15,8 @@ import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
 import { agoraLocal, anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
+import { EXPLICAR_LIGADO } from './explicar/config.js';
+import { montarExplicar } from './explicar/painel.js';
 import { maisAntiga } from './pwa/textos.js';
 
 const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
@@ -133,6 +135,9 @@ function calcular({ focar } = { focar: true }) {
       agoraLocal(new Date()),
     );
     resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil }));
+    if (EXPLICAR_LIGADO && jeitos.length) {
+      resultado.append(montarExplicar({ lojaId: loja.id, centavos, perfil: perfilSalvo, melhor: jeitos[0] }));
+    }
     anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
   } catch (erro) {
     anunciar('');

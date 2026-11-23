@@ -118,8 +118,8 @@ if [ -d dist ]; then
 fi
 
 # ---------------------------------------------------------------------------
-secao "5. XSS e execução de código (site/)"
-xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa 2>/dev/null || true)"
+secao "5. XSS e execução de código (site/, functions/ e servidor/)"
+xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa functions servidor 2>/dev/null || true)"
 if [ -n "$xss" ]; then
   falha "uso de innerHTML/eval ou similar (use textContent / createElement):"
   printf '%s\n' "$xss" | listar 1,2
@@ -133,6 +133,24 @@ if [ -n "$inline" ]; then
   printf '%s\n' "$inline" | listar 1,2
 else
   ok "sem script, evento ou estilo inline no HTML"
+fi
+
+if [ -d functions ]; then
+  # Com functions/, a Cloudflare roda a função em todo pedido, a não ser que
+  # _routes.json diga quais caminhos são dela.
+  if [ -f dist/_routes.json ] && node -e 'const r=require("./dist/_routes.json");process.exit(r.version===1&&r.include.every((c)=>c.startsWith("/api/"))?0:1)' 2>/dev/null; then
+    ok "dist/_routes.json limita as funções a /api/*"
+  else
+    falha "functions/ existe, mas dist/_routes.json não limita as funções a /api/*"
+  fi
+  # A chave da IA só pode existir no servidor, vinda do ambiente da Cloudflare.
+  chave_ia="$(git grep -nIE 'ANTHROPIC_API_KEY|api\.anthropic\.com' -- site 2>/dev/null || true)"
+  if [ -n "$chave_ia" ]; then
+    falha "o código do navegador fala com a API de IA ou cita a chave (use /api/explicar):"
+    printf '%s\n' "$chave_ia" | listar 1,2
+  else
+    ok "o navegador não fala com a API de IA nem conhece a chave"
+  fi
 fi
 
 # ---------------------------------------------------------------------------

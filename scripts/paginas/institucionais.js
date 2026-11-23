@@ -18,6 +18,7 @@
 // Funções puras: recebem a data e a URL base e devolvem os arquivos.
 
 import { formatarData } from '../../site/js/motor/index.js';
+import { EXPLICAR_LIGADO } from '../../site/js/explicar/config.js';
 import { EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
 import { h, juntar } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
@@ -135,12 +136,31 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade() {
+// Só entra quando o botão "Explica pra mim" está ligado
+// (site/js/explicar/config.js). Diz o que a função /api/explicar envia e
+// guarda. REVISÃO JURÍDICA: texto novo, ainda não revisado pelo advogado.
+function secaoExplicar() {
+  return secao('explica-pra-mim', 'Quando você pede "Explica pra mim"',
+    p('Embaixo do resultado há o botão "Explica pra mim", que escreve uma explicação do resultado em palavras simples. Ele é opcional. Só quando você toca nele, o seu aparelho manda para o nosso servidor:'),
+    lista([
+      'a loja e o valor da compra;',
+      juntar('o que você marcou em ', meuPerfil(), ' (programas, clube, cartões pelo nome, milheiro e cotação do dólar), para o servidor refazer a mesma conta;'),
+      'a pergunta que você escreveu, se escreveu.',
+    ]),
+    p('O nosso servidor refaz a conta e manda o resultado e a sua pergunta para a Anthropic, a empresa que faz o Claude, o modelo de inteligência artificial que escreve a explicação. A Anthropic fica nos Estados Unidos, então esse texto é processado fora do Brasil, conforme a ',
+      h('a', { href: 'https://www.anthropic.com/legal/privacy', rel: 'noopener noreferrer' }, 'política de privacidade da Anthropic'), '. Não mandamos o seu IP nem nada que identifique você.'),
+    p(forte('Não escreva dados pessoais na pergunta.'), ' Se a pergunta tiver algo parecido com número de cartão, CPF, telefone ou e-mail, o site nem envia.'),
+    p('A gente não guarda a pergunta nem a explicação. Para limitar o uso por dia, o servidor guarda por 2 dias um código embaralhado feito a partir do endereço de internet (IP), com um contador. O IP em si não fica guardado.'));
+}
+
+function paginaPrivacidade(explicarLigado) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
     descricao: `O que o ${NOME_DO_SITE} guarda, onde guarda e o que nunca pede: sem número de cartão, sem CPF e sem cadastro.`,
-    abertura: 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho.',
+    abertura: explicarLigado
+      ? 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho, a não ser que você peça uma explicação no "Explica pra mim".'
+      : 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho.',
     corpo: [
       secao('nunca-pedimos', 'O que a gente nunca pede',
         lista([
@@ -158,7 +178,9 @@ function paginaPrivacidade() {
           'o valor do milheiro, se você trocou o nosso pelo seu;',
           'a cotação do dólar, se você informou uma.',
         ]),
-        p('Esses dados não vão para nenhum servidor, nem para a gente. A conta é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'),
+        explicarLigado
+          ? p('A conta é feita no seu aparelho. Esses dados só saem dele se você tocar em "Explica pra mim" (veja abaixo), e mesmo assim não ficam guardados. Se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).')
+          : p('Esses dados não vão para nenhum servidor, nem para a gente. A conta é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'),
         p('Em janela anônima, o perfil some quando você fecha a janela.')),
       secao('sem-internet', 'Para funcionar sem internet',
         p('O site guarda no aparelho uma cópia das próprias páginas e da lista de ofertas, para a calculadora funcionar sem internet. Essa cópia não tem nada seu.')),
@@ -177,6 +199,7 @@ function paginaPrivacidade() {
           h('a', { href: 'https://www.cloudflare.com/privacypolicy/', rel: 'noopener noreferrer' }, 'política de privacidade da Cloudflare'), '.')),
       secao('links-fora', 'Links para outros sites',
         p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.')),
+      explicarLigado ? secaoExplicar() : null,
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
     ],
@@ -186,7 +209,7 @@ function paginaPrivacidade() {
 // ---------------------------------------------------------------------------
 // Termos de uso
 
-function paginaTermos() {
+function paginaTermos(explicarLigado) {
   return {
     pasta: 'termos',
     titulo: 'Termos de uso',
@@ -211,6 +234,13 @@ function paginaTermos() {
         p(`O ${NOME_DO_SITE} não é loja, banco nem programa de pontos. Não vendemos produtos, não emitimos cartão e não creditamos pontos. Se os pontos não caírem, quem resolve é o programa ou a loja. Se quiser, avise a gente também, para corrigirmos a informação.`)),
       secao('nao-e-conselho', 'Não é conselho financeiro',
         p('O site não diz se vale a pena fazer um cartão, assinar um clube ou comprar alguma coisa. Ele só compara pontos. Anuidade, juros e o preço do produto em outras lojas ficam por sua conta.')),
+      explicarLigado
+        ? secao('explica-pra-mim', 'O "Explica pra mim"',
+          p('O botão "Explica pra mim" mostra um texto automático, escrito por inteligência artificial a partir do resultado da calculadora. Ele não busca ofertas novas e não refaz a conta, mas pode errar ou se expressar mal.'),
+          p(forte('Se a explicação disser uma coisa e o resultado disser outra, vale o resultado. E se a loja ou o programa disserem outra, vale o que eles disserem.')),
+          p('A explicação não é conselho financeiro: ela não decide por você se vale assinar um clube, fazer um cartão ou comprar. Quando a resposta depende de algo que não está nos nossos dados, como o preço do clube, ela diz que não sabe.'),
+          p('Use o botão só para perguntas sobre a conta. Há um limite de explicações por dia, e pedidos abusivos podem ser bloqueados.'))
+        : null,
       secao('como-se-mantem', 'Como o site se mantém',
         p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
         p('Se um dia isso mudar, vamos avisar de forma clara, perto de cada link, que podemos ganhar uma comissão sem custo extra para você. E a ordem do resultado vai continuar sendo só pelos pontos.')),
@@ -302,6 +332,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   revisaoPendente  padrão: REVISAO_JURIDICA_PENDENTE (config.js)
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
+ *   explicarLigado   padrão: EXPLICAR_LIGADO (site/js/explicar/config.js)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -310,10 +341,11 @@ export function paginasInstitucionais({
   revisaoPendente = REVISAO_JURIDICA_PENDENTE,
   email = EMAIL_DE_CONTATO,
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
+  explicarLigado = EXPLICAR_LIGADO,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(), paginaTermos(), contatoPagina];
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(explicarLigado), paginaTermos(explicarLigado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {
