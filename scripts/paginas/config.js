@@ -35,3 +35,13 @@ export const TEXTOS_ATUALIZADOS_EM = '2026-11-22';
 // Contato diz que o canal está sendo preparado e o build avisa.
 // Exemplo: export const EMAIL_DE_CONTATO = 'contato@milhasdavez.com.br';
 export const EMAIL_DE_CONTATO = 'A_CONFIRMAR';
+
+// ---------------------------------------------------------------------------
+// Alertas por e-mail (servidor/alertas/, functions/api/alertas/, site/alertas/)
+
+// Enquanto for false, nenhuma página leva para /alertas/ e a Privacidade não
+// fala de alertas (porque o site não guarda e-mail). Só troque para true
+// depois de configurar o Supabase, o Resend, a Cloudflare e o GitHub
+// (README, seção "Alertas por e-mail") e de testar com um e-mail seu.
+// Ao trocar, mude também TEXTOS_ATUALIZADOS_EM: a Privacidade muda.
+export const ALERTAS_LIGADO = false;

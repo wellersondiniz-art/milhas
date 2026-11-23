@@ -18,7 +18,7 @@
 // Funções puras: recebem a data e a URL base e devolvem os arquivos.
 
 import { formatarData } from '../../site/js/motor/index.js';
-import { EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
+import { ALERTAS_LIGADO, EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
 import { h, juntar } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 
@@ -135,18 +135,22 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade() {
+function paginaPrivacidade(alertas) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
     descricao: `O que o ${NOME_DO_SITE} guarda, onde guarda e o que nunca pede: sem número de cartão, sem CPF e sem cadastro.`,
-    abertura: 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho.',
+    abertura: alertas
+      ? 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho, a não ser que você peça um alerta por e-mail.'
+      : 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho.',
     corpo: [
       secao('nunca-pedimos', 'O que a gente nunca pede',
         lista([
           'Número do cartão, validade ou código de segurança.',
           'CPF, RG ou qualquer documento.',
-          'Nome, e-mail, telefone ou endereço para usar o site.',
+          alertas
+            ? 'Nome, telefone ou endereço para usar o site. O e-mail, só se você pedir um alerta (veja abaixo).'
+            : 'Nome, e-mail, telefone ou endereço para usar o site.',
           'Senha ou login de banco, loja ou programa de pontos.',
         ]),
         p('Não há cadastro nem login. Você escolhe os cartões pelo nome, como "Cartão X Platinum", nunca pelo número. Se alguém pedir esses dados em nome do ', NOME_DO_SITE, ', não é a gente.')),
@@ -158,8 +162,11 @@ function paginaPrivacidade() {
           'o valor do milheiro, se você trocou o nosso pelo seu;',
           'a cotação do dólar, se você informou uma.',
         ]),
-        p('Esses dados não vão para nenhum servidor, nem para a gente. A conta é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'),
+        p(alertas
+          ? 'Esses dados não vão para nenhum servidor, nem para a gente, a não ser que você peça um alerta por e-mail (veja abaixo). A conta da calculadora é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'
+          : 'Esses dados não vão para nenhum servidor, nem para a gente. A conta é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'),
         p('Em janela anônima, o perfil some quando você fecha a janela.')),
+      alertas ? secaoDeAlertas() : null,
       secao('sem-internet', 'Para funcionar sem internet',
         p('O site guarda no aparelho uma cópia das próprias páginas e da lista de ofertas, para a calculadora funcionar sem internet. Essa cópia não tem nada seu.')),
       secao('levar', 'Levar para outro aparelho',
@@ -181,6 +188,23 @@ function paginaPrivacidade() {
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
     ],
   };
+}
+
+/** Só aparece com ALERTAS_LIGADO: é quando o site passa a guardar um e-mail. */
+function secaoDeAlertas() {
+  return secao('alertas', 'Alertas por e-mail (só se você pedir)',
+    p('Se você criar um ', link('alertas/', 'alerta de pontos por e-mail'), ', a gente guarda no servidor:'),
+    lista([
+      'o seu endereço de e-mail;',
+      'o alerta: a loja, o programa (se você escolheu um) e quantos pontos por real você quer;',
+      'uma cópia do seu perfil, só com os programas, se você assina o clube e desde quando, e os cartões pelo nome. Sem milheiro, sem cotação e nunca número de cartão;',
+      'as datas dos últimos e-mails, para respeitar o limite de e-mails por semana.',
+    ]),
+    p('Para que serve: só para fazer a conta do alerta depois de cada atualização das ofertas e mandar o e-mail. Não vendemos, não emprestamos e não usamos o e-mail para propaganda.'),
+    p('Duplo aceite: primeiro mandamos um link de confirmação. Sem o clique nesse link, não mandamos alerta nenhum. O link vale por 48 horas; depois disso, o pedido não confirmado é apagado na rodada semanal seguinte.'),
+    p('Limites: no máximo 2 e-mails de alerta por semana. Cada e-mail vai só para você, nunca junto com o de outra pessoa.'),
+    p('Cancelar: todo e-mail tem o link "Cancelar". Ao cancelar, apagamos o seu e-mail, os alertas e a cópia do perfil na hora.'),
+    p('Quem ajuda: os dados ficam no Supabase (banco de dados) e os e-mails saem pelo Resend (serviço de envio de e-mail). O registro de envios que guardamos não tem o seu e-mail: só a data, o tipo e se deu certo.'));
 }
 
 // ---------------------------------------------------------------------------
@@ -302,6 +326,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   revisaoPendente  padrão: REVISAO_JURIDICA_PENDENTE (config.js)
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
+ *   alertas          padrão: ALERTAS_LIGADO (config.js); muda a Privacidade
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -310,10 +335,11 @@ export function paginasInstitucionais({
   revisaoPendente = REVISAO_JURIDICA_PENDENTE,
   email = EMAIL_DE_CONTATO,
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
+  alertas = ALERTAS_LIGADO,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(), paginaTermos(), contatoPagina];
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(alertas), paginaTermos(), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

@@ -82,4 +82,5 @@ Vamos preenchendo conforme o projeto cresce.
 | Servir localmente | `npm run servir` (serve `dist/`) |
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
+| Alertas por e-mail | `npm run alertas -- --simular` (só conta) e `npm run test:banco` (migração num Postgres local, Docker) |
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |

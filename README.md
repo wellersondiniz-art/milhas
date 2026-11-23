@@ -184,6 +184,34 @@ Cada passo usa a data de hoje (Brasília); para outra data, passe `--data AAAA-M
 
 Para ver o fluxo inteiro sem internet e sem chave: `npm run atualizacao:demo`. Ele usa duas páginas fictícias e respostas do modelo escritas à mão (`testes/atualizacao/`), roda numa cópia temporária do projeto e só simula os comandos de Git.
 
+## Alertas por e-mail
+
+A pessoa diz "me avise quando a [loja] tiver [X] pontos por real ou mais para o meu perfil". Depois de cada atualização semanal das ofertas, o robô faz a conta com o **mesmo motor** da calculadora (`site/js/motor/`) e manda um e-mail para quem chegou no alvo. **Está desligado** (`ALERTAS_LIGADO = false` em `scripts/paginas/config.js`) até tudo abaixo estar configurado e testado.
+
+Como funciona:
+
+- **Inscrição** (`site/alertas/`, rota `POST /api/alertas/inscrever`): loja, programa (opcional), pontos por real, e-mail e o aceite. O perfil vai só com ids, clube e data do clube. A resposta é sempre a mesma, exista o e-mail ou não.
+- **Duplo opt-in**: nada vale antes do clique no link de confirmação, que vale 48 horas e uma vez só. O banco guarda só o SHA-256 do token. O link abre uma página com o botão "Confirmar" (o leitor de links do provedor de e-mail não confirma sozinho).
+- **Cancelar**: todo e-mail tem o link (assinado com HMAC) e o cabeçalho `List-Unsubscribe` com cancelamento em um clique. Cancelar apaga o e-mail e os alertas na hora.
+- **Limites**: até 2 e-mails de alerta por pessoa em 7 dias, até 3 e-mails de confirmação por endereço em 24 horas e até 10 alertas por e-mail. A mesma oferta com os mesmos pontos não é avisada duas vezes.
+- **Privacidade**: cada e-mail vai para uma pessoa só. O log (`alertas_envios`) tem data, tipo, resultado e quantidade, sem e-mail, id ou loja. A saída do robô só tem contagens.
+- **Código**: regras e envio em `servidor/alertas/`, rotas em `functions/api/alertas/`, robô em `scripts/alertas/enviar.js` e `.github/workflows/alertas.yml`, banco em `supabase/migrations/`.
+
+Para ligar (uma vez só):
+
+1. **Supabase**: crie o projeto (região São Paulo) e aplique `supabase/migrations/20261123000000_alertas_email.sql`. As tabelas têm RLS forçada, nenhuma política e nenhum grant para `anon`/`authenticated`: só a chave secreta acessa. Em **Project Settings → API Keys**, crie **duas** chaves secretas (`sb_secret_...`): uma para a Cloudflare e outra para o GitHub. Assim dá para revogar uma sem parar a outra.
+2. **Resend**: crie a conta, verifique o domínio de envio (registros DNS no Cloudflare) e crie uma chave com permissão **só de envio**.
+3. **Segredo dos links**: gere 32+ caracteres aleatórios (ex.: `openssl rand -base64 48`). O mesmo valor vai para a Cloudflare e para o GitHub.
+4. **Cloudflare Pages** → `milhasdavez` → Settings → Variables and Secrets, no ambiente **Production**: `SUPABASE_URL` (variável), `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `ALERTAS_SEGREDO` (segredos) e `ALERTAS_REMETENTE` (variável, ex.: `Milhas da Vez <alertas@milhasdavez.com.br>`). Recomendado: uma regra de Rate Limiting em `/api/alertas/*` (Security → WAF).
+5. **GitHub** → Settings → Environments → New environment `alertas`, com os segredos `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (a outra chave), `RESEND_API_KEY`, `ALERTAS_REMETENTE` e `ALERTAS_SEGREDO`, e a variável `ALERTAS_URL_SITE` (ex.: `https://milhasdavez.com.br`).
+6. **Teste com um e-mail seu** e só então troque `ALERTAS_LIGADO` para `true` (e `TEXTOS_ATUALIZADOS_EM`, porque a Privacidade muda).
+
+Comandos:
+
+- `npm run alertas -- --simular`: avalia todos os alertas e conta, sem enviar nem gravar (precisa só de `SUPABASE_URL` e `SUPABASE_SECRET_KEY`).
+- `npm run alertas`: rodada de verdade (o robô do GitHub faz isso sozinho quando `dados/ofertas.json` muda na `main`; também dá para rodar em Actions → alertas → Run workflow).
+- `npm run test:banco`: aplica a migração num Postgres descartável no Docker e prova que `anon` e `authenticated` não leem nem apagam nada, mais os CHECKs e o limite de alertas. Não toca no Supabase.
+
 ## Pastas
 
 - `site/`: o código do site, legível (`js/motor/` guarda o cálculo puro, sem interface; `js/tela/` monta a tela inicial e só exibe o que o motor devolve; `_headers` define os cabeçalhos de segurança).

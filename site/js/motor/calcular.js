@@ -565,6 +565,8 @@ function paraSaida(ctx, j) {
     pontos_do_cartao: pontosParaNumero(j.cartEsc),
     total_pontos: pontosParaNumero(total),
     total_pontos_texto: formatarPontos(total),
+    // Total exato, em pontos × ESCALA_PONTOS (BigInt), para quem precisa comparar sem float (alertas).
+    total_pontos_escalado: total,
     valor_estimado_em_reais:
       j.valorEsc === null ? null : { bilionesimos_de_centavo: j.valorEsc, texto: formatarValor(j.valorEsc) },
     condicoes_a_cumprir: j.condicoes,
