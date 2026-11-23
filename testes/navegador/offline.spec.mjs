@@ -5,8 +5,13 @@ import { readdir } from 'node:fs/promises';
 import { abrirInicio, cartoesDoResultado, expect, test } from './apoio.mjs';
 
 /** Abre o site e espera o service worker assumir a página e guardar os dados. */
-/** Quantos arquivos de dados o site publica (dist/dados/*.json). */
-const arquivosDeDados = async () => (await readdir(new URL('../../dist/dados/', import.meta.url))).filter((n) => n.endsWith('.json')).length;
+/**
+ * Quantos arquivos de dados a calculadora usa (dist/dados/*.json). Os de
+ * postos (redes-postos, regras-postos) só a tela "Quanto rende abastecer" pede.
+ */
+const SO_DA_TELA_DE_ABASTECER = new Set(['redes-postos.json', 'regras-postos.json']);
+const arquivosDeDados = async () => (await readdir(new URL('../../dist/dados/', import.meta.url)))
+  .filter((n) => n.endsWith('.json') && !SO_DA_TELA_DE_ABASTECER.has(n)).length;
 
 async function abrirComServiceWorker(page) {
   await abrirInicio(page);

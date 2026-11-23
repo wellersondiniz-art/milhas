@@ -448,7 +448,7 @@ export function gerarPaginas(dados, { hoje, urlBase = null }) {
   const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {
-    const caminhos = ['', 'ofertas/', ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];
+    const caminhos = ['', 'ofertas/', 'abastecer/', ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];
     arquivos.push({ caminho: 'sitemap.xml', conteudo: sitemap(base, caminhos, hoje) });
   } else {
     avisos.push('URL base do site A_CONFIRMAR: sem link canônico, sem og:url e sem sitemap.xml. Defina em scripts/paginas/config.js, ou use URL_DO_SITE / --url-base.');

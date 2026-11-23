@@ -3,3 +3,6 @@ export { calcularJeitosDeComprar, A_CONFIRMAR, DIAS_AVISO_VENCIMENTO, DIAS_DADO_
 export {
   ESCALA_PONTOS, ESCALA_VALOR, arredondarParaCentavos, formatarCentavos, formatarCotacao, formatarData, formatarPontos, formatarValor,
 } from './formatar.js';
+export {
+  COMBUSTIVEIS, LITROS_MAXIMOS_ML, PRECO_MAXIMO_MILESIMOS, calcularAbastecimento, formatarLitros, formatarPrecoLitro,
+} from './combustivel.js';

@@ -544,7 +544,7 @@ test('aprovação: recusa proposta editada, ofertas.json mudado, Git sujo e bran
   };
   const r = await aprovar({ raiz, data: DATA, codigo, executar: semGh, log: (m) => mensagens.push(m) });
   assert.equal(r.pr, null);
-  assert.ok(mensagens.some((m) => m.includes('https://github.com/dono/milhas/compare/main...ofertas%2F2026-11-22?expand=1')));
+  assert.ok(mensagens.some((m) => m.includes(`https://github.com/dono/milhas/compare/main...ofertas%2F${DATA}?expand=1`)));
 });
 
 test('aprovação: se a gravação não passar na validação, desfaz a branch e não envia', async () => {
@@ -560,7 +560,7 @@ test('aprovação: se a gravação não passar na validação, desfaz a branch e
   const comandos = [];
   const executar = (c, a) => { comandos.push(`${c} ${a.join(' ')}`); return a[0] === 'rev-parse' ? 'main' : ''; };
   await assert.rejects(aprovar({ raiz, data: DATA, codigo: p.codigo, executar, log: () => {} }), /não passaram na validação/);
-  assert.ok(comandos.includes('git branch -D ofertas/2026-11-22'));
+  assert.ok(comandos.includes(`git branch -D ofertas/${DATA}`));
   assert.ok(!comandos.some((c) => c.startsWith('git push')));
   await writeFile(arquivoOfertas, base); // o "git checkout" acima foi simulado
   await assert.rejects(aprovar({ raiz, data: DATA, codigo: p.codigo, soGravar: true, executar, log: () => {} }), /não passaram na validação/);

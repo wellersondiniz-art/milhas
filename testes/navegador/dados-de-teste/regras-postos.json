@@ -1,0 +1,76 @@
+[
+  {
+    "id": "alfa-litro",
+    "rede_id": "rede-alfa",
+    "programa_id": "programa-alfa",
+    "nome_do_app": "App Alfa",
+    "unidade": "litro",
+    "pontos_por_unidade": 2,
+    "combustiveis": [
+      "gasolina_comum",
+      "gasolina_aditivada",
+      "etanol_comum"
+    ],
+    "formas_de_pagamento": [
+      "cpf_no_caixa"
+    ],
+    "inicio": "sem_data",
+    "fim": "sem_data",
+    "credito_prazo": {
+      "dias": 3,
+      "tipo": "corridos"
+    },
+    "validade_dos_pontos_meses": 12,
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "observacoes": "Dado de teste, não é uma regra real."
+  },
+  {
+    "id": "beta-real",
+    "rede_id": "rede-beta",
+    "programa_id": "programa-beta",
+    "nome_do_app": "App Beta",
+    "unidade": "real",
+    "pontos_por_unidade": 1,
+    "pontua_a_cada": 100,
+    "combustiveis": [
+      "gasolina_comum",
+      "etanol_comum",
+      "diesel_s10_comum",
+      "gnv"
+    ],
+    "formas_de_pagamento": [
+      "app_meio_a_confirmar"
+    ],
+    "inicio": "sem_data",
+    "fim": "sem_data",
+    "credito_prazo": {
+      "dias": 3,
+      "tipo": "corridos"
+    },
+    "validade_dos_pontos_meses": 12,
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "observacoes": "Dado de teste, não é uma regra real."
+  },
+  {
+    "id": "gama-a-confirmar",
+    "rede_id": "rede-gama",
+    "programa_id": "programa-alfa",
+    "unidade": "A_CONFIRMAR",
+    "pontos_por_unidade": "A_CONFIRMAR",
+    "combustiveis": "A_CONFIRMAR",
+    "formas_de_pagamento": "A_CONFIRMAR",
+    "status": "A_CONFIRMAR",
+    "inicio": "sem_data",
+    "fim": "sem_data",
+    "credito_prazo": {
+      "dias": 3,
+      "tipo": "corridos"
+    },
+    "validade_dos_pontos_meses": 12,
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "observacoes": "Dado de teste, não é uma regra real."
+  }
+]

@@ -201,10 +201,10 @@ test('tela não usa innerHTML, outerHTML, insertAdjacentHTML nem document.write'
 // ---------------------------------------------------------------------------
 // Cópia dos dados para o site
 
-test('copiar dados leva os 5 arquivos para a pasta do site', async () => {
+test('copiar dados leva os 7 arquivos para a pasta do site (com redes e regras de postos)', async () => {
   const destino = await mkdtemp(join(tmpdir(), 'dados-'));
   const n = await copiarDados(new URL('../dados/', import.meta.url), pathToFileURL(`${destino}/`));
-  assert.equal(n, 5);
+  assert.equal(n, 7);
   for (const nome of ARQUIVOS) {
     const original = await readFile(new URL(`../dados/${nome}`, import.meta.url), 'utf8');
     assert.equal(await readFile(join(destino, nome), 'utf8'), original);

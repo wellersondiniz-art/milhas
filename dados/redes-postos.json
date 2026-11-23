@@ -1,0 +1,28 @@
+[
+  {
+    "id": "ipiranga",
+    "nome": "Ipiranga",
+    "site": "https://www.ipiranga.com.br",
+    "fonte_url": "https://www.ipiranga.com.br/wps/portal/pt-br/ipiranga/km-de-vantagens",
+    "verificado_em": "2026-11-23"
+  },
+  {
+    "id": "petrobras",
+    "nome": "Petrobras",
+    "outros_nomes": [
+      "BR"
+    ],
+    "site": "https://www.postospetrobras.com.br",
+    "fonte_url": "https://www.postospetrobras.com.br/ganhe-mais-com/premmia",
+    "verificado_em": "2026-11-23",
+    "observacoes": "Postos Petrobras, antigos postos BR. O programa Petrobras Premmia é da Vibra."
+  },
+  {
+    "id": "shell",
+    "nome": "Shell",
+    "site": "https://www.shell.com.br",
+    "fonte_url": "https://www.shell.com.br/motoristas/app-shell-box/regulamento-shell-box-clube.html",
+    "verificado_em": "2026-11-23",
+    "observacoes": "O Shell Box Clube é da Raízen, que opera os postos Shell no Brasil."
+  }
+]
