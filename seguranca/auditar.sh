@@ -195,6 +195,14 @@ fi
 # ---------------------------------------------------------------------------
 secao "8. CORS"
 cors="$(git grep -nIiE 'Access-Control-Allow-Origin:?[[:space:]]*["'\'']?\*' -- . "${EXCLUIR[@]}" 2>/dev/null || true)"
+# Única exceção: os dados públicos (/dados/*) em site/_headers, lidos pelo app
+# Android/iOS. Arquivos públicos, sem cookie. Qualquer outro * continua falha.
+cors="$(printf '%s\n' "$cors" | while IFS= read -r achado; do
+  [ -z "$achado" ] && continue
+  arquivo="${achado%%:*}"; resto="${achado#*:}"; linha="${resto%%:*}"
+  if [ "$arquivo" = "site/_headers" ] && [ "$(sed -n "$((linha - 1))p" site/_headers)" = "/dados/*" ]; then continue; fi
+  printf '%s\n' "$achado"
+done)"
 if [ -n "$cors" ]; then
   falha "CORS liberado para qualquer origem (*):"
   printf '%s\n' "$cors" | listar 1,2
@@ -240,7 +248,9 @@ fi
 secao "10. Dependências"
 # Fase 1: nenhuma dependência de runtime. Ferramenta de teste (devDependencies)
 # só da lista aprovada e com versão exata.
-DEV_PERMITIDAS='["@playwright/test"]'
+# Capacitor e o plugin do cofre: aprovados em 23/11/2026 (app Android/iOS);
+# só entram no app nativo, nunca no site.
+DEV_PERMITIDAS='["@playwright/test","@capacitor/cli","@capacitor/core","@capacitor/android","@capacitor/ios","@aparajita/capacitor-secure-storage"]'
 if [ -f package.json ]; then
   if node -e 'const p=require("./package.json");process.exit(Object.keys({...p.dependencies,...p.optionalDependencies,...p.peerDependencies}).length?1:0)' 2>/dev/null; then
     ok "package.json sem dependências de runtime"

@@ -342,3 +342,22 @@ test('o workflow de publicação só roda à mão e os segredos só entram nos p
   const verificacao = await ler('.github/workflows/app.yml');
   assert.doesNotMatch(verificacao, /secrets\./);
 });
+
+// ---------------------------------------------------------------------------
+// Privacidade: a página diz o que o app faz de verdade
+
+test('Privacidade fala do app: cofre do sistema, sem backup, só a lista pública vem do site', async () => {
+  const { paginasInstitucionais } = await import('../scripts/paginas/institucionais.js');
+  const { paginas } = paginasInstitucionais({ urlBase: 'https://exemplo.com.br' });
+  const html = paginas.find((p) => p.caminho === 'privacidade/index.html').conteudo;
+  const texto = html.replace(/<[^>]+>/g, ' ').replace(/&quot;/g, '"').replace(/\s+/g, ' ');
+  assert.match(texto, /No app para Android e iPhone/);
+  assert.match(texto, /Keychain/);
+  assert.match(texto, /não entra no backup/);
+  assert.match(texto, /lista pública de lojas e ofertas/);
+  assert.match(texto, /não pede acesso a câmera, localização, contatos, fotos ou notificações/);
+  // O que o texto promete, o app cumpre: só a permissão de internet e a CSP só libera o site.
+  const manifesto = await ler('app/android/app/src/main/AndroidManifest.xml');
+  assert.doesNotMatch(manifesto, /CAMERA|LOCATION|CONTACTS|MEDIA_IMAGES|POST_NOTIFICATIONS/);
+  assert.doesNotMatch(await ler('app/ios/App/App/Info.plist'), /UsageDescription/);
+});

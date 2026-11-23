@@ -29,7 +29,7 @@ export const REVISAO_JURIDICA_PENDENTE = true;
 
 // Data da última mudança nos textos das páginas institucionais (AAAA-MM-DD).
 // Troque sempre que mudar o que essas páginas dizem.
-export const TEXTOS_ATUALIZADOS_EM = '2026-11-22';
+export const TEXTOS_ATUALIZADOS_EM = '2026-11-23';
 
 // Canal de contato. Ainda não foi escolhido: com "A_CONFIRMAR", a página
 // Contato diz que o canal está sendo preparado e o build avisa.
