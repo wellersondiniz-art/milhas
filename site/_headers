@@ -16,3 +16,10 @@
 /manifest.webmanifest
   Content-Type: application/manifest+json
   Cache-Control: no-cache
+
+# Os dados públicos (lojas, cartões, programas, ofertas) podem ser lidos pelo
+# app das lojas (Android/iOS), que roda em outra origem (capacitor://localhost
+# e https://localhost). São arquivos públicos, sem cookie: liberar para
+# qualquer origem não expõe nada que já não esteja no site.
+/dados/*
+  Access-Control-Allow-Origin: *

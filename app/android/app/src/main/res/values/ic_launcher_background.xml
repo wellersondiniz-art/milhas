@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Verde do Cofrinho (site/css/base.css, --cor-primaria). -->
+    <color name="ic_launcher_background">#1F6B3A</color>
+    <!-- Creme do Cofrinho (--cor-fundo). -->
+    <color name="abertura_fundo">#FBF6EC</color>
+</resources>

@@ -24,10 +24,18 @@
     "extrair": "node scripts/extrair.js",
     "propor": "node scripts/propor-mudancas.js",
     "aprovar": "node scripts/aprovar-mudancas.js",
-    "atualizacao:demo": "node testes/atualizacao/demo.mjs"
-
+    "atualizacao:demo": "node testes/atualizacao/demo.mjs",
+    "app:montar": "npm run build && node scripts/app/montar-app.js && cap sync",
+    "app:imagens": "node scripts/app/gerar-imagens.js",
+    "app:android": "npm run app:montar && cap open android",
+    "app:ios": "npm run app:montar && cap open ios"
   },
   "devDependencies": {
+    "@aparajita/capacitor-secure-storage": "8.0.1",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/core": "8.6.2",
+    "@capacitor/ios": "8.6.2",
     "@playwright/test": "1.63.0"
   }
 }

@@ -8,7 +8,7 @@
 import { calcularJeitosDeComprar, formatarCentavos } from './motor/index.js';
 import { criarBuscaDeLoja } from './tela/busca-loja.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
-import { abrirArmazem } from './perfil/armazem.js';
+import { abrirArmazem, CHAVE, CHAVE_V1 } from './perfil/armazem.js';
 import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
 import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
@@ -16,6 +16,10 @@ import { agoraLocal, anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { maisAntiga } from './pwa/textos.js';
+import { ponteNativa } from './nativo/plataforma.js';
+import { abrirArmazenamentoSeguro } from './nativo/armazem-seguro.js';
+import { buscarDadosDoApp } from './nativo/dados.js';
+import { ENDERECO_DO_SITE, ESPERA_DOS_DADOS_MS } from './nativo/config.js';
 
 const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
 
@@ -40,7 +44,13 @@ let dados = null;
 let perfilSalvo = null;
 let mostrandoResultado = false;
 let telaDoPerfil = null;
-const armazem = abrirArmazem((() => { try { return globalThis.localStorage; } catch { return undefined; } })());
+// No app das lojas (Android/iOS), o perfil vai para o cofre do sistema;
+// no navegador, para o localStorage. Ver js/nativo/armazem-seguro.js.
+const ponte = ponteNativa();
+const armazem = abrirArmazem(ponte
+  ? await abrirArmazenamentoSeguro(ponte, [CHAVE, CHAVE_V1], { aoFalhar: (erro) => console.error(erro) })
+  : (() => { try { return globalThis.localStorage; } catch { return undefined; } })());
+if (ponte) document.documentElement.dataset.app = ponte.getPlatform();
 
 // ---------------------------------------------------------------------------
 // Passo 1: loja
@@ -225,7 +235,10 @@ window.addEventListener('hashchange', aoMudarRota);
 
 /** Busca dados/<nome>.json. Devolve { lista, salvoEm }. */
 async function buscarLista(nome) {
-  const resposta = await fetch(`dados/${nome}.json`, { cache: 'no-cache' });
+  // No app, tenta os dados do site primeiro (as ofertas mudam toda semana).
+  const resposta = ponte
+    ? (await buscarDadosDoApp(nome, { buscar: fetch, endereco: ENDERECO_DO_SITE, espera: ESPERA_DOS_DADOS_MS })).resposta
+    : await fetch(`dados/${nome}.json`, { cache: 'no-cache' });
   if (!resposta.ok) throw new Error(`dados/${nome}.json respondeu ${resposta.status}`);
   // Veio da cópia guardada pelo service worker? Ele marca a hora em X-Salvo-Em.
   const salvoEm = resposta.headers.get('X-Salvo-Em');
@@ -322,7 +335,18 @@ async function carregar() {
   }
 }
 
-const pwa = iniciarPwa({ avisoVersao: $('aviso-versao'), avisoConexao: $('aviso-conexao') });
+// No app, os arquivos já estão dentro dele: sem service worker (versão nova
+// chega pela loja). O aviso de "sem internet" continua.
+const pwa = iniciarPwa({
+  avisoVersao: $('aviso-versao'),
+  avisoConexao: $('aviso-conexao'),
+  navegador: ponte ? { onLine: navigator.onLine } : navigator,
+});
+// No app, baixar arquivo pelo navegador não funciona: exportar fica no site.
+if (ponte) {
+  $('perfil-exportar').hidden = true;
+  $('perfil-transferir').textContent = 'Para levar o perfil para o app, exporte no site e toque em "Importar perfil" aqui. Importar substitui o que está marcado aqui.';
+}
 
 mostrarConvite();
 aoMudarRota();
