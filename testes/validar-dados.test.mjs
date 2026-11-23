@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { dataValida, validarDados, validarSchema } from '../scripts/validar-dados.js';
 
 const DADOS = new URL('../dados/', import.meta.url);
-const HOJE = '2026-11-22';
+const HOJE = '2026-11-23';
 
 async function lerReais() {
   const dados = {};
@@ -185,7 +185,7 @@ test('reprova origem do milheiro fora da lista', async () => {
 });
 
 test('cotação do dólar: aceita inteiro (reais × 10.000) e avisa quando está A_CONFIRMAR', async () => {
-  const { avisos } = await validarDados(DADOS, { hoje: HOJE });
+  const { avisos } = await validarCom((d) => { d.cambio[0].reais_por_dolar = 'A_CONFIRMAR'; });
   assert.ok(avisos.some((a) => a.includes('câmbio "usd-brl"') && a.includes('A_CONFIRMAR')));
   const ok = await validarCom((d) => {
     d.cambio[0].reais_por_dolar = 53456;

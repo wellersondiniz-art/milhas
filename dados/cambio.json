@@ -2,11 +2,11 @@
   {
     "id": "usd-brl",
     "moeda": "USD",
-    "reais_por_dolar": "A_CONFIRMAR",
+    "reais_por_dolar": 58889,
     "origem": "ptax",
-    "data_referencia": "A_CONFIRMAR",
-    "observacoes": "PTAX de venda do Banco Central. Ainda não conferida: o acesso ao site do Banco Central falhou em 22/11/2026. Enquanto isso, cada pessoa pode informar a cotação em Meu perfil.",
-    "fonte_url": "https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes",
-    "verificado_em": "2026-11-22"
+    "data_referencia": "2026-11-19",
+    "observacoes": "PTAX de venda do Banco Central de 19/11/2026 (último fechamento disponível em 23/11/2026; 20/11 foi feriado). Cada pessoa pode informar outra cotação em Meu perfil.",
+    "fonte_url": "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao=%2711-19-2026%27&$format=json",
+    "verificado_em": "2026-11-23"
   }
 ]

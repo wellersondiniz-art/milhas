@@ -272,7 +272,8 @@ test('gerar no disco: grava os arquivos e todo link interno leva a um arquivo', 
   const pasta = await mkdtemp(join(tmpdir(), 'paginas-'));
   const saida = pathToFileURL(`${pasta}/site/`);
   await cp(new URL('site/', RAIZ), saida, { recursive: true });
-  const { arquivos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje: HOJE, urlBase: BASE });
+  // Dados reais: a data precisa ser a da última conferência ou depois.
+  const { arquivos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje: '2026-11-23', urlBase: BASE });
   const lojas = await readdir(new URL('loja/', saida));
   const dados = await lerDados(new URL('dados/', RAIZ));
   assert.deepEqual(lojas.sort(), dados.lojas.map((l) => l.id).sort());
