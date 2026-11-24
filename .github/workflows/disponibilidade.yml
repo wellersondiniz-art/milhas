@@ -1,0 +1,55 @@
+name: disponibilidade
+
+# Monitor de reserva: confere o site a cada 15 minutos (o principal é o
+# UptimeRobot, fora do GitHub; ver docs/operacao.md, parte 1).
+# Fora do ar → abre um alerta (issue) e o GitHub avisa por e-mail e no app.
+# Voltou → fecha o alerta sozinho.
+# Desligado até configurar a variável SITE_URL
+# (Settings → Secrets and variables → Actions → Variables).
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: disponibilidade
+  cancel-in-progress: false
+
+jobs:
+  conferir:
+    name: Conferir o site
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Conferir página inicial e dados
+        id: conferir
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: |
+          set +e
+          node scripts/operacao/disponibilidade.js --saida "$RUNNER_TEMP/alerta.md"
+          echo "codigo=$?" >> "$GITHUB_OUTPUT"
+      - name: Abrir alerta (site fora do ar)
+        if: steps.conferir.outputs.codigo == '1'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/operacao/alerta.js abrir --chave disponibilidade --titulo "Site fora do ar" --corpo-arquivo "$RUNNER_TEMP/alerta.md"
+      - name: Fechar alerta (site no ar)
+        if: steps.conferir.outputs.codigo == '0' && vars.SITE_URL != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/operacao/alerta.js fechar --chave disponibilidade
+      - name: Erro de configuração
+        if: steps.conferir.outputs.codigo != '0' && steps.conferir.outputs.codigo != '1'
+        run: |
+          echo "O monitor não rodou: confira a variável SITE_URL (só https://dominio)."
+          exit 1

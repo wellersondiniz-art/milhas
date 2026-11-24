@@ -184,6 +184,10 @@ Cada passo usa a data de hoje (Brasília); para outra data, passe `--data AAAA-M
 
 Para ver o fluxo inteiro sem internet e sem chave: `npm run atualizacao:demo`. Ele usa duas páginas fictícias e respostas do modelo escritas à mão (`testes/atualizacao/`), roda numa cópia temporária do projeto e só simula os comandos de Git.
 
+## Operação de produção
+
+Monitor de disponibilidade, logs de erro sem dado pessoal, alerta de ofertas paradas, backup diário do banco com teste de restauração, painel de custos e plano de resposta a incidente: tudo em [docs/operacao.md](docs/operacao.md), em linguagem de quem não é de TI. Os robôs ficam em `.github/workflows/` (`disponibilidade`, `vigia`, `custos`, `backup`) e avisam abrindo uma issue com a etiqueta `operacao`. Cada um fica desligado até receber a configuração descrita no guia.
+
 ## Pastas
 
 - `site/`: o código do site, legível (`js/motor/` guarda o cálculo puro, sem interface; `js/tela/` monta a tela inicial e só exibe o que o motor devolve; `_headers` define os cabeçalhos de segurança).
