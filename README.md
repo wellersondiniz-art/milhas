@@ -201,14 +201,16 @@ O botão vem **desligado** (`EXPLICAR_LIGADO = false` em `site/js/explicar/confi
 
 ### Para ligar
 
-1. **Conta na Anthropic** (<https://console.anthropic.com>): crie a conta, ponha crédito (o mínimo basta por meses) e, em **Limits**, defina um limite de gasto mensal baixo (por exemplo US$ 10). É a segunda trava, caso o teto do site falhe.
+1. **Conta na Anthropic** (<https://console.anthropic.com>): crie a conta, ponha crédito (o mínimo basta por meses) e, em **Limits**, defina um limite de gasto mensal baixo (por exemplo US$ 10). **Obrigatório**: é a única trava firme do teto. O teto do site reserva a vaga antes de chamar o modelo, mas o Workers KV demora até cerca de 60 segundos para mostrar o valor novo em outros pontos da rede, então pedidos no mesmo instante em lugares diferentes ainda podem passar juntos.
 2. Crie uma chave em **API Keys** com o nome `milhasdavez-explicar`. Copie: ela aparece uma vez só. Não cole em arquivo, chat nem commit.
 3. Antes de ligar, confira o modelo de verdade contra as tentativas de injeção, no seu computador: `ANTHROPIC_API_KEY=... npm run explicar:injecao` (custa menos de US$ 0,02). Tem que terminar com "Nenhum golpe chegou à tela".
 4. **Cloudflare**: **Storage & Databases** → **Workers KV** → **Create**, nome `milhasdavez-explicar-limite`.
 5. Em **Workers & Pages** → `milhasdavez` → **Settings**, só no ambiente **Production**:
    - **Bindings** → **Add** → **KV namespace**. Variable name: `EXPLICAR_LIMITE`. Namespace: `milhasdavez-explicar-limite`.
    - **Variables and Secrets** → **Add** → Type **Secret**, nome `ANTHROPIC_API_KEY`, valor: a chave do passo 2.
+   - **Variables and Secrets** → **Add** → Type **Secret**, nome `IP_SEGREDO`, valor: 32+ caracteres aleatórios (ex.: `openssl rand -base64 48`). Serve só para embaralhar o IP no limite por pessoa. Se os alertas por e-mail já estiverem ligados, pode ser o mesmo `IP_SEGREDO` deles.
    - Opcional (Type **Text**): `EXPLICAR_TETO_MENSAL_USD` (padrão `5`) e `EXPLICAR_POR_DIA_TOTAL` (padrão `200`).
+   - **Obrigatório**: em **Security** → **WAF** → **Rate limiting rules**, uma regra para o caminho `/api/explicar` (por exemplo, 10 pedidos por minuto por IP, bloquear por 10 minutos). Ela barra rajadas antes de chegarem à função.
    - Em **Deployments**, na publicação mais recente da `main`: **...** → **Retry deployment**.
 6. **Revisão jurídica**: com o botão ligado, Privacidade e Termos ganham um trecho novo (envio da pergunta para a Anthropic, nos Estados Unidos). Mostre ao advogado junto com os outros textos.
 7. Troque `EXPLICAR_LIGADO` para `true` (num PR) e atualize `TEXTOS_ATUALIZADOS_EM` em `scripts/paginas/config.js`.

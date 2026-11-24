@@ -30,6 +30,7 @@ async function ligarExplicar(page, textoDoModelo) {
     const pedido = new Request(r.url(), { method: r.method(), headers: await r.allHeaders(), body: r.postData() });
     const resposta = await tratarExplicacao(pedido, {
       chave: 'chave-de-teste',
+      segredoIp: 'segredo-de-teste-so-para-o-ip-0123456789',
       kv: { get: async (k) => kv.get(k) ?? null, put: async (k, v) => { kv.set(k, v); } },
       buscarDados: async () => dados,
       agora: () => AGORA_DE_TESTE,

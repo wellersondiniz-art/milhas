@@ -12,7 +12,7 @@ import {
 } from '../servidor/explicar/config.js';
 import { lerPedido, neutralizarPergunta, temDadoPessoal } from '../servidor/explicar/entrada.js';
 import { aMaisSe, montarFatos, numerosDe, O_QUE_NAO_SABEMOS } from '../servidor/explicar/fatos.js';
-import { cabeNoTeto, podeExplicar, registrar, resumoDoIp } from '../servidor/explicar/limite.js';
+import { acertarGasto, cabeNoTeto, podeExplicar, reservar, resumoDoIp, umPorVez } from '../servidor/explicar/limite.js';
 import { chamarComReserva, esperaDaTentativa, lerRetryAfter } from '../servidor/explicar/modelo.js';
 import { agoraEmSaoPaulo, MENSAGENS, tratarExplicacao } from '../servidor/explicar/pedido.js';
 import { estimarTokensDeEntrada, MARCA_DE_CONTROLE, montarPedido, SISTEMA } from '../servidor/explicar/prompt.js';
@@ -88,9 +88,12 @@ function apiDeMentira(fila) {
   return { buscar, pedidos };
 }
 
+const SEGREDO_IP = 'segredo-de-teste-so-para-o-ip-0123456789';
+
 function deps(extra = {}) {
   return {
     chave: 'chave-de-teste',
+    segredoIp: SEGREDO_IP,
     kv: kvDeMentira(),
     buscarDados: async () => DADOS,
     agora: () => AGORA,
@@ -455,11 +458,16 @@ test('limite: por pessoa, por dia e teto do mês', async () => {
   assert.equal(l.ok, true);
   assert.equal(cabeNoTeto(l.lido, 0, 1000), true);
   assert.equal(cabeNoTeto(l.lido, 1, 1000), false);
-  await registrar(kv, l.lido, 600);
+  await reservar(kv, l.lido, 600);
   assert.equal(kv.mapa.get('explicar:gasto:2026-11'), '600');
   assert.equal(kv.mapa.get('explicar:pessoa:r:2026-11-10#ttl'), 2 * 86_400);
+  // Custo real menor que a reserva: devolve a diferença.
+  await acertarGasto(kv, l.lido, 600, 250);
+  assert.equal(kv.mapa.get('explicar:gasto:2026-11'), '250');
+  await acertarGasto(kv, l.lido, 100, 100);
+  assert.equal(kv.mapa.get('explicar:gasto:2026-11'), '250');
   l = await podeExplicar(kv, base);
-  await registrar(kv, l.lido, 0);
+  await reservar(kv, l.lido, 0);
   assert.deepEqual(await podeExplicar(kv, base), { ok: false, motivo: 'pessoa' });
   assert.equal((await podeExplicar(kv, { ...base, resumo: 'outra' })).ok, true);
   kv.mapa.set('explicar:dia:2026-11-10', '3');
@@ -519,6 +527,8 @@ test('pedido: travas antes de chamar o modelo', async () => {
   const casos = [
     [{ chave: '' }, {}, 503, 'foraDoAr'],
     [{ kv: null }, {}, 503, 'foraDoAr'],
+    [{ segredoIp: '' }, {}, 503, 'foraDoAr'],
+    [{ segredoIp: 'curto' }, {}, 503, 'foraDoAr'],
     [{}, { headers: { Origin: 'https://golpe.example' } }, 403, 'origem'],
     [{}, { headers: { 'Sec-Fetch-Site': 'cross-site' } }, 403, 'origem'],
     [{}, { headers: { 'Content-Type': 'text/plain' } }, 415, 'formato'],
@@ -544,7 +554,7 @@ test('pedido: travas antes de chamar o modelo', async () => {
 });
 
 test('pedido: limite por pessoa, por dia e teto → 429 sem chamar o modelo', async () => {
-  const resumo = await resumoDoIp('203.0.113.7', 'chave-de-teste');
+  const resumo = await resumoDoIp('203.0.113.7', SEGREDO_IP);
   const casos = [
     [{ [`explicar:pessoa:${resumo}:2026-11-10`]: '10' }, 'limitePessoa'],
     [{ 'explicar:dia:2026-11-10': '200' }, 'limiteDia'],
@@ -566,6 +576,46 @@ test('pedido: limite por pessoa, por dia e teto → 429 sem chamar o modelo', as
   assert.equal(api.pedidos.length, 0);
 });
 
+test('pedido: 50 pedidos ao mesmo tempo do mesmo IP não furam o limite (S2)', async () => {
+  // A API demora: todos os pedidos chegam antes de qualquer um terminar.
+  let soltar;
+  const porta = new Promise((r) => { soltar = r; });
+  const chamadas = [];
+  const buscar = async () => { chamadas.push(1); await porta; return respostaApi(BOA); };
+  const kv = kvDeMentira();
+  const d = deps({ kv, buscar });
+  const pendentes = Array.from({ length: 50 }, () => tratarExplicacao(pedidoHttp(corpo()), d));
+  await new Promise((r) => setTimeout(r, 20));
+  soltar();
+  const respostas = await Promise.all(pendentes);
+  assert.equal(chamadas.length, 1, 'só um pedido chega ao modelo');
+  assert.equal(respostas.filter((r) => r.status === 200).length, 1);
+  const recusadas = respostas.filter((r) => r.status === 429);
+  assert.equal(recusadas.length, 49);
+  assert.equal((await recusadas[0].json()).mensagem, MENSAGENS.umDeCadaVez);
+  // Terminado o primeiro, a pessoa pode pedir de novo (e a vaga foi contada).
+  const resumo = await resumoDoIp('203.0.113.7', SEGREDO_IP);
+  assert.equal(kv.mapa.get(`explicar:pessoa:${resumo}:2026-11-10`), '1');
+  const liberar = umPorVez(resumo);
+  assert.ok(liberar, 'a vaga foi liberada');
+  liberar();
+  const deNovo = umPorVez(resumo);
+  assert.ok(deNovo, 'liberar solta a vaga');
+  deNovo();
+});
+
+test('pedido: a vaga é reservada ANTES de chamar o modelo e o gasto vira o custo real depois', async () => {
+  const kv = kvDeMentira();
+  let gastoDuranteAChamada = null;
+  const buscar = async () => { gastoDuranteAChamada = Number(kv.mapa.get('explicar:gasto:2026-11')); return respostaApi(BOA); };
+  const r = await explicar(corpo(), { kv, buscar });
+  assert.equal(r.status, 200);
+  assert.ok(gastoDuranteAChamada > 0, 'durante a chamada, o custo máximo já estava reservado');
+  const final = Number(kv.mapa.get('explicar:gasto:2026-11'));
+  assert.ok(final > 0 && final < gastoDuranteAChamada, `custo real (${final}) menor que a reserva (${gastoDuranteAChamada})`);
+  assert.equal(kv.mapa.get('explicar:dia:2026-11-10'), '1');
+});
+
 test('pedido: modelo fora do ar → 503 com recado; chave recusada → 503; conta o gasto', async () => {
   const falhas = Array.from({ length: 4 }, () => respostaApi('', { status: 500 }));
   let kv = kvDeMentira();
@@ -573,7 +623,8 @@ test('pedido: modelo fora do ar → 503 com recado; chave recusada → 503; cont
   assert.equal(r.status, 503);
   assert.equal(r.json.mensagem, MENSAGENS.falhou);
   assert.equal(kv.mapa.get('explicar:dia:2026-11-10'), '1');
-  assert.equal(kv.mapa.has('explicar:gasto:2026-11'), false);
+  // A reserva foi devolvida: sem resposta da API, o gasto volta a zero.
+  assert.equal(kv.mapa.get('explicar:gasto:2026-11'), '0');
   kv = kvDeMentira();
   r = await explicar(corpo(), { buscar: apiDeMentira([respostaApi('', { status: 401 })]).buscar, kv });
   assert.equal(r.status, 503);
@@ -598,7 +649,7 @@ test('função: liga variáveis, KV e dados publicados; sem configuração respo
   const sem = await onRequestPost({ request: pedidoHttp(corpo()), env: { ASSETS: assets } });
   assert.equal(sem.status, 503);
   const kv = kvDeMentira({ 'explicar:dia:2026-11-10': '0' });
-  const env = { ASSETS: assets, ANTHROPIC_API_KEY: 'chave-de-teste', EXPLICAR_LIMITE: kv, EXPLICAR_POR_DIA_TOTAL: '1' };
+  const env = { ASSETS: assets, ANTHROPIC_API_KEY: 'chave-de-teste', IP_SEGREDO: SEGREDO_IP, EXPLICAR_LIMITE: kv, EXPLICAR_POR_DIA_TOTAL: '1' };
   // Com a chave, chegaria à API de verdade: aqui o limite do dia (1) já foi usado, então para antes.
   kv.mapa.set(`explicar:dia:${agoraEmSaoPaulo(new Date()).slice(0, 10)}`, '1');
   const cheio = await onRequestPost({ request: pedidoHttp(corpo()), env });
@@ -672,4 +723,10 @@ test('privacidade e termos: falam do "Explica pra mim" só quando ele está liga
   const termos = texto(ligado, 'termos');
   assert.match(termos, /vale o resultado/);
   assert.match(termos, /não é conselho financeiro/);
+  // Como funciona (achado T1): sem frase que deixa de ser verdade com o botão ligado.
+  assert.match(texto(desligado, 'como-funciona'), /não vão para nenhum servidor/);
+  const como = texto(ligado, 'como-funciona');
+  assert.doesNotMatch(como, /não vão para nenhum servidor/);
+  assert.match(como, /usa inteligência artificial só para explicar/);
+  assert.match(como, /vão para o nosso servidor e para a empresa de inteligência artificial/);
 });

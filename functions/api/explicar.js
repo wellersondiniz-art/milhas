@@ -5,10 +5,12 @@
 // a CSP continua com connect-src 'self'. A lógica fica em servidor/explicar/
 // (testada com node --test). Configuração no README, seção "Explica pra mim":
 //   - ANTHROPIC_API_KEY        segredo;
+//   - IP_SEGREDO               segredo, 32+ caracteres aleatórios, só para resumir o IP
+//                              no limite por pessoa (não reaproveita a chave da API);
 //   - EXPLICAR_LIMITE          vínculo (binding) com um namespace do Workers KV;
 //   - EXPLICAR_TETO_MENSAL_USD variável opcional (padrão: 5);
 //   - EXPLICAR_POR_DIA_TOTAL   variável opcional (padrão: 200).
-// Sem a chave ou sem o KV, responde 503 e não chama nada.
+// Sem a chave, o IP_SEGREDO ou o KV, responde 503 e não chama nada.
 
 import { LIMITES, inteiroDoAmbiente, tetoEmNano } from '../../servidor/explicar/config.js';
 import { responder, tratarExplicacao } from '../../servidor/explicar/pedido.js';
@@ -32,6 +34,7 @@ export function leitorDeDados(env, request) {
 export function onRequestPost({ request, env }) {
   return tratarExplicacao(request, {
     chave: env.ANTHROPIC_API_KEY ?? '',
+    segredoIp: env.IP_SEGREDO ?? '',
     kv: env.EXPLICAR_LIMITE ?? null,
     buscarDados: leitorDeDados(env, request),
     agora: () => new Date(),

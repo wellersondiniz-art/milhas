@@ -1,12 +1,13 @@
 // Recebe o POST /api/explicar e devolve a explicação em texto simples.
 //
 // Ordem das travas (a mais barata primeiro):
-//   1. configuração completa (chave da API e KV), senão 503;
+//   1. configuração completa (chave da API, IP_SEGREDO e KV), senão 503;
 //   2. o pedido vem do próprio site (Origin), senão 403;
 //   3. JSON de até 8 KB, senão 415/413/400;
 //   4. ids, valor e pergunta válidos (entrada.js); pergunta com dado pessoal
 //      é recusada e nem sai daqui (422);
-//   5. limite por pessoa, por dia e teto de gasto do mês (limite.js), 429;
+//   5. um pedido por pessoa de cada vez; limite por pessoa, por dia e teto de
+//      gasto do mês (limite.js), 429. A vaga é reservada antes da chamada;
 //   6. o servidor REFAZ a conta com o motor e os dados publicados; se o
 //      melhor jeito não for o mesmo que a pessoa vê, pede para refazer (409);
 //   7. chama o modelo (modelo.js), com reserva;
@@ -16,10 +17,10 @@
 
 import { calcularJeitosDeComprar } from '../../site/js/motor/index.js';
 import { ehVazio, limparPerfil, perfilDeTodos, perfilParaConta } from '../../site/js/perfil/formato.js';
-import { LIMITES } from './config.js';
+import { LIMITES, MODELOS, custoMaximo } from './config.js';
 import { lerPedido } from './entrada.js';
 import { montarFatos } from './fatos.js';
-import { cabeNoTeto, podeExplicar, registrar, resumoDoIp } from './limite.js';
+import { acertarGasto, cabeNoTeto, podeExplicar, reservar, resumoDoIp, umPorVez } from './limite.js';
 import { chamarComReserva } from './modelo.js';
 import { estimarTokensDeEntrada, montarPedido } from './prompt.js';
 import { conferirResposta, emBlocos, RECUSA_FIXA } from './saida.js';
@@ -31,6 +32,7 @@ export const MENSAGENS = Object.freeze({
   grande: 'A pergunta ficou grande demais. Encurte e tente de novo.',
   dadoPessoal: 'Tire da pergunta números de cartão, CPF, telefone ou e-mail. A gente não precisa deles para explicar.',
   limitePessoa: 'Você já usou todas as explicações de hoje. Amanhã tem mais. O resultado acima continua valendo.',
+  umDeCadaVez: 'Ainda estamos explicando o seu pedido anterior. Espere ele chegar e tente de novo.',
   limiteDia: 'Muita gente pediu explicação hoje e chegamos ao limite. Tente amanhã.',
   teto: 'O "explica pra mim" chegou ao limite deste mês. O resultado acima continua valendo.',
   mudou: 'Os dados mudaram desde a sua conta. Faça a conta de novo e peça a explicação outra vez.',
@@ -79,6 +81,7 @@ const erro = (status, chave, extras) => responder(status, { ok: false, mensagem:
  * @param {Request} request
  * @param {object} deps
  * @param {string} deps.chave          ANTHROPIC_API_KEY (segredo da Cloudflare)
+ * @param {string} deps.segredoIp      IP_SEGREDO (segredo da Cloudflare, 32+ caracteres, só para resumir o IP)
  * @param {object|null} deps.kv        KV com get/put
  * @param {() => Promise<object>} deps.buscarDados  { lojas, ofertas, programas, cartoes, cambio }
  * @param {() => Date} deps.agora
@@ -90,7 +93,7 @@ const erro = (status, chave, extras) => responder(status, { ok: false, mensagem:
  */
 export async function tratarExplicacao(request, deps) {
   if (request.method !== 'POST') return erro(405, 'formato', { Allow: 'POST' });
-  if (!deps.chave || !deps.kv) return erro(503, 'foraDoAr');
+  if (!deps.chave || !deps.kv || typeof deps.segredoIp !== 'string' || deps.segredoIp.length < 32) return erro(503, 'foraDoAr');
   if (!mesmaOrigem(request)) return erro(403, 'origem');
   if (!/^application\/json(;|$)/i.test(request.headers.get('Content-Type') ?? '')) return erro(415, 'formato');
   const corpo = await lerComLimite(request, LIMITES.corpoBytes);
@@ -109,7 +112,18 @@ export async function tratarExplicacao(request, deps) {
   const hojeHora = agoraEmSaoPaulo(agora);
   const hoje = hojeHora.slice(0, 10);
   const ip = request.headers.get('CF-Connecting-IP') ?? 'sem-ip';
-  const resumo = await resumoDoIp(ip, deps.chave);
+  // Resumo do IP com um segredo só para isso (achado S3), não com a chave da API.
+  const resumo = await resumoDoIp(ip, deps.segredoIp);
+  const liberar = umPorVez(resumo);
+  if (!liberar) return erro(429, 'umDeCadaVez', { 'Retry-After': '30' });
+  try {
+    return await explicarComLimite(pedido, { deps, dados, resumo, hoje, hojeHora });
+  } finally {
+    liberar();
+  }
+}
+
+async function explicarComLimite(pedido, { deps, dados, resumo, hoje, hojeHora }) {
   const limite = await podeExplicar(deps.kv, {
     resumo, hoje, porPessoa: LIMITES.porPessoaPorDia, porDia: deps.porDiaTotal, tetoNano: deps.tetoNano,
   });
@@ -138,6 +152,10 @@ export async function tratarExplicacao(request, deps) {
 
   const fatos = montarFatos(jeitos, { loja: pedido.loja, valor_centavos: pedido.valor_centavos, semPerfil, hoje: hojeHora }, dados);
   const log = deps.log ?? (() => {});
+  // Reserva a vaga antes de chamar: o custo máximo de uma tentativa do modelo
+  // principal. Depois da chamada, a reserva vira o custo real.
+  const reservaNano = custoMaximo(MODELOS[0], estimarTokensDeEntrada(montarPedido(MODELOS[0], fatos.texto, pedido.pergunta)));
+  await reservar(deps.kv, limite.lido, reservaNano);
   const chamada = await chamarComReserva({
     pedidoPara: (modelo) => montarPedido(modelo, fatos.texto, pedido.pergunta),
     tokensDeEntrada: estimarTokensDeEntrada,
@@ -147,7 +165,7 @@ export async function tratarExplicacao(request, deps) {
     esperar: deps.esperar,
     log,
   });
-  await registrar(deps.kv, limite.lido, chamada.gasto);
+  await acertarGasto(deps.kv, limite.lido, reservaNano, chamada.gasto);
 
   if (!chamada.ok) {
     if (chamada.motivo === 'recusa') return responder(200, { ok: true, blocos: emBlocos(RECUSA_FIXA), fixa: true });
