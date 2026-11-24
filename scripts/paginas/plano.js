@@ -11,12 +11,20 @@ import { formatarCentavos } from '../../site/js/motor/formatar.js';
 import { BENEFICIOS } from '../../servidor/plano/regras.js';
 import { LIMITES } from '../../servidor/alertas/regras.js';
 import {
-  NOME_DO_SITE, PLANO_LIGADO, PLANO_LINK_PAGAMENTO, PLANO_LINK_PORTAL, PLANO_MODO_REAL, PLANO_PRECO_CENTAVOS, REVISAO_JURIDICA_PENDENTE,
+  EMAIL_DE_CONTATO, NOME_DO_SITE, PLANO_LIGADO, PLANO_LINK_PAGAMENTO, PLANO_LINK_PORTAL, PLANO_MODO_REAL, PLANO_PRECO_CENTAVOS,
+  PLANO_VENDEDOR, REVISAO_JURIDICA_PENDENTE,
 } from './config.js';
 import { h, juntar, linkExterno } from './html.js';
 import { alerta, documento } from './moldura.js';
 
 const RAIZ = '../';
+const A_CONFIRMAR = 'A_CONFIRMAR';
+const EMAIL_VALIDO = /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
+
+/** Nome, documento e endereço de quem vende, todos preenchidos? */
+export function vendedorCompleto(v) {
+  return Boolean(v) && ['nome', 'documento', 'endereco'].every((k) => typeof v[k] === 'string' && v[k].trim() && v[k] !== A_CONFIRMAR);
+}
 
 /** Configuração do plano, a partir de config.js (ou do que os testes passarem). */
 export function configDoPlano(sobrepor = {}) {
@@ -26,6 +34,8 @@ export function configDoPlano(sobrepor = {}) {
     linkPagamento: PLANO_LINK_PAGAMENTO,
     linkPortal: PLANO_LINK_PORTAL,
     modoReal: PLANO_MODO_REAL,
+    vendedor: PLANO_VENDEDOR,
+    emailDeContato: EMAIL_DE_CONTATO,
     ...sobrepor,
   };
 }
@@ -50,6 +60,16 @@ export function problemasDoPlano(config) {
   }
   if (!portal.test(config.linkPortal ?? '')) {
     problemas.push(`PLANO_LINK_PORTAL precisa ser o link de entrada do portal ${teste ? 'DE TESTE (https://billing.stripe.com/p/login/test_...)' : 'real (https://billing.stripe.com/p/login/...)'}.`);
+  }
+  // Achado T6: cobrar de verdade exige mostrar quem vende e ter um contato
+  // que funcione (o reembolso de 7 dias é pedido por ele).
+  if (!teste) {
+    if (!vendedorCompleto(config.vendedor)) {
+      problemas.push('PLANO_VENDEDOR precisa de nome, documento (CPF ou CNPJ) e endereço antes do modo real (Decreto 7.962/2013).');
+    }
+    if (!EMAIL_VALIDO.test(config.emailDeContato ?? '')) {
+      problemas.push('EMAIL_DE_CONTATO precisa estar definido antes do modo real: o reembolso de 7 dias é pedido pela página de Contato.');
+    }
   }
   return problemas;
 }
@@ -110,6 +130,15 @@ export function paginaDoPlano({ urlBase = null, config = configDoPlano(), revisa
 
     secao('se-falhar', 'Se o pagamento falhar',
       p('O Stripe tenta cobrar de novo por alguns dias e avisa você por e-mail. Enquanto não der certo, os seus alertas voltam aos limites do grátis. Não tem multa.')),
+
+    secao('quem-vende', 'Quem vende',
+      vendedorCompleto(config.vendedor)
+        ? h('ul', { class: 'pagina__lista' },
+          h('li', {}, config.vendedor.nome),
+          h('li', {}, config.vendedor.documento),
+          h('li', {}, config.vendedor.endereco))
+        : alerta('aviso', '!', 'Falta informar quem vende',
+          p('Antes de cobrar de verdade, aqui aparecem o nome, o CPF ou CNPJ e o endereço de quem vende o plano.'))),
 
     secao('regras', 'Regras completas',
       p('Veja a parte "Plano pago" dos ', link('termos/', 'Termos de uso'), ' e da ', link('privacidade/', 'Privacidade'), '.')),

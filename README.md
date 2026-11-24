@@ -222,7 +222,7 @@ Regras de ouro, e onde cada uma está garantida:
 - **A situação só muda pelo webhook com assinatura verificada**: `POST /api/plano/stripe` confere o `Stripe-Signature` (HMAC-SHA256 do corpo bruto, janela de 5 minutos) antes de qualquer coisa. Não existe rota do navegador que grave `plano_assinaturas` (`servidor/plano/webhook.js`).
 - **Webhook idempotente**: o id de cada evento fica em `plano_eventos`; um aviso repetido responde 200 e não faz nada. Além disso, o webhook não confia no conteúdo do aviso: busca o cliente e as assinaturas na API do Stripe e grava o estado de agora, então avisos atrasados ou fora de ordem dão o mesmo resultado. Se algo falhar, responde 500 e o Stripe reenvia.
 - **Chaves só no servidor**: `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` vivem só nos segredos da Cloudflare. O auditor (`npm run auditar`) procura chaves do Stripe no Git.
-- **Modo de teste até a aprovação**: sem `PLANO_MODO_REAL=ligado` na Cloudflare, o servidor recusa chave de produção (`sk_live_`/`rk_live_`) e eventos reais; com `PLANO_MODO_REAL = false` no `config.js`, o build recusa links de pagamento que não sejam de teste.
+- **Modo de teste até a aprovação**: sem `PLANO_MODO_REAL=ligado` na Cloudflare, o servidor recusa chave de produção (`sk_live_`/`rk_live_`) e eventos reais; com `PLANO_MODO_REAL = false` no `config.js`, o build recusa links de pagamento que não sejam de teste. Para o modo real, o build também exige `PLANO_VENDEDOR` (nome, CPF ou CNPJ e endereço de quem vende, como pede o Decreto 7.962/2013) e `EMAIL_DE_CONTATO` (o reembolso de 7 dias é pedido por ele). Confira com o contador a nota fiscal de serviço antes de cobrar.
 
 Estados (testados em `testes/plano.test.mjs`):
 
