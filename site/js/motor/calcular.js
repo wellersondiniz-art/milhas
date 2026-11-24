@@ -380,6 +380,20 @@ function estimarValor(ctx, partes, avisos, passos) {
   return total;
 }
 
+/**
+ * Valor só das partes com milheiro conhecido (piso do valor), para ordenar.
+ * null quando nenhuma parte com pontos tem milheiro. Não aparece na tela.
+ */
+function valorConhecido(ctx, partes) {
+  let total = null;
+  for (const { programaId, esc } of partes) {
+    if (esc <= 0n) continue;
+    const m = ctx.milheiro(programaId);
+    if (m) total = (total ?? 0n) + esc * BigInt(m.centavos);
+  }
+  return total;
+}
+
 function descreverCompra(ctx) {
   const quem = ctx.compra.tipo_vendedor === 'loja' ? 'vendida e entregue pela própria loja' : 'de um vendedor parceiro';
   return `Compra de ${formatarCentavos(ctx.valor)} na ${ctx.loja.nome}, ${quem}.`;
@@ -499,12 +513,9 @@ function jeitoComOferta(ctx, oferta, cartao) {
   }
 
   // 5. Valor
-  const valorEsc = estimarValor(
-    ctx,
-    [{ programaId: oferta.programa_id, esc: progEsc }, { programaId: cart.programaId, esc: cartEsc }],
-    avisos,
-    passos,
-  );
+  const partes = [{ programaId: oferta.programa_id, esc: progEsc }, { programaId: cart.programaId, esc: cartEsc }];
+  const valorEsc = estimarValor(ctx, partes, avisos, passos);
+  const pisoEsc = valorConhecido(ctx, partes);
   avisarDadoAntigo(ctx, ctx.programas.get(oferta.programa_id), `programa ${nomeProg}`, avisos);
 
   const prazo = oferta.credito_prazo_dias;
@@ -518,6 +529,7 @@ function jeitoComOferta(ctx, oferta, cartao) {
     progEsc,
     cartEsc,
     valorEsc,
+    pisoEsc,
     condicoes,
     avisos,
     passos,
@@ -540,7 +552,9 @@ function jeitoSemOferta(ctx, cartao) {
   const condicoes = [];
   const passos = [descreverCompra(ctx), 'Sem oferta da loja: só os pontos do cartão.'];
   const cart = pontosDoCartao(ctx, cartao, avisos, passos, condicoes);
-  const valorEsc = estimarValor(ctx, [{ programaId: cart.programaId, esc: cart.esc }], avisos, passos);
+  const partes = [{ programaId: cart.programaId, esc: cart.esc }];
+  const valorEsc = estimarValor(ctx, partes, avisos, passos);
+  const pisoEsc = valorConhecido(ctx, partes);
   if (cartao) avisarDadoAntigo(ctx, ctx.programas.get(cartao.programa_id), `programa ${ctx.nomePrograma(cartao.programa_id)}`, avisos);
   return {
     tipo: 'sem_oferta',
@@ -552,6 +566,7 @@ function jeitoSemOferta(ctx, cartao) {
     progEsc: 0n,
     cartEsc: cart.esc,
     valorEsc,
+    pisoEsc,
     condicoes,
     avisos,
     passos,
@@ -564,15 +579,22 @@ function jeitoSemOferta(ctx, cartao) {
 // ---------------------------------------------------------------------------
 // Ordem e saída
 
+// Ordem: mais reais primeiro (pontos de programas diferentes valem diferente,
+// então só o valor em reais compara de forma justa). Quando falta o milheiro de
+// uma parte, conta o valor das partes conhecidas (um piso). Sem nenhuma parte
+// com valor vai depois. Empate → valor completo antes do piso → mais pontos.
+// Quem não rende ponto nenhum fica sempre por último.
 function comparar(a, b) {
   const ta = a.progEsc + a.cartEsc;
   const tb = b.progEsc + b.cartEsc;
-  if (ta !== tb) return ta > tb ? -1 : 1;
-  if (a.valorEsc !== b.valorEsc) {
-    if (a.valorEsc === null) return 1;
-    if (b.valorEsc === null) return -1;
-    return a.valorEsc > b.valorEsc ? -1 : 1;
+  if ((ta === 0n) !== (tb === 0n)) return ta === 0n ? 1 : -1;
+  if (a.pisoEsc !== b.pisoEsc) {
+    if (a.pisoEsc === null) return 1;
+    if (b.pisoEsc === null) return -1;
+    return a.pisoEsc > b.pisoEsc ? -1 : 1;
   }
+  if ((a.valorEsc === null) !== (b.valorEsc === null)) return a.valorEsc === null ? 1 : -1;
+  if (ta !== tb) return ta > tb ? -1 : 1;
   if (a.tipo !== b.tipo) return a.tipo === 'oferta' ? -1 : 1;
   const chave = (j) => [j.programaId ?? '', j.cartao?.id ?? '', j.oferta?.id ?? ''];
   const ka = chave(a);
@@ -603,12 +625,15 @@ function paraSaida(ctx, j) {
     o_que_voce_ganharia_se: j.hipoteses,
     depende_da_categoria: j.dependeDaCategoria,
     falta_cotacao_do_dolar: j.faltaCotacao,
+    // Piso do valor (só partes com milheiro conhecido), usado na ordem. Não exibir.
+    valor_para_ordenar: j.pisoEsc,
     explicacao: j.passos,
   };
 }
 
 /**
- * Lista os jeitos de comprar, do melhor ao pior (mais pontos; empate → mais reais).
+ * Lista os jeitos de comprar, do melhor ao pior (mais reais; sem valor conhecido vai
+ * depois; empate → mais pontos).
  *
  * @param {object} perfil  { programas: [{programa_id, clube_ativo, clube_ativo_desde}], cartoes: [cartao_id], valor_milheiro_brl?: {programa_id: centavos}, cotacao_dolar?: reais × 10.000 }
  * @param {object} compra  { loja_id, valor_centavos, tipo_vendedor: "loja"|"parceiro", categoria?, cupom_aplicado? }

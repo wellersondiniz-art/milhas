@@ -4,9 +4,11 @@
 // Sem perfil, a conta usa todos os cartões e programas (Programa Alfa e Beta,
 // sem clube). Compra de R$ 100,00 na Loja Teste:
 //   1º oferta + Cartão Alfa: 100 × 9 + 100 × 2 = 1.100 pontos Alfa → 1.100 × R$ 20,00 ÷ 1.000 = R$ 22,00
-//   2º oferta + Cartão Beta: 100 × 7 (Alfa) + 100 × 3 (Beta) = 1.000 pontos (Beta sem milheiro)
-//   3º sem oferta, Cartão Beta: 300 pontos
-//   4º sem oferta, Cartão Alfa: 200 pontos → R$ 4,00
+//   2º oferta + Cartão Beta: 100 × 7 (Alfa) + 100 × 3 (Beta) = 1.000 pontos (Beta sem milheiro;
+//      só a parte Alfa já vale 700 × R$ 20,00 ÷ 1.000 = R$ 14,00, e isso conta na ordem)
+//   3º sem oferta, Cartão Alfa: 200 pontos → R$ 4,00
+//   4º sem oferta, Cartão Beta: 300 pontos (sem valor em reais conhecido)
+// A ordem é pelo valor em reais, não pela soma de pontos de programas diferentes.
 import { readFile } from 'node:fs/promises';
 import {
   abrirInicio, calcular, cartoesDoResultado, escolherLojaPeloTeclado, expect, fixarRelogio, test, usarDadosDeTeste,
@@ -36,7 +38,8 @@ test.describe('com dados de teste', () => {
     await expect(cartoes.nth(0)).toContainText('Cartão Alfa Platinum');
     await expect(cartoes.nth(0)).toContainText('1.100 pontos');
     await expect(cartoes.nth(1)).toContainText('Cartão Beta Gold');
-    await expect(cartoes.nth(3)).toContainText('R$ 4,00');
+    await expect(cartoes.nth(2)).toContainText('R$ 4,00');
+    await expect(cartoes.nth(3)).toContainText('Cartão Beta Gold');
   });
 
   test('"Como calcular" abre a conta passo a passo', async ({ page }) => {

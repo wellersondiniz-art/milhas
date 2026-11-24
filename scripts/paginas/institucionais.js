@@ -57,7 +57,7 @@ function comoFunciona() {
     pasta: 'como-funciona',
     titulo: 'Como funciona',
     descricao: `Como o ${NOME_DO_SITE} calcula quantos pontos e milhas uma compra rende, e o que fica de fora da conta.`,
-    abertura: 'Você diz a loja e o valor da compra. A gente faz a conta e mostra qual jeito de pagar rende mais pontos, e quanto esses pontos valem em reais, mais ou menos.',
+    abertura: 'Você diz a loja e o valor da compra. A gente faz a conta e mostra qual jeito de pagar vale mais, em reais, mais ou menos, e quantos pontos ele rende. A gente compara em reais porque 1 ponto de um programa pode valer bem mais que 1 ponto de outro.',
     corpo: [
       secao('passo-a-passo', 'Passo a passo', passos([
         'Você escolhe a loja e digita quanto vai gastar.',
@@ -240,7 +240,7 @@ function paginaTermos() {
         p('O site não diz se vale a pena fazer um cartão, assinar um clube ou comprar alguma coisa. Ele só compara pontos. Anuidade, juros e o preço do produto em outras lojas ficam por sua conta.')),
       secao('como-se-mantem', 'Como o site se mantém',
         p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
-        p('Se um dia isso mudar, vamos avisar de forma clara, perto de cada link, que podemos ganhar uma comissão sem custo extra para você. E a ordem do resultado vai continuar sendo só pelos pontos.')),
+        p('Se um dia isso mudar, vamos avisar de forma clara, perto de cada link, que podemos ganhar uma comissão sem custo extra para você. E a ordem do resultado vai continuar sendo só pelo valor dos pontos, nunca pela comissão.')),
       secao('mudancas', 'Mudanças neste texto',
         p('Se este texto mudar, a data no começo da página muda junto. Dúvidas? Fale com a gente em ', contato(), '.')),
     ],

@@ -392,7 +392,8 @@ test('cupom exigido vira condição, e some quando já foi aplicado', () => {
 test('sempre inclui o caso base, sem oferta, para cada cartão', () => {
   const lista = calcular(perfil([COM_CLUBE], ['azul-itau', 'cartao-livelo']), compra(10000), dadosDeTeste(), HOJE);
   const base = lista.filter((j) => j.tipo === 'sem_oferta').map((j) => [j.cartao.id, j.total_pontos]);
-  assert.deepEqual(base, [['cartao-livelo', 300], ['azul-itau', 200]]);
+  // Azul tem milheiro e Livelo não: quem tem valor em reais vem antes, mesmo com menos pontos.
+  assert.deepEqual(base, [['azul-itau', 200], ['cartao-livelo', 300]]);
   assert.equal(lista.length, 4); // 2 com oferta + 2 sem
 });
 

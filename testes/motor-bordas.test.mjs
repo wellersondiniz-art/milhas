@@ -501,3 +501,48 @@ test('oferta repetida nos dados (mesmo id) não quebra a ordem', () => {
   const lista = calcular(perfil(), compra(), d, HOJE);
   assert.deepEqual(lista.map((j) => [j.tipo, j.total_pontos]), [['oferta', 500], ['oferta', 500], ['sem_oferta', 0]]);
 });
+
+// ---------------------------------------------------------------------------
+describe('ordem do resultado: pelo valor em reais', () => {
+  // Loja Vazia, R$ 100, sem oferta:
+  //   Cartão A: 2 × 100 = 200 pontos × R$ 20,00 o milheiro = R$ 4,00
+  //   Cartão B: 3 × 100 = 300 pontos × R$ 10,00 o milheiro = R$ 3,00
+  //   Cartão C: 1 × 100 = 100 pontos, sem milheiro → sem valor
+  const lista = () => calcular(
+    perfil([PROG_A], ['cartao-b', 'cartao-c', 'cartao-a']),
+    compra(10000, { loja_id: 'vazia' }), dadosBase(), HOJE,
+  );
+
+  test('mais reais vem primeiro, mesmo com menos pontos', () => {
+    assert.deepEqual(lista().map((j) => [j.cartao.id, j.total_pontos, j.valor_estimado_em_reais?.texto ?? null]),
+      [['cartao-a', 200, 'R$ 4,00'], ['cartao-b', 300, 'R$ 3,00'], ['cartao-c', 100, null]]);
+  });
+
+  test('sem valor conhecido vai depois; entre eles, mais pontos primeiro', () => {
+    const d = dadosCom((x) => { x.programas[0].valor_milheiro_brl = 'A_CONFIRMAR'; x.programas[1].valor_milheiro_brl = 'A_CONFIRMAR'; });
+    const r = calcular(perfil([PROG_A], ['cartao-a', 'cartao-c', 'cartao-b']), compra(10000, { loja_id: 'vazia' }), d, HOJE);
+    assert.deepEqual(r.map((j) => j.cartao.id), ['cartao-b', 'cartao-a', 'cartao-c']);
+  });
+
+  test('quem não rende ponto nenhum fica por último, mesmo valendo R$ 0,00', () => {
+    // Só o Programa C (sem milheiro) com uma oferta; sem cartão, o caso base dá 0 pontos.
+    const d = dadosCom((x) => { x.ofertas[0].programa_id = 'prog-sem-milheiro'; });
+    const r = calcular(perfil([{ programa_id: 'prog-sem-milheiro', clube_ativo: false }], []), compra(), d, HOJE);
+    assert.equal(r[0].tipo, 'oferta');
+    assert.equal(r.at(-1).total_pontos, 0);
+  });
+});
+
+describe('ordem: quando falta o milheiro só de uma parte', () => {
+  test('a parte com valor conhecido conta como piso', () => {
+    // Oferta do Programa A (5/real) + Cartão C (Programa C, sem milheiro), R$ 100:
+    //   500 pontos A × R$ 20,00 ÷ 1.000 = R$ 10,00 (piso) + 100 pontos C sem valor
+    // Sem oferta, Cartão B: 300 pontos × R$ 10,00 ÷ 1.000 = R$ 3,00
+    const r = calcular(perfil([PROG_A], ['cartao-c', 'cartao-b']), compra(), dadosBase(), HOJE);
+    const ofertaComC = r.findIndex((j) => j.tipo === 'oferta' && j.cartao.id === 'cartao-c');
+    const semOfertaB = r.findIndex((j) => j.tipo === 'sem_oferta' && j.cartao.id === 'cartao-b');
+    assert.equal(r[ofertaComC].valor_estimado_em_reais, null);
+    assert.equal(r[ofertaComC].valor_para_ordenar, 10n * 100n * BI);
+    assert.ok(ofertaComC < semOfertaB);
+  });
+});

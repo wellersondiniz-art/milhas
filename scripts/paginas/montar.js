@@ -80,12 +80,24 @@ function contar(dados, lojaId, cenario, hoje) {
   return porReal.map((j) => ({ porReal: j, porCem: cem.get(chaveDoJeito(j)) }));
 }
 
+/** Mesmo critério do motor: mais reais (piso conhecido); sem valor perde; empate → mais pontos. */
+function melhorQue(a, b) {
+  const va = a.valor_para_ordenar;
+  const vb = b.valor_para_ordenar;
+  if (va !== vb) {
+    if (va === null) return false;
+    if (vb === null) return true;
+    return va > vb;
+  }
+  return a.total_pontos > b.total_pontos;
+}
+
 /** O melhor jeito de comprar na loja hoje, no cenário mais simples que chega ao máximo. */
 export function melhorJeito(dados, lojaId, hoje) {
   let melhor = null;
   for (const cenario of CENARIOS) {
     const [primeiro] = contar(dados, lojaId, cenario, hoje);
-    if (primeiro && (!melhor || primeiro.porReal.total_pontos > melhor.porReal.total_pontos)) {
+    if (primeiro && (!melhor || melhorQue(primeiro.porReal, melhor.porReal))) {
       melhor = { ...primeiro, cenario };
     }
   }

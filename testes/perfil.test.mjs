@@ -130,9 +130,9 @@ test('perfil vazio: a conta usa todos os programas e cartões (melhores opções
   assert.deepEqual(todos.programas.map((p) => p.programa_id), ['prog-a', 'prog-b']);
   assert.ok(todos.programas.every((p) => p.clube_ativo === false));
   assert.deepEqual(todos.cartoes, ['cartao-a', 'cartao-b']);
-  const [melhor] = calcularJeitosDeComprar(todos, { loja_id: 'loja-a', valor_centavos: 10000, tipo_vendedor: 'loja' }, DADOS, `${HOJE}T12:00`);
-  assert.equal(melhor.tipo, 'oferta');
-  assert.ok(melhor.total_pontos > 0);
+  const jeitos = calcularJeitosDeComprar(todos, { loja_id: 'loja-a', valor_centavos: 10000, tipo_vendedor: 'loja' }, DADOS, `${HOJE}T12:00`);
+  assert.ok(jeitos.some((j) => j.tipo === 'oferta'), 'a oferta do programa B entra mesmo sem o usuário ter escolhido nada');
+  assert.ok(jeitos[0].total_pontos > 0);
 });
 
 test('perfil cheio: clube com data antiga e milheiro do perfil entram na conta', () => {
