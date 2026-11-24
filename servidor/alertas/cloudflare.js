@@ -6,6 +6,8 @@
 //   ALERTAS_REMETENTE     variável: ex. "Milhas da Vez <alertas@milhasdavez.com.br>"
 //   ALERTAS_SEGREDO       segredo: 32+ caracteres aleatórios (assina os links de cancelar);
 //                         o MESMO valor vai para o GitHub Actions
+//   IP_SEGREDO            segredo: outros 32+ caracteres aleatórios, só para resumir
+//                         o IP no limite de pedidos (fica só na Cloudflare)
 // Sem qualquer um deles, as rotas respondem 503 e nada é gravado nem enviado.
 
 import { repositorioSupabase } from './supabase.js';
@@ -32,6 +34,7 @@ export function dependencias(env, request) {
     repo: repositorioSupabase({ url: env.SUPABASE_URL, chave: env.SUPABASE_SECRET_KEY }),
     correio: clienteResend({ chave: env.RESEND_API_KEY, remetente: env.ALERTAS_REMETENTE }),
     segredo: env.ALERTAS_SEGREDO ?? '',
+    segredoIp: env.IP_SEGREDO ?? '',
     // Os links dos e-mails apontam para o endereço por onde a pessoa entrou.
     urlSite: new URL(request.url).origin,
     buscarDados: leitorDeDados(env, request),

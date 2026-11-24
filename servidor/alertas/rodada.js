@@ -33,6 +33,7 @@ export async function rodarAlertas({ repo, correio, segredo, urlSite, dados, ago
   const resumo = {
     simulacao: simular,
     pedidos_vencidos_apagados: 0,
+    contadores_antigos_apagados: 0,
     inscricoes: 0,
     alertas_avaliados: 0,
     alertas_no_alvo: 0,
@@ -41,7 +42,12 @@ export async function rodarAlertas({ repo, correio, segredo, urlSite, dados, ago
     erros_de_envio: 0,
     erros_de_avaliacao: 0,
   };
-  if (!simular) resumo.pedidos_vencidos_apagados = await repo.apagarNaoConfirmadasVencidas(agora);
+  if (!simular) {
+    resumo.pedidos_vencidos_apagados = await repo.apagarNaoConfirmadasVencidas(agora);
+    // Contadores do limite de pedidos: só o dia de hoje e o de ontem importam.
+    const anteontem = new Date(agora.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    resumo.contadores_antigos_apagados = await repo.apagarContadoresAntes(anteontem);
+  }
 
   for await (const inscricao of repo.inscricoesConfirmadas()) {
     resumo.inscricoes += 1;

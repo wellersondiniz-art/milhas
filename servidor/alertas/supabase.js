@@ -92,6 +92,17 @@ export function repositorioSupabase({ url, chave, fetch: buscar = globalThis.fet
         if (linhas.length < PAGINA) return;
       }
     },
+    /** Soma 1 no contador (atômico, no banco) e devolve o total depois da soma. */
+    async contar(chave, dia) {
+      const total = await pedir('contar pedido', 'rpc/alertas_contar', { method: 'POST', corpo: { p_chave: chave, p_dia: dia } });
+      return Number(total);
+    },
+    async apagarContadoresAntes(dia) {
+      const linhas = await pedir('apagar contadores antigos',
+        `alertas_contadores?dia=lt.${encodeURIComponent(dia)}&select=chave`,
+        { method: 'DELETE', prefer: 'return=representation' });
+      return Array.isArray(linhas) ? linhas.length : 0;
+    },
     async registrarEnvio(registro) {
       await pedir('registrar envio', 'alertas_envios', { method: 'POST', corpo: registro, prefer: 'return=minimal' });
     },

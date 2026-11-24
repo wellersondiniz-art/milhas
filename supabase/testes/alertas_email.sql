@@ -118,5 +118,31 @@ begin
   end if;
 end $$;
 
+-- 7. Contador do limite de pedidos: soma 1 e devolve o total; chave sem IP cru.
+do $$
+declare n integer;
+begin
+  n := public.alertas_contar('total:2026-11-24', '2026-11-24');
+  if n <> 1 then raise exception 'FALHOU: primeira contagem deu %', n; end if;
+  n := public.alertas_contar('total:2026-11-24', '2026-11-24');
+  if n <> 2 then raise exception 'FALHOU: segunda contagem deu %', n; end if;
+  begin
+    perform public.alertas_contar('ip:203.0.113.7:2026-11-24', '2026-11-24');
+    raise exception 'FALHOU: aceitou IP cru na chave';
+  exception when check_violation then null;
+  end;
+  if exists (
+    select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = 'alertas_contadores'
+      and not (c.relrowsecurity and c.relforcerowsecurity)
+  ) then raise exception 'FALHOU: RLS desligada nos contadores'; end if;
+  if has_function_privilege('anon', 'public.alertas_contar(text, date)', 'execute') then
+    raise exception 'FALHOU: anon pode chamar alertas_contar';
+  end if;
+  if has_table_privilege('anon', 'public.alertas_contadores', 'select') then
+    raise exception 'FALHOU: anon lê os contadores';
+  end if;
+end $$;
+
 rollback;
 \echo TUDO CERTO

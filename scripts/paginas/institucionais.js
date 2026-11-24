@@ -202,8 +202,10 @@ function secaoDeAlertas() {
     ]),
     p('Para que serve: só para fazer a conta do alerta depois de cada atualização das ofertas e mandar o e-mail. Não vendemos, não emprestamos e não usamos o e-mail para propaganda.'),
     p('Duplo aceite: primeiro mandamos um link de confirmação. Sem o clique nesse link, não mandamos alerta nenhum. O link vale por 48 horas; depois disso, o pedido não confirmado é apagado na rodada semanal seguinte.'),
+    p('A cópia do perfil, junto com o seu e-mail, diz quais cartões e clubes você tem. Por isso a tratamos como dado pessoal, com o mesmo cuidado do e-mail.'),
     p('Limites: no máximo 2 e-mails de alerta por semana. Cada e-mail vai só para você, nunca junto com o de outra pessoa.'),
-    p('Cancelar: todo e-mail tem o link "Cancelar". Ao cancelar, apagamos o seu e-mail, os alertas e a cópia do perfil na hora.'),
+    p('Contra abuso: para impedir que alguém use o formulário para mandar e-mail a desconhecidos, contamos quantos pedidos chegam de cada conexão por dia. Não guardamos o seu endereço de internet (IP): só um código embaralhado dele, que não dá para desfazer e é apagado em até uma semana.'),
+    p('Cancelar: todo e-mail tem o link "Cancelar". Ao cancelar, apagamos do banco na hora o seu e-mail, os alertas e a cópia do perfil. Se houver cópias de segurança do banco, elas são cifradas e se apagam sozinhas em até 30 dias.'),
     p('Quem ajuda: os dados ficam no Supabase (banco de dados) e os e-mails saem pelo Resend (serviço de envio de e-mail). O registro de envios que guardamos não tem o seu e-mail: só a data, o tipo e se deu certo.'));
 }
 

@@ -17,6 +17,14 @@ export const LIMITES = Object.freeze({
   alertasPorSemana: 2,
   /** E-mails de confirmação para o mesmo endereço em 24 horas. */
   confirmacoesPorDia: 3,
+  /** Pedidos de inscrição aceitos do mesmo endereço de internet (IP) por dia. */
+  pedidosPorIpPorDia: 10,
+  /**
+   * Pedidos de inscrição aceitos por dia, somando todo mundo. Teto contra quem
+   * troca de IP: segura o gasto de e-mail e a reputação do domínio. O plano
+   * grátis do Resend manda 100 e-mails por dia; 80 deixa folga.
+   */
+  pedidosPorDiaNoTotal: 80,
   /** Validade do link de confirmação, em horas. */
   horasParaConfirmar: 48,
   /** Mínimo aceito, em centésimos de ponto por real: de 0,01 a 1.000. */

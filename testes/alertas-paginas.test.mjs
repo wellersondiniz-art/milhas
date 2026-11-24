@@ -30,7 +30,7 @@ test('Privacidade ligada: diz o que guarda, para quê, duplo aceite, limite, can
     'Duplo aceite',
     'no máximo 2 e-mails de alerta por semana',
     'nunca junto com o de outra pessoa',
-    'apagamos o seu e-mail, os alertas e a cópia do perfil na hora',
+    'apagamos do banco na hora o seu e-mail, os alertas e a cópia do perfil',
     'Supabase',
     'Resend',
     'não tem o seu e-mail',
