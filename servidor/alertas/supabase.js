@@ -9,6 +9,8 @@
 //
 // Erros nunca levam o corpo da resposta para o log (pode ter e-mail).
 
+import { algumaComBeneficio, temBeneficio } from '../plano/regras.js';
+
 export class ErroDoBanco extends Error {
   constructor(operacao, status) {
     super(`Supabase: ${operacao} falhou (status ${status})`);
@@ -91,6 +93,16 @@ export function repositorioSupabase({ url, chave, fetch: buscar = globalThis.fet
         for (const linha of linhas) yield { ...linha, alertas: linha.alertas_email ?? [] };
         if (linhas.length < PAGINA) return;
       }
+    },
+    /** Plano pago (tabela da migração 20261124000000_plano_pago.sql). */
+    async temPlano(email, agora) {
+      const linhas = await pedir('ler plano', `plano_assinaturas?select=situacao,contestada,fim_do_periodo&email=${eq(email)}`) ?? [];
+      return algumaComBeneficio(linhas, agora);
+    },
+    /** E-mails com o plano valendo agora, de uma vez só (rodada semanal). */
+    async emailsComPlano(agora) {
+      const linhas = await pedir('listar planos', 'plano_assinaturas?select=email,situacao,contestada,fim_do_periodo&situacao=eq.ativa') ?? [];
+      return new Set(linhas.filter((l) => temBeneficio(l, agora)).map((l) => l.email));
     },
     async registrarEnvio(registro) {
       await pedir('registrar envio', 'alertas_envios', { method: 'POST', corpo: registro, prefer: 'return=minimal' });

@@ -67,6 +67,8 @@ site/sobre-os-dados/
 site/privacidade/
 site/termos/
 site/contato/
+# Página do plano pago (scripts/paginas/plano.js), só com PLANO_LIGADO
+site/plano/
 
 # Service worker gerado a partir de scripts/pwa/sw-modelo.js (npm run sw)
 site/sw.js

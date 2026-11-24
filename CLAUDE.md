@@ -83,4 +83,5 @@ Vamos preenchendo conforme o projeto cresce.
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
 | Alertas por e-mail | `npm run alertas -- --simular` (só conta) e `npm run test:banco` (migração num Postgres local, Docker) |
+| Plano pago | testes em `npm run test:unidade` (`testes/plano*.test.mjs`) e `npm run test:banco`; ligar só seguindo o README, seção "Plano pago" |
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |

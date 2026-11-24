@@ -15,6 +15,7 @@ import { avaliarAlerta } from './avaliar.js';
 import { alertaParaTexto, urlDeCancelar } from './fluxo.js';
 import { emailDeAlerta } from './emails.js';
 import { podeEnviarAlerta } from './limite.js';
+import { limitesDeAlertas } from '../plano/regras.js';
 import { assinaturaDeCancelamento } from './tokens.js';
 import { dataHoraEmSaoPaulo } from './regras.js';
 
@@ -43,6 +44,9 @@ export async function rodarAlertas({ repo, correio, segredo, urlSite, dados, ago
   };
   if (!simular) resumo.pedidos_vencidos_apagados = await repo.apagarNaoConfirmadasVencidas(agora);
 
+  // Quem tem o plano pago pode receber mais e-mails por semana.
+  const comPlano = (await repo.emailsComPlano?.(agora)) ?? new Set();
+
   for await (const inscricao of repo.inscricoesConfirmadas()) {
     resumo.inscricoes += 1;
     const disparos = [];
@@ -70,7 +74,7 @@ export async function rodarAlertas({ repo, correio, segredo, urlSite, dados, ago
     }
     if (!disparos.length) continue;
 
-    const limite = podeEnviarAlerta(inscricao.alertas_recentes, agora);
+    const limite = podeEnviarAlerta(inscricao.alertas_recentes, agora, limitesDeAlertas(comPlano.has(inscricao.email)).alertasPorSemana);
     if (!limite.ok) {
       // Não grava a chave: se continuar no alvo, avisa quando o limite liberar.
       resumo.emails_barrados_pelo_limite += 1;

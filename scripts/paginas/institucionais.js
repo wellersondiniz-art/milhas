@@ -19,7 +19,10 @@
 
 import { formatarData } from '../../site/js/motor/index.js';
 import { ALERTAS_LIGADO, EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
-import { h, juntar } from './html.js';
+import { h, juntar, linkExterno } from './html.js';
+import { configDoPlano } from './plano.js';
+import { BENEFICIOS } from '../../servidor/plano/regras.js';
+import { formatarCentavos } from '../../site/js/motor/formatar.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 
 const A_CONFIRMAR = 'A_CONFIRMAR';
@@ -135,7 +138,7 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade(alertas) {
+function paginaPrivacidade(alertas, plano) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -167,6 +170,7 @@ function paginaPrivacidade(alertas) {
           : 'Esses dados não vão para nenhum servidor, nem para a gente. A conta é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'),
         p('Em janela anônima, o perfil some quando você fecha a janela.')),
       alertas ? secaoDeAlertas() : null,
+      plano.ligado ? secaoDoPlanoNaPrivacidade() : null,
       secao('sem-internet', 'Para funcionar sem internet',
         p('O site guarda no aparelho uma cópia das próprias páginas e da lista de ofertas, para a calculadora funcionar sem internet. Essa cópia não tem nada seu.')),
       secao('levar', 'Levar para outro aparelho',
@@ -207,10 +211,45 @@ function secaoDeAlertas() {
     p('Quem ajuda: os dados ficam no Supabase (banco de dados) e os e-mails saem pelo Resend (serviço de envio de e-mail). O registro de envios que guardamos não tem o seu e-mail: só a data, o tipo e se deu certo.'));
 }
 
+/** Só aparece com PLANO_LIGADO: quem assina deixa o e-mail com a gente. */
+function secaoDoPlanoNaPrivacidade() {
+  return secao('plano-pago', 'Plano pago (só se você assinar)',
+    p('O pagamento é feito na página do Stripe, a empresa que processa o pagamento. O número do cartão, a validade e o código de segurança são digitados só lá: nunca passam pelo nosso site e nunca chegam até a gente. Para os dados do pagamento, vale a ', linkExterno('https://stripe.com/br/privacy', 'política de privacidade do Stripe'), '.'),
+    p('Do Stripe, a gente recebe e guarda só:'),
+    lista([
+      'o seu e-mail, para saber que você assina e aumentar o limite dos seus alertas;',
+      'os códigos do cliente e da assinatura no Stripe;',
+      'a situação do plano (ativo, pagamento recusado, cancelado ou devolvido), a data do fim do mês pago e se houve contestação no cartão.',
+    ]),
+    p('Guardamos também os códigos dos avisos que o Stripe manda, sem dado pessoal, para não processar o mesmo aviso duas vezes.'),
+    p('Por quanto tempo: enquanto o plano existir e depois, pelo prazo que a lei manda guardar registros de cobrança (em revisão; hoje previsto em 5 anos depois da última cobrança).'),
+    p('Quem ajuda: o Stripe (pagamento, empresa com sede fora do Brasil) e o Supabase (banco de dados, servidor em São Paulo). A página de pagamento do Stripe pode usar cookies próprios; o nosso site continua sem cookies.'),
+    p('Para ver, corrigir ou apagar os seus dados, fale com a gente em ', contato(), '. Apagar cancela o plano; os registros de cobrança que a lei manda guardar ficam pelo prazo dela.'));
+}
+
+/** Só aparece com PLANO_LIGADO. */
+function secaoDoPlanoNosTermos(plano) {
+  const preco = formatarCentavos(plano.precoCentavos);
+  return secao('plano-pago', 'Plano pago',
+    p('O plano pago é opcional. Ele dá mais alertas de pontos por e-mail (até ', String(BENEFICIOS.alertasPorEmail), ' alertas e até ', String(BENEFICIOS.alertasPorSemana), ' e-mails por semana). ', forte('Ele não muda a conta nem a ordem do resultado'), ': quem assina vê os mesmos pontos e o mesmo ranking de quem não assina.'),
+    lista([
+      `Preço: ${preco} por mês, com tributos, cobrado no início de cada mês de assinatura e renovado automaticamente. Veja a `,
+      'Pagamento: na página do Stripe. A gente não vê nem guarda o número do cartão.',
+      'Cancelar: quando quiser, pelo portal do Stripe (link na página do plano). O plano vale até o fim do mês já pago e não há nova cobrança.',
+      'Arrependimento: nos primeiros 7 dias depois de assinar, devolvemos o valor inteiro, sem perguntas, e o plano acaba.',
+      'Depois dos 7 dias, o mês em curso não é devolvido em parte. Cobrança em dobro ou erro nosso, devolvemos sempre.',
+      'Pagamento recusado: o Stripe tenta de novo por alguns dias. Enquanto não der certo, os alertas voltam aos limites do grátis, sem multa.',
+      'Contestação no cartão: enquanto estiver aberta, o plano fica suspenso.',
+      'Mudança de preço: avisamos por e-mail com 30 dias de antecedência. Vale só a partir da renovação seguinte, e você pode cancelar antes, sem custo.',
+      'Fim do plano: se um dia o plano pago acabar, avisamos com 30 dias e devolvemos a parte não usada.',
+      'Só para maiores de 18 anos.',
+    ].map((item, i) => (i === 0 ? juntar(item, link('plano/', 'página do plano'), '.') : item))));
+}
+
 // ---------------------------------------------------------------------------
 // Termos de uso
 
-function paginaTermos() {
+function paginaTermos(plano) {
   return {
     pasta: 'termos',
     titulo: 'Termos de uso',
@@ -218,7 +257,7 @@ function paginaTermos() {
     abertura: `Em poucas palavras: o ${NOME_DO_SITE} faz uma conta para ajudar você a decidir. Quem decide as regras dos pontos são as lojas, os bancos e os programas. Confira sempre na loja antes de comprar.`,
     corpo: [
       secao('o-que-faz', 'O que o site faz',
-        p('É uma calculadora gratuita. Você diz a loja e o valor, e o site estima quantos pontos a compra pode render em cada jeito de pagar e quanto isso vale em reais, em média. Não precisa de cadastro. Veja ', link('como-funciona/', 'Como funciona'), '.')),
+        p(plano.ligado ? 'É uma calculadora gratuita, com um plano pago opcional que só dá mais alertas por e-mail. Você diz a loja e o valor,' : 'É uma calculadora gratuita. Você diz a loja e o valor, e o site estima quantos pontos a compra pode render em cada jeito de pagar e quanto isso vale em reais, em média. Não precisa de cadastro. Veja ', link('como-funciona/', 'Como funciona'), '.')),
       secao('estimativas', 'Os números são estimativas',
         p('A conta usa as regras que as lojas, os bancos e os programas publicaram, mais algumas estimativas, como o valor do milheiro e a cotação do dólar (veja ', sobreOsDados(), ').'),
         p('Por isso o resultado é uma estimativa. Os pontos que você vai receber de verdade podem ser diferentes, e o valor em reais depende de como você usar os pontos. Não prometemos ganho nenhum.')),
@@ -235,7 +274,9 @@ function paginaTermos() {
         p(`O ${NOME_DO_SITE} não é loja, banco nem programa de pontos. Não vendemos produtos, não emitimos cartão e não creditamos pontos. Se os pontos não caírem, quem resolve é o programa ou a loja. Se quiser, avise a gente também, para corrigirmos a informação.`)),
       secao('nao-e-conselho', 'Não é conselho financeiro',
         p('O site não diz se vale a pena fazer um cartão, assinar um clube ou comprar alguma coisa. Ele só compara pontos. Anuidade, juros e o preço do produto em outras lojas ficam por sua conta.')),
+      plano.ligado ? secaoDoPlanoNosTermos(plano) : null,
       secao('como-se-mantem', 'Como o site se mantém',
+        plano.ligado ? p('O site se mantém com o plano pago opcional. Quem não assina usa a calculadora inteira, de graça.') : null,
         p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
         p('Se um dia isso mudar, vamos avisar de forma clara, perto de cada link, que podemos ganhar uma comissão sem custo extra para você. E a ordem do resultado vai continuar sendo só pelos pontos.')),
       secao('mudancas', 'Mudanças neste texto',
@@ -327,6 +368,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
  *   alertas          padrão: ALERTAS_LIGADO (config.js); muda a Privacidade
+ *   plano            padrão: configDoPlano() (config.js); com ligado, muda Privacidade e Termos
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -336,10 +378,11 @@ export function paginasInstitucionais({
   email = EMAIL_DE_CONTATO,
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
   alertas = ALERTAS_LIGADO,
+  plano = configDoPlano(),
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(alertas), paginaTermos(), contatoPagina];
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(alertas, plano), paginaTermos(plano), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

@@ -183,7 +183,7 @@ export async function tratarConfirmar(request, deps) {
   }
   if (resultado.resultado === 'limite_de_alertas') {
     return responderPagina(409, 'Limite de alertas', [
-      par(`Cada e-mail pode ter até ${LIMITES.alertasPorEmail} alertas. Cancele os alertas pelo link de um e-mail nosso e crie de novo os que quiser.`),
+      par(`Cada e-mail pode ter até ${resultado.limite ?? LIMITES.alertasPorEmail} alertas. Cancele os alertas pelo link de um e-mail nosso e crie de novo os que quiser.`),
     ]);
   }
   if (resultado.resultado !== 'confirmado') return responderPagina(400, ...LINK_RUIM);

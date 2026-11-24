@@ -47,6 +47,7 @@ export async function gerarNoDisco({ pastaDados, saida, hoje, urlBase }) {
   await rm(new URL('loja/', saida), { recursive: true, force: true });
   await rm(new URL('ofertas/', saida), { recursive: true, force: true });
   for (const pasta of PASTAS_INSTITUCIONAIS) await rm(new URL(`${pasta}/`, saida), { recursive: true, force: true });
+  await rm(new URL('plano/', saida), { recursive: true, force: true });
   await rm(new URL('sitemap.xml', saida), { force: true });
   for (const { caminho, conteudo } of resultado.arquivos) {
     const destino = new URL(caminho, saida);

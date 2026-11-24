@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sobe um Postgres 17 descartável no Docker, cria os papéis do Supabase
 # (anon, authenticated, service_role), aplica as migrações e roda os testes
-# SQL dos alertas. Não toca em nenhum projeto do Supabase.
+# SQL dos alertas e do plano pago. Não toca em nenhum projeto do Supabase.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 NOME=milhas-pg-teste
@@ -24,3 +24,4 @@ for arquivo in supabase/migrations/*.sql; do
   psql -q -h 127.0.0.1 -p "$PORTA" -U postgres -v ON_ERROR_STOP=1 -f "$arquivo"
 done
 psql -q -h 127.0.0.1 -p "$PORTA" -U postgres -v ON_ERROR_STOP=1 -f supabase/testes/alertas_email.sql
+psql -q -h 127.0.0.1 -p "$PORTA" -U postgres -v ON_ERROR_STOP=1 -f supabase/testes/plano_pago.sql
