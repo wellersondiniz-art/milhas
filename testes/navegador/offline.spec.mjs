@@ -58,7 +58,9 @@ test('sem internet, a calculadora abre e calcula com os dados guardados', async 
   await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('10000');
   await page.getByRole('button', { name: 'Ver o resultado' }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'R$ 100,00 na Magalu' })).toBeVisible();
-  await expect(cartoesDoResultado(page).first()).toContainText('Melhor jeito');
+  // Com os dados reais: ou aparece o melhor jeito, ou (sem a cotação do dólar
+  // e sem oferta) uma mensagem só, sem lista de "Nenhum ponto".
+  await expect(page.locator('#resultado')).toContainText(/Melhor jeito|Ainda não dá para calcular os pontos dos cartões/);
 
   // A internet volta: o aviso some.
   await context.setOffline(false);

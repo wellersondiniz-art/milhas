@@ -18,7 +18,9 @@
 // Funções puras: recebem a data e a URL base e devolvem os arquivos.
 
 import { formatarData } from '../../site/js/motor/index.js';
-import { EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
+import {
+  EMAIL_DE_CONTATO, NOME_DO_SITE, RESPONSAVEL_PELOS_DADOS, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM,
+} from './config.js';
 import { h, juntar } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 
@@ -101,7 +103,7 @@ function sobreDados() {
     pasta: 'sobre-os-dados',
     titulo: 'Sobre os dados',
     descricao: `De onde vêm as ofertas, os cartões e os programas do ${NOME_DO_SITE}, com que frequência conferimos e o que é estimativa.`,
-    abertura: 'Tudo o que entra na conta vem de páginas oficiais das lojas, dos bancos e dos programas de pontos. Cada dado tem o link da fonte e a data em que foi conferido.',
+    abertura: 'As regras que entram na conta (ofertas, pontos dos cartões e programas) vêm de páginas oficiais das lojas, dos bancos e dos programas de pontos. O valor do milheiro e a cotação do dólar são estimativas, explicadas abaixo. Cada dado tem o link da fonte e a data em que foi conferido.',
     corpo: [
       secao('origem', 'De onde vêm',
         p('A gente confere à mão, uma por uma, as páginas oficiais: o regulamento da oferta na loja ou no programa, a página do cartão no site do banco e a página do programa de pontos.'),
@@ -135,7 +137,13 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade() {
+/** O responsável pelos dados está preenchido em config.js? */
+function responsavelDefinido(r) {
+  return Boolean(r && typeof r.nome === 'string' && typeof r.documento === 'string' &&
+    r.nome.trim() && r.documento.trim() && r.nome !== A_CONFIRMAR && r.documento !== A_CONFIRMAR);
+}
+
+function paginaPrivacidade(responsavel, temEmail) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -179,6 +187,25 @@ function paginaPrivacidade() {
         p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.')),
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
+      secao('responsavel', 'Quem responde pelos seus dados',
+        responsavelDefinido(responsavel)
+          ? p(`Quem responde pelos dados tratados no ${NOME_DO_SITE} (o "controlador", como diz a Lei Geral de Proteção de Dados, a LGPD) é ${responsavel.nome}, ${responsavel.documento}.`)
+          : alerta('aviso', '!', 'Falta informar quem responde pelos dados',
+            p('Aqui vai aparecer o nome e o documento (CNPJ ou CPF) de quem responde pelos dados do site, o "controlador", como diz a Lei Geral de Proteção de Dados (LGPD). Essa informação entra antes do lançamento.')),
+        p('Por que a gente pode tratar o pouco que recebe: os dados técnicos de acesso são usados para entregar e proteger o site (legítimo interesse, na LGPD), e o que você manda pelo Contato é usado para atender o seu pedido.')),
+      secao('direitos', 'Os seus direitos',
+        p('Pela LGPD, você pode pedir para:'),
+        lista([
+          'saber se a gente trata algum dado seu e ver quais são;',
+          'corrigir um dado errado ou desatualizado;',
+          'apagar dados seus;',
+          'levar os seus dados para outro serviço;',
+          'saber com quais empresas a gente compartilha dados;',
+          'retirar uma permissão que você deu.',
+        ]),
+        p('Como o perfil fica só no seu aparelho, apagar e levar os dados você mesmo faz em ', meuPerfil(), ', sem pedir para ninguém. Para o resto, ',
+          temEmail ? juntar('escreva pela página de ', contato(), '.') : juntar('o canal ainda está sendo preparado; quando estiver pronto, aparece na página de ', contato(), '.')),
+        p('Você também pode reclamar na ', h('a', { href: 'https://www.gov.br/anpd/', rel: 'noopener noreferrer' }, 'Autoridade Nacional de Proteção de Dados (ANPD)'), '.')),
     ],
   };
 }
@@ -301,6 +328,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   urlBase          URL base já normalizada, ou null
  *   revisaoPendente  padrão: REVISAO_JURIDICA_PENDENTE (config.js)
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
+ *   responsavel      padrão: RESPONSAVEL_PELOS_DADOS (config.js), { nome, documento }
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
@@ -310,16 +338,20 @@ export function paginasInstitucionais({
   revisaoPendente = REVISAO_JURIDICA_PENDENTE,
   email = EMAIL_DE_CONTATO,
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
+  responsavel = RESPONSAVEL_PELOS_DADOS,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(), paginaTermos(), contatoPagina];
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(responsavel, contatoPagina.temEmail), paginaTermos(), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {
     avisos.push('Páginas institucionais com REVISAO_JURIDICA_PENDENTE = true: aviso "Texto em revisão", noindex e fora do sitemap. Troque em scripts/paginas/config.js depois que um advogado revisar.');
   }
   if (email !== A_CONFIRMAR && !contatoPagina.temEmail) throw new Error(`EMAIL_DE_CONTATO inválido: ${email}`);
+  if (!responsavelDefinido(responsavel)) {
+    avisos.push('RESPONSAVEL_PELOS_DADOS A_CONFIRMAR: a Privacidade diz que falta informar quem responde pelos dados. Defina em scripts/paginas/config.js (com o advogado).');
+  }
   if (!contatoPagina.temEmail) avisos.push('EMAIL_DE_CONTATO A_CONFIRMAR: a página Contato diz que o canal está em preparação. Defina em scripts/paginas/config.js.');
   return {
     paginas: todas.map((pagina) => montar(pagina, opcoes)),

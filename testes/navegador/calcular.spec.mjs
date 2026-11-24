@@ -111,6 +111,23 @@ test.describe('quando os dados não carregam', () => {
 test.describe('com os dados reais do repositório', () => {
   test.use({ serviceWorkers: 'block' });
 
+  test('sem cotação do dólar e sem oferta: uma mensagem só, sem "Melhor jeito" em cima de "Nenhum ponto"', async ({ page }) => {
+    // Força a cotação "A_CONFIRMAR", para o teste não depender de quando ela for preenchida.
+    await page.route('**/dados/cambio.json', async (rota) => {
+      const resposta = await rota.fetch();
+      const cambio = (await resposta.json()).map((c) => ({ ...c, reais_por_dolar: 'A_CONFIRMAR', data_referencia: 'A_CONFIRMAR' }));
+      await rota.fulfill({ response: resposta, json: cambio });
+    });
+    await page.route('**/dados/ofertas.json', (rota) => rota.fulfill({ json: [] }));
+    await abrirInicio(page, '/?loja=magalu');
+    await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('50000');
+    await page.getByRole('button', { name: 'Ver o resultado' }).click();
+    await expect(page.getByText('Ainda não dá para calcular os pontos dos cartões')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Informar a cotação' })).toHaveAttribute('href', '#/perfil');
+    await expect(cartoesDoResultado(page)).toHaveCount(0);
+    await expect(page.locator('#resultado')).not.toContainText('Melhor jeito');
+  });
+
   test('toda loja calcula sem erro', async ({ page }) => {
     const lojas = JSON.parse(await readFile(new URL('../../dados/lojas.json', import.meta.url), 'utf8'));
     for (const loja of lojas) {
@@ -118,7 +135,9 @@ test.describe('com os dados reais do repositório', () => {
       await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('129900');
       await page.getByRole('button', { name: 'Ver o resultado' }).click();
       await expect(page.getByRole('heading', { level: 2, name: `R$ 1.299,00 na ${loja.nome}` })).toBeVisible();
-      await expect(cartoesDoResultado(page).first()).toContainText('Melhor jeito');
+      // Com os dados reais: ou aparece o melhor jeito, ou (sem a cotação do dólar
+      // e sem oferta) uma mensagem só, sem lista de "Nenhum ponto".
+      await expect(page.locator('#resultado')).toContainText(/Melhor jeito|Ainda não dá para calcular os pontos dos cartões/);
       await expect(page.getByText('Não deu para calcular')).toHaveCount(0);
     }
   });

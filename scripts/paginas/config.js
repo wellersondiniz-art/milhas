@@ -29,9 +29,17 @@ export const REVISAO_JURIDICA_PENDENTE = true;
 
 // Data da última mudança nos textos das páginas institucionais (AAAA-MM-DD).
 // Troque sempre que mudar o que essas páginas dizem.
-export const TEXTOS_ATUALIZADOS_EM = '2026-11-22';
+export const TEXTOS_ATUALIZADOS_EM = '2026-11-24';
 
 // Canal de contato. Ainda não foi escolhido: com "A_CONFIRMAR", a página
 // Contato diz que o canal está sendo preparado e o build avisa.
 // Exemplo: export const EMAIL_DE_CONTATO = 'contato@milhasdavez.com.br';
 export const EMAIL_DE_CONTATO = 'A_CONFIRMAR';
+
+// Quem responde pelos dados (o "controlador", na LGPD). A Privacidade precisa
+// dizer o nome (ou razão social) e o CNPJ ou CPF de quem cuida do site.
+// Só o dono do site sabe e decide isso: preencha depois de falar com o
+// advogado. Com "A_CONFIRMAR", a Privacidade mostra um aviso de que falta essa
+// informação e o build avisa.
+// Exemplo: export const RESPONSAVEL_PELOS_DADOS = { nome: 'Fulano de Tal ME', documento: 'CNPJ 00.000.000/0001-00' };
+export const RESPONSAVEL_PELOS_DADOS = { nome: 'A_CONFIRMAR', documento: 'A_CONFIRMAR' };

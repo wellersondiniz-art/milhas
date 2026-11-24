@@ -337,11 +337,12 @@ test('cartão com pontos A_CONFIRMAR não soma pontos', () => {
   assert.ok(melhor.avisos.includes('Os pontos por real do cartão Azul Itaú não estão confirmados; não entram no cálculo.'));
 });
 
-test('oferta de exemplo do repositório (vários campos A_CONFIRMAR)', async () => {
+test('oferta de exemplo (testes/exemplos) com os dados do repositório (vários campos A_CONFIRMAR)', async () => {
   const dados = {};
-  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas']) {
+  for (const nome of ['programas', 'cartoes', 'lojas']) {
     dados[nome] = JSON.parse(await readFile(new URL(`../dados/${nome}.json`, import.meta.url), 'utf8'));
   }
+  dados.ofertas = JSON.parse(await readFile(new URL('./exemplos/ofertas-exemplo.json', import.meta.url), 'utf8'));
   // Hoje dentro da validade: a oferta de exemplo termina em 12/11/2026.
   const lista = calcular(perfil([COM_CLUBE], ['azul-itau-infinite']), compra(10000), dados, HOJE);
   const [melhor] = lista;
@@ -457,7 +458,7 @@ test('pontos por dólar com a cotação do cadastro (PTAX)', () => {
   const [j] = calcular(perfil([], ['cartao-livelo']), compra(10000, SEM_OFERTA), dados, HOJE);
   // R$ 100,00 ÷ R$ 5,0000 = US$ 20; × 2 pontos por dólar = 40 pontos
   assert.equal(j.pontos_do_cartao, 40);
-  assert.ok(j.avisos.some((a) => a.includes('R$ 5,0000 (PTAX de 21/11/2026)')));
+  assert.ok(j.avisos.some((a) => a.includes('R$ 5,0000 (dólar oficial do Banco Central, a PTAX de 21/11/2026)')));
   assert.ok(j.explicacao.some((p) => p.includes('R$ 100,00 ÷ R$ 5,0000 por dólar × 2 pontos por dólar = 40 pontos')));
 });
 
@@ -474,6 +475,14 @@ test('pontos por dólar sem cotação nenhuma: conta 0 e pede a cotação', () =
   const [j] = calcular(perfil([], ['cartao-livelo']), compra(10000, SEM_OFERTA), dados, HOJE);
   assert.equal(j.pontos_do_cartao, 0);
   assert.ok(j.avisos.some((a) => a.includes('falta a cotação do dólar')));
+  assert.equal(j.falta_cotacao_do_dolar, true);
+});
+
+test('com cotação, falta_cotacao_do_dolar é false', () => {
+  const dados = dadosCom((d) => { soDolar(d); d.cambio = CAMBIO(50000); });
+  const [j] = calcular(perfil([], ['cartao-livelo']), compra(10000, SEM_OFERTA), dados, HOJE);
+  assert.equal(j.falta_cotacao_do_dolar, false);
+  assert.ok(j.avisos.some((a) => a.includes('um pouco abaixo deste número')));
 });
 
 test('pontos por dólar guardam a fração até a exibição', () => {

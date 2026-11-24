@@ -522,7 +522,7 @@ test('aprovação: recusa proposta editada, ofertas.json mudado, Git sujo e bran
 
   // Volta ofertas.json para a base e testa o Git.
   await writeFile(arquivoProposta, original);
-  const base = await readFile(new URL('dados/ofertas.json', RAIZ), 'utf8');
+  const base = await readFile(new URL('testes/exemplos/ofertas-exemplo.json', RAIZ), 'utf8');
   await writeFile(arquivoOfertas, base);
   await assert.rejects(aprovar({ raiz, data: DATA, codigo, executar: (c, a) => (a[0] === 'status' ? ' M x' : ''), log: () => {} }), /mudanças não salvas/);
   await assert.rejects(aprovar({ raiz, data: DATA, codigo, executar: (c, a) => (a[0] === 'rev-parse' ? 'outra' : ''), log: () => {} }), /branch "outra"/);
@@ -551,7 +551,7 @@ test('aprovação: se a gravação não passar na validação, desfaz a branch e
   const raiz = new URL(`file://${demo.tmp}/`);
   const arquivoProposta = join(demo.tmp, 'coleta', DATA, 'proposta.json');
   const arquivoOfertas = join(demo.tmp, 'dados', 'ofertas.json');
-  const base = await readFile(new URL('dados/ofertas.json', RAIZ), 'utf8');
+  const base = await readFile(new URL('testes/exemplos/ofertas-exemplo.json', RAIZ), 'utf8');
   await writeFile(arquivoOfertas, base);
   const p = JSON.parse(await readFile(arquivoProposta, 'utf8'));
   p.ofertas[0].loja_id = 'loja-que-nao-existe';

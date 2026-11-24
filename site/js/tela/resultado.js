@@ -3,7 +3,8 @@
 
 import { el } from './dom.js';
 import {
-  destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  destaqueDoJeito, fraseDoJeito, nenhumJeitoRende, palavrasQueAparecem, textoNadaRende, textoValidade,
+  textosAntesDeComprar, textosConferido,
 } from './textos.js';
 
 const TERMOS = {
@@ -31,6 +32,7 @@ function selos(jeito, posicao) {
   if (posicao === 0) lista.push(el('span', { class: 'selo selo--destaque' }, el('span', { 'aria-hidden': 'true' }, '★'), ' Melhor jeito'));
   else lista.push(el('span', { class: 'selo' }, `${posicao + 1}º jeito`));
   if (jeito.tipo === 'sem_oferta') lista.push(el('span', { class: 'selo selo--info' }, 'Sem oferta'));
+  if (jeito.depende_da_categoria) lista.push(el('span', { class: 'selo selo--aviso' }, 'Depende do produto'));
   if (jeito.tem_dado_antigo) lista.push(el('span', { class: 'selo selo--aviso' }, 'Dado antigo'));
   return el('div', { class: 'card__topo' }, lista);
 }
@@ -105,6 +107,20 @@ export function montarResultado(jeitos, contexto) {
     partes.push(alerta('info', 'Mostrando com todos os cartões e programas',
       el('p', {}, 'Você ainda não disse quais cartões e programas tem. Por isso a conta usa todos os que conhecemos, sem clube.'),
       el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Cadastrar os meus')));
+  }
+  // Nada rende pontos (por exemplo, sem a cotação do dólar): uma mensagem só,
+  // em vez de uma lista de cards iguais com "Nenhum ponto" e um "Melhor jeito"
+  // escolhido por ordem alfabética.
+  if (nenhumJeitoRende(jeitos)) {
+    const { titulo, texto, pedeCotacao } = textoNadaRende(jeitos);
+    partes.push(alerta('aviso', titulo,
+      el('p', {}, texto),
+      pedeCotacao ? el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Informar a cotação') : null));
+    if (!temOferta) {
+      partes.push(el('p', { class: 'texto-suave' },
+        `A ${loja.nome} não tem oferta de pontos valendo hoje${semPerfil ? '' : ' para os programas que você marcou'}.`));
+    }
+    return el('div', { class: 'pilha', 'data-resumo': `${valorTexto} na ${loja.nome}` }, partes);
   }
   if (!temOferta) {
     partes.push(alerta('info', `A ${loja.nome} não tem oferta de pontos valendo hoje`,

@@ -231,12 +231,26 @@ function regrasExtras(dados, hoje) {
     const nome = `oferta ${JSON.stringify(o.id)}`;
     if (dataValida(o.fim) && o.fim < hoje) avisos.push(`${nome}: já terminou (fim ${o.fim}, hoje ${hoje})`);
     for (const campo of Object.keys(o)) {
-      if (o[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR" e fica fora do cálculo`);
+      if (o[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR"; ${EFEITO_A_CONFIRMAR[campo] ?? 'esse dado não entra no cálculo'}`);
     }
   });
 
   return { erros, avisos };
 }
+
+// O que o motor faz quando um campo da oferta está "A_CONFIRMAR" (regras
+// aceitas em 22/11/2026). O aviso precisa dizer a mesma coisa que o motor faz.
+const EFEITO_A_CONFIRMAR = {
+  inicio: 'a oferta entra na conta, com um aviso na tela',
+  fim: 'a oferta entra na conta, com um aviso na tela',
+  acumula_com_cartao: 'a conta não soma oferta e cartão (vale o maior)',
+  exige_cupom: 'a oferta entra na conta, com um aviso na tela',
+  clube_ativo_ha_horas: 'o clube conta, com um aviso na tela',
+  pontos_fora_do_escopo_por_real: 'produto fora da oferta conta 0 ponto',
+  credito_prazo_dias: 'a tela diz que o prazo não está confirmado',
+  status: 'a oferta inteira fica fora do cálculo',
+  link_oferta: 'a tela não mostra o link da oferta',
+};
 
 // ---------------------------------------------------------------------------
 // Execução

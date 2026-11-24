@@ -80,6 +80,31 @@ test('contato: sem e-mail definido, diz que o canal está em preparação', () =
   assert.ok(avisos.some((a) => /EMAIL_DE_CONTATO/.test(a)));
 });
 
+test('privacidade: sem responsável definido, mostra o aviso; com ele, diz nome e documento; sempre lista os direitos', () => {
+  const sem = paginasInstitucionais({ email: 'A_CONFIRMAR' });
+  const textoSem = textoVisivel(porCaminho(sem.paginas)['privacidade/index.html']);
+  assert.match(textoSem, /Falta informar quem responde pelos dados/);
+  assert.match(textoSem, /o canal ainda está sendo preparado/);
+  assert.ok(sem.avisos.some((a) => /RESPONSAVEL_PELOS_DADOS/.test(a)));
+  for (const direito of ['corrigir um dado errado', 'apagar dados seus', 'levar os seus dados', 'retirar uma permissão', 'ANPD']) {
+    assert.ok(textoSem.includes(direito), direito);
+  }
+  const com = paginasInstitucionais({ email: 'oi@exemplo.com.br', responsavel: { nome: 'Pessoa de Teste', documento: 'CPF de teste' } });
+  const textoCom = textoVisivel(porCaminho(com.paginas)['privacidade/index.html']);
+  assert.match(textoCom, /é Pessoa de Teste, CPF de teste\./);
+  assert.doesNotMatch(textoCom, /Falta informar/);
+  assert.match(textoCom, /escreva pela página de Contato/);
+  assert.ok(!com.avisos.some((a) => /RESPONSAVEL_PELOS_DADOS/.test(a)));
+  // Campo vazio conta como não definido.
+  assert.ok(paginasInstitucionais({ responsavel: { nome: ' ', documento: 'x' } }).avisos.some((a) => /RESPONSAVEL_PELOS_DADOS/.test(a)));
+});
+
+test('sobre os dados: não diz que tudo vem de páginas oficiais (milheiro e dólar são estimativa)', () => {
+  const texto = textoVisivel(porCaminho(paginasInstitucionais({}).paginas)['sobre-os-dados/index.html']);
+  assert.doesNotMatch(texto, /Tudo o que entra na conta vem de páginas oficiais/);
+  assert.match(texto, /O valor do milheiro e a cotação do dólar são estimativas/);
+});
+
 test('contato: com e-mail, vira link mailto; e-mail inválido para o build', () => {
   const contato = porCaminho(paginasInstitucionais({ email: 'oi@exemplo.com.br' }).paginas)['contato/index.html'];
   assert.match(contato, /<a href="mailto:oi@exemplo.com.br">oi@exemplo.com.br<\/a>/);

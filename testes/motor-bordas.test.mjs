@@ -246,10 +246,33 @@ describe('escopo por categoria', () => {
     assert.deepEqual(o.o_que_voce_ganharia_se, []);
   });
 
-  test('sem categoria informada: pede a categoria', () => {
+  test('sem categoria informada: conta fora da oferta e diz para quais categorias ela vale', () => {
     const o = ofertaDe(calcular(perfil(), compra(), dadosCom(porCategoria), HOJE));
     assert.equal(o.pontos_do_programa, 100);
-    assert.ok(o.avisos.includes('Informe a categoria do produto para saber se ele entra na oferta.'));
+    assert.equal(o.depende_da_categoria, true);
+    assert.ok(o.avisos.some((a) => a.startsWith('Esta oferta só vale para produtos de: eletro, moveis.') && a.includes('a oferta dá até')));
+  });
+
+  test('categoria excluída e compra sem categoria: lista as exclusões nas condições e avisa', () => {
+    // Caso 8b da revisão independente: antes, 14.000 pontos sem aviso nenhum.
+    const d = dadosCom((x) => { x.ofertas[0].categorias_excluidas = ['celulares', 'gift card']; });
+    const o = ofertaDe(calcular(perfil(), compra(10000), d, HOJE));
+    assert.equal(o.depende_da_categoria, true);
+    assert.ok(o.condicoes_a_cumprir.includes('Conferir se o produto não é de uma categoria fora da oferta: celulares, gift card.'));
+    assert.ok(o.avisos.includes('A oferta não vale para: celulares, gift card. Se o seu produto for de uma dessas categorias, ele rende só 1 ponto por real, e o número acima não vale.'));
+  });
+
+  test('categoria excluída sem pontos fora do escopo confirmados: aviso sem número', () => {
+    const d = dadosCom((x) => { x.ofertas[0].categorias_excluidas = ['celulares']; x.ofertas[0].pontos_fora_do_escopo_por_real = 'A_CONFIRMAR'; });
+    const o = ofertaDe(calcular(perfil(), compra(10000), d, HOJE));
+    assert.ok(o.avisos.some((a) => a.endsWith('ele fica fora da oferta, e o número acima não vale.')));
+  });
+
+  test('categoria informada e fora da lista de exclusões: sem aviso de categoria', () => {
+    const d = dadosCom((x) => { x.ofertas[0].categorias_excluidas = ['celulares']; });
+    const o = ofertaDe(calcular(perfil(), compra(10000, { categoria: 'livros' }), d, HOJE));
+    assert.equal(o.depende_da_categoria, false);
+    assert.ok(!o.avisos.some((a) => a.startsWith('A oferta não vale para')));
   });
 
   test('categoria excluída vence o escopo "todos os produtos"', () => {

@@ -9,7 +9,8 @@ import { pathToFileURL } from 'node:url';
 import { aplicarMascara, erroDoValor, MAX_DIGITOS, VALOR_MAXIMO_CENTAVOS } from '../site/js/tela/moeda.js';
 import { filtrarLojas, lojaPeloNome, normalizar } from '../site/js/tela/lojas.js';
 import {
-  agoraLocal, anuncioDoResultado, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  agoraLocal, anuncioDoResultado, destaqueDoJeito, fraseDoJeito, nenhumJeitoRende, palavrasQueAparecem, textoNadaRende, textoValidade,
+  textosAntesDeComprar, textosConferido,
 } from '../site/js/tela/textos.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
 import { copiarDados, ARQUIVOS } from '../scripts/copiar-dados.js';
@@ -155,7 +156,23 @@ test('anúncio para leitor de tela: valor, pontos, como comprar e quantos jeitos
 test('validade: da oferta, ou explica que é ponto de sempre do cartão', () => {
   const [comOferta, semOferta] = calc(PERFIL);
   assert.equal(textoValidade(comOferta), 'Validade da oferta: de 01/11/2026 até 30/11/2026.');
-  assert.match(textoValidade(semOferta), /sem data para acabar/);
+  assert.equal(textoValidade(semOferta), 'Sem oferta da loja: só os pontos normais do cartão.');
+});
+
+test('nada rende: uma mensagem só, que diz quando falta a cotação do dólar', () => {
+  const [vazio] = calc({ programas: [], cartoes: [] });
+  assert.equal(nenhumJeitoRende([vazio]), true);
+  assert.equal(nenhumJeitoRende([]), false);
+  assert.equal(nenhumJeitoRende(calc(PERFIL)), false);
+  assert.equal(textoNadaRende([vazio]).pedeCotacao, false);
+  const semCotacao = { ...vazio, falta_cotacao_do_dolar: true };
+  const t = textoNadaRende([vazio, semCotacao]);
+  assert.equal(t.pedeCotacao, true);
+  assert.equal(t.titulo, 'Ainda não dá para calcular os pontos dos cartões');
+  assert.equal(
+    anuncioDoResultado([semCotacao], { nomeLoja: 'Loja A', valorTexto: 'R$ 100,00' }),
+    `Resultado para R$ 100,00 na Loja A. ${t.titulo}. ${t.texto}`,
+  );
 });
 
 test('conferido: uma linha por dado usado, marcando o antigo', () => {

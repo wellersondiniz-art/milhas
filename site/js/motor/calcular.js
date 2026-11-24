@@ -321,17 +321,17 @@ function pontosDoCartaoEmDolar(ctx, cartao, ppdEsc, avisos, passos) {
   if (!cot) {
     avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe em "Meu perfil".`);
     passos.push(`Pontos do cartão ${cartao.nome}: falta a cotação do dólar, contamos 0.`);
-    return { esc: 0n, programaId: cartao.programa_id };
+    return { esc: 0n, programaId: cartao.programa_id, faltaCotacao: true };
   }
   if (cot.registro) avisarDadoAntigo(ctx, cot.registro, 'cotação do dólar', avisos);
   // pontos × 1.000.000 = centavos × (ppd × 10.000) × 10.000 ÷ (cotação × 10.000)
   const esc = (ctx.valor * ppdEsc * BigInt(ESCALA_COTACAO)) / BigInt(cot.x10000);
   const origem = cot.doPerfil
     ? 'valor que você informou'
-    : `PTAX${cot.registro?.data_referencia && cot.registro.data_referencia !== A_CONFIRMAR ? ` de ${formatarData(cot.registro.data_referencia)}` : ''}`;
+    : `dólar oficial do Banco Central, a PTAX${cot.registro?.data_referencia && cot.registro.data_referencia !== A_CONFIRMAR ? ` de ${formatarData(cot.registro.data_referencia)}` : ''}`;
   avisos.push(
-    `O cartão ${cartao.nome} rende pontos por dólar. Usamos o dólar a ${formatarCotacao(cot.x10000)} (${origem}); ` +
-    'o banco usa a cotação do dia em que fecha a conta, então os pontos podem variar um pouco.',
+    `O cartão ${cartao.nome} rende pontos por dólar. Usamos o dólar a ${formatarCotacao(cot.x10000)} (${origem}). ` +
+    'O banco converte com o dólar dele, que costuma ser um pouco mais alto, então os pontos que caem podem ficar um pouco abaixo deste número.',
   );
   passos.push(
     `Pontos do cartão ${cartao.nome}: ${formatarCentavos(ctx.valor)} ÷ ${formatarCotacao(cot.x10000)} por dólar × ` +
@@ -410,6 +410,7 @@ function jeitoComOferta(ctx, oferta, cartao) {
 
   // 2. Pontos do programa
   let regra = null;
+  let dependeDaCategoria = false;
   let ppr;
   if (escopo.dentro) {
     regra = escolherRegra(oferta.regras, clube.cumpre, cartao?.id ?? null);
@@ -425,6 +426,21 @@ function jeitoComOferta(ctx, oferta, cartao) {
     } else if (oferta.escopo === 'categorias_selecionadas') {
       condicoes.push(`Produto de uma das categorias da oferta: ${oferta.categorias_incluidas.join(', ')}.`);
     }
+    // A tela não pergunta a categoria do produto. Se a oferta exclui
+    // categorias e a compra não diz qual é, a pessoa precisa ver a lista,
+    // e o resultado avisa quanto renderia se o produto estivesse fora.
+    const excluidas = oferta.categorias_excluidas ?? [];
+    if (excluidas.length && !ctx.compra.categoria) {
+      dependeDaCategoria = true;
+      condicoes.push(`Conferir se o produto não é de uma categoria fora da oferta: ${excluidas.join(', ')}.`);
+      const fora = oferta.pontos_fora_do_escopo_por_real;
+      avisos.push(
+        `A oferta não vale para: ${excluidas.join(', ')}. ` +
+        (typeof fora === 'number'
+          ? `Se o seu produto for de uma dessas categorias, ele rende só ${pontosPorReal(fora)}, e o número acima não vale.`
+          : 'Se o seu produto for de uma dessas categorias, ele fica fora da oferta, e o número acima não vale.'),
+      );
+    }
     if (clube.horasAConfirmar && temRegraDeClube) {
       avisos.push('Não está confirmado há quanto tempo o clube precisa estar ativo antes da compra.');
     }
@@ -436,7 +452,14 @@ function jeitoComOferta(ctx, oferta, cartao) {
     } else {
       avisos.push(`${escopo.motivo} fica fora da oferta, e os pontos fora da oferta não estão confirmados; contamos 0.`);
     }
-    if (escopo.semCategoria) avisos.push('Informe a categoria do produto para saber se ele entra na oferta.');
+    if (escopo.semCategoria) {
+      dependeDaCategoria = true;
+      const melhorFaixa = Math.max(...oferta.regras.map((r) => r.pontos_por_real));
+      avisos.push(
+        `Esta oferta só vale para produtos de: ${(oferta.categorias_incluidas ?? []).join(', ')}. ` +
+        `Como não sabemos a categoria do seu produto, contamos só os pontos de fora da oferta. Se ele for de uma delas, a oferta dá até ${pontosPorReal(melhorFaixa)}; confira na loja.`,
+      );
+    }
     passos.push(`Oferta ${nomeProg} na ${ctx.loja.nome}: este produto fica fora da oferta, então vale ${pontosPorReal(ppr)}.`);
   }
   let progEsc = pprEscalado(ppr) * ctx.valor;
@@ -488,6 +511,8 @@ function jeitoComOferta(ctx, oferta, cartao) {
   return {
     tipo: 'oferta',
     oferta,
+    dependeDaCategoria,
+    faltaCotacao: cart.faltaCotacao === true,
     programaId: oferta.programa_id,
     cartao,
     progEsc,
@@ -520,6 +545,8 @@ function jeitoSemOferta(ctx, cartao) {
   return {
     tipo: 'sem_oferta',
     oferta: null,
+    dependeDaCategoria: false,
+    faltaCotacao: cart.faltaCotacao === true,
     programaId: cartao ? cartao.programa_id : null,
     cartao,
     progEsc: 0n,
@@ -574,6 +601,8 @@ function paraSaida(ctx, j) {
     conferido_em: j.avisos.conferidos,
     tem_dado_antigo: j.avisos.conferidos.some((c) => c.antigo),
     o_que_voce_ganharia_se: j.hipoteses,
+    depende_da_categoria: j.dependeDaCategoria,
+    falta_cotacao_do_dolar: j.faltaCotacao,
     explicacao: j.passos,
   };
 }
