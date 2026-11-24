@@ -66,7 +66,7 @@ function validarEntrada(perfil, compra, dados, hoje) {
 }
 
 /** Pontos por real → inteiro × 10.000 (BigInt). null se não for número. */
-function pprEscalado(n) {
+export function pprEscalado(n) {
   if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return null;
   const s = Math.round(n * ESCALA_PPR);
   if (Math.abs(s - n * ESCALA_PPR) > 1e-6) throw erro(`pontos por real com mais de 4 casas decimais: ${n}`);
@@ -127,7 +127,7 @@ function montarContexto(perfil, compra, dados, hoje) {
 // ---------------------------------------------------------------------------
 // Oferta
 
-function ofertaValeHoje(oferta, dataHoje) {
+export function ofertaValeHoje(oferta, dataHoje) {
   if (oferta.inicio !== A_CONFIRMAR && oferta.inicio > dataHoje) return false;
   if (oferta.fim !== A_CONFIRMAR && oferta.fim < dataHoje) return false;
   return true;
@@ -160,7 +160,7 @@ function avaliarEscopo(oferta, compra) {
 }
 
 /** O clube do programa conta para esta oferta? */
-function avaliarClube(oferta, doPerfil, hoje) {
+export function avaliarClube(oferta, doPerfil, hoje) {
   const exigidas = oferta.clube_ativo_ha_horas;
   if (!doPerfil || doPerfil.clube_ativo !== true) return { cumpre: false, falta: 'assinar', exigidas };
   if (exigidas === A_CONFIRMAR) return { cumpre: true, horasAConfirmar: true };
@@ -190,7 +190,7 @@ function especificidade(regra) {
 }
 
 /** A regra mais específica que vale; empate → mais pontos; empate → a primeira da lista. */
-function escolherRegra(regras, clubeCumpre, cartaoId) {
+export function escolherRegra(regras, clubeCumpre, cartaoId) {
   let melhor = null;
   for (const regra of regras) {
     if (!regraVale(regra, clubeCumpre, cartaoId)) continue;

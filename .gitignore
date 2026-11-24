@@ -59,6 +59,7 @@ site/dados/
 # Páginas geradas a partir dos dados (npm run paginas)
 site/loja/
 site/ofertas/
+site/onde-rende-mais/
 site/sitemap.xml
 site/robots.txt
 # Páginas institucionais (scripts/paginas/institucionais.js)

@@ -207,6 +207,7 @@ test('classificar: app, dados, páginas e o que passa direto', async () => {
   assert.equal(c('/dados/lojas.json'), 'dados');
   assert.equal(c('/loja/magalu/', 'navigate'), 'pagina');
   assert.equal(c('/ofertas/', 'navigate'), 'pagina');
+  assert.equal(c('/onde-rende-mais/', 'navigate'), 'pagina');
   // Passa direto, sem cache:
   assert.equal(c('/sw.js'), 'ignorar');
   assert.equal(c('/estilo.html', 'navigate'), 'ignorar');

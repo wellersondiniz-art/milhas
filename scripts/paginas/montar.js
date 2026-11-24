@@ -12,6 +12,7 @@ import { NOME_DO_SITE } from './config.js';
 import { escaparXml, h, juntar, linkExterno } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 import { paginasInstitucionais } from './institucionais.js';
+import { PASTA_ONDE_RENDE_MAIS, blocoDaLoja, paginaOndeRendeMais } from './onde-rende-mais.js';
 
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const ID_SEGURO = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -187,6 +188,10 @@ function secaoDaOferta(ativa, dados, indice) {
     h('dl', { class: 'lista-conta' },
       linhaConta('Validade', porReal.validade_da_oferta?.texto ?? 'Não confirmada.'),
       linhaConta('Vale para', textoEscopo(oferta)),
+      oferta.produtos_em_campanha?.length
+        ? linhaConta('Produtos citados na campanha', h('ul', { class: 'pagina__lista' },
+          oferta.produtos_em_campanha.map((p) => h('li', {}, linkExterno(p.link, p.nome)))))
+        : null,
       linhaConta('Fora da oferta', textoFora(oferta)),
       linhaConta('Soma com o cartão?', textoAcumula(oferta.acumula_com_cartao)),
       linhaConta('Precisa de cupom?', textoCupom(oferta)),
@@ -267,6 +272,7 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
       h('h1', {}, `Pontos e milhas ${naLoja(loja)} hoje`),
       h('p', { class: 'texto-suave texto-pequeno' }, `Situação em ${formatarData(hoje)}, com os dados conferidos até agora.`)),
     cartaoDaResposta(dados, loja, melhor, resposta, raiz),
+    blocoDaLoja(dados, loja, hoje, raiz),
     h('section', { class: 'pilha', 'aria-labelledby': 'regras-titulo' },
       h('h2', { id: 'regras-titulo', class: 'pagina__subtitulo' }, ativas.length ? 'Regras das ofertas ativas' : 'Ofertas ativas'),
       ativas.length
@@ -347,7 +353,8 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
     h('section', { class: 'pilha--sm' },
       h('h1', {}, 'Ofertas de pontos ativas hoje'),
       h('p', { class: 'resposta' }, frase),
-      h('p', { class: 'texto-suave texto-pequeno' }, 'Ofertas vencidas saem desta lista. "Até" é o máximo da oferta, que pode pedir clube ou um cartão específico: veja as regras na página da loja.')),
+      h('p', { class: 'texto-suave texto-pequeno' }, 'Ofertas vencidas saem desta lista. "Até" é o máximo da oferta, que pode pedir clube ou um cartão específico: veja as regras na página da loja.'),
+      h('p', {}, h('a', { class: 'alvo-toque', href: `${raiz}${PASTA_ONDE_RENDE_MAIS}/` }, 'Ver por categoria e produto em campanha: onde rende mais hoje'))),
     linhas.length
       ? h('table', { class: 'tabela' },
         h('caption', {}, 'Ofertas ativas, da que mais rende para a que menos rende'),
@@ -444,16 +451,17 @@ export function gerarPaginas(dados, { hoje, urlBase = null }) {
   }
   const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
+  const ondeRendeMais = paginaOndeRendeMais(dados, { hoje, urlBase: base });
   const institucionais = paginasInstitucionais({ hoje, urlBase: base });
-  const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
+  const arquivos = [ofertas, ondeRendeMais, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {
-    const caminhos = ['', 'ofertas/', ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];
+    const caminhos = ['', 'ofertas/', `${PASTA_ONDE_RENDE_MAIS}/`, ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];
     arquivos.push({ caminho: 'sitemap.xml', conteudo: sitemap(base, caminhos, hoje) });
   } else {
     avisos.push('URL base do site A_CONFIRMAR: sem link canônico, sem og:url e sem sitemap.xml. Defina em scripts/paginas/config.js, ou use URL_DO_SITE / --url-base.');
   }
   arquivos.push({ caminho: 'robots.txt', conteudo: robots(base) });
-  return { arquivos, resumo: { ofertas: ofertas.resumo, lojas: lojas.map((l) => l.resumo) }, avisos };
+  return { arquivos, resumo: { ofertas: ofertas.resumo, ondeRendeMais: ondeRendeMais.resumo, lojas: lojas.map((l) => l.resumo) }, avisos };
 }
 
