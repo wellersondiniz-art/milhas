@@ -319,7 +319,7 @@ function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
 function pontosDoCartaoEmDolar(ctx, cartao, ppdEsc, avisos, passos) {
   const cot = ctx.cotacao();
   if (!cot) {
-    avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe em "Meu perfil".`);
+    avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe quanto está o dólar em "O que a conta supôs" ou em "Meu perfil".`);
     passos.push(`Pontos do cartão ${cartao.nome}: falta a cotação do dólar, contamos 0.`);
     return { esc: 0n, programaId: cartao.programa_id };
   }
@@ -565,6 +565,8 @@ function paraSaida(ctx, j) {
     pontos_do_cartao: pontosParaNumero(j.cartEsc),
     total_pontos: pontosParaNumero(total),
     total_pontos_texto: formatarPontos(total),
+    /** Total de pontos × 1.000.000 (BigInt), para contas exatas fora do motor. */
+    total_pontos_escalado: total,
     valor_estimado_em_reais:
       j.valorEsc === null ? null : { bilionesimos_de_centavo: j.valorEsc, texto: formatarValor(j.valorEsc) },
     condicoes_a_cumprir: j.condicoes,

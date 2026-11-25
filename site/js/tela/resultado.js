@@ -2,6 +2,7 @@
 // A tela só exibe: toda conta vem de calcularJeitosDeComprar.
 
 import { el } from './dom.js';
+import { fraseSemPontos, separarJeitos } from './primeira-visita.js';
 import {
   destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
 } from './textos.js';
@@ -93,24 +94,31 @@ function card(jeito, posicao, nomeLoja) {
 
 /**
  * @param {object[]} jeitos   saída do motor, do melhor ao pior
- * @param {object} contexto   { loja, valorTexto, semPerfil }
+ * @param {object} contexto   { loja, valorTexto, semPerfil, ajuste?, valeAPena?, faltaDolar? }
+ *   ajuste e valeAPena são elementos prontos ("O que a conta supôs" e "Vale a pena?").
  */
 export function montarResultado(jeitos, contexto) {
-  const { loja, valorTexto, semPerfil } = contexto;
+  const { loja, valorTexto, semPerfil, ajuste, valeAPena, faltaDolar } = contexto;
   const partes = [];
-  const [melhor, ...demais] = jeitos;
+  const { melhor, abertos, recolhidos, semPontos } = separarJeitos(jeitos);
   const temOferta = jeitos.some((j) => j.tipo === 'oferta');
 
-  if (semPerfil) {
-    partes.push(alerta('info', 'Mostrando com todos os cartões e programas',
-      el('p', {}, 'Você ainda não disse quais cartões e programas tem. Por isso a conta usa todos os que conhecemos, sem clube.'),
-      el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Cadastrar os meus')));
+  if (faltaDolar && melhor && !(melhor.total_pontos > 0)) {
+    const botao = el('button', { type: 'button', class: 'botao botao--secundario' }, 'Informar o dólar');
+    botao.addEventListener('click', () => {
+      const campo = document.getElementById('ajuste-dolar');
+      campo?.closest('details')?.setAttribute('open', '');
+      campo?.focus();
+    });
+    partes.push(alerta('aviso', 'Falta só a cotação do dólar',
+      el('p', {}, 'Quase todos os cartões de pontos rendem por dólar gasto. Sem saber quanto está o dólar, eles aparecem com 0 ponto. Informe a cotação e a conta sai na hora.'),
+      botao));
   }
   if (!temOferta) {
     partes.push(alerta('info', `A ${loja.nome} não tem oferta de pontos valendo hoje`,
       semPerfil
-        ? 'Abaixo está o que cada cartão rende numa compra normal, começando pelo melhor.'
-        : 'Pelo menos não para os programas que você marcou. Abaixo está o que o seu melhor cartão rende numa compra normal.'));
+        ? 'Abaixo está o que os cartões de pontos rendem numa compra normal, começando pelo melhor.'
+        : 'Pelo menos não para os programas que você marcou. Abaixo está o que o seu cartão rende numa compra normal.'));
   }
   if (jeitos.some((j) => j.tem_dado_antigo)) {
     partes.push(alerta('aviso', 'Alguns dados podem estar desatualizados',
@@ -127,9 +135,21 @@ export function montarResultado(jeitos, contexto) {
       palavras.clube ? termo('clube') : null));
   }
 
-  if (demais.length) {
-    partes.push(el('h3', { class: 'resultado__secao' }, demais.length === 1 ? 'Outro jeito' : `Outros ${demais.length} jeitos`));
-    partes.push(el('div', { class: 'pilha resultado__demais' }, demais.map((j, i) => card(j, i + 1, loja.nome))));
+  if (ajuste) partes.push(ajuste);
+  if (valeAPena) partes.push(valeAPena);
+
+  const outros = abertos.length + recolhidos.length;
+  if (outros) {
+    partes.push(el('h3', { class: 'resultado__secao' }, outros === 1 ? 'Outro jeito' : `Outros ${outros} jeitos`));
+    partes.push(el('div', { class: 'pilha resultado__demais' }, abertos.map((j, i) => card(j, i + 1, loja.nome))));
+    if (recolhidos.length) {
+      partes.push(el('details', { class: 'termo resultado__mais' },
+        el('summary', {}, `Ver mais ${recolhidos.length} ${recolhidos.length === 1 ? 'jeito' : 'jeitos'}`),
+        el('div', { class: 'pilha resultado__demais' }, recolhidos.map((j, i) => card(j, i + 1 + abertos.length, loja.nome)))));
+    }
+  }
+  if (semPontos.length) {
+    partes.push(el('p', { class: 'texto-suave texto-pequeno resultado__sem-pontos' }, fraseSemPontos(semPontos, faltaDolar)));
   }
 
   return el('div', { class: 'pilha', 'data-resumo': `${valorTexto} na ${loja.nome}` }, partes);

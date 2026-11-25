@@ -44,14 +44,7 @@
     <!-- Já vem no HTML para o formulário não pular quando o JavaScript roda.
          Se houver perfil guardado, o app troca por uma linha com o resumo. -->
     <div id="convite-perfil">
-      <div class="alerta alerta--info" role="note">
-        <span class="alerta__icone" aria-hidden="true">i</span>
-        <div class="alerta__corpo">
-          <strong class="alerta__titulo">Ainda não sabemos quais cartões você tem</strong>
-          <p>Tudo bem: a conta funciona assim mesmo, com as melhores opções entre todos os cartões e programas que conhecemos. Para ver só o que é seu, cadastre os seus cartões. Leva um minuto.</p>
-          <a class="botao botao--secundario" href="#/perfil">Cadastrar meus cartões</a>
-        </div>
-      </div>
+      <p class="texto-suave convite">Não precisa cadastrar nada: a conta usa padrões que aparecem junto com o resultado, e você muda ali mesmo. <a href="#/perfil">Cadastrar meus cartões</a></p>
     </div>
 
     <form id="formulario" class="card pilha passos" novalidate autocomplete="off">
@@ -85,6 +78,11 @@
 
       <button class="botao botao--bloco" id="ver-resultado" type="submit">Ver o resultado</button>
     </form>
+
+    <div class="exemplos">
+      <p class="exemplos__titulo texto-suave" id="exemplos-titulo">Sem compra em mente? Toque num exemplo:</p>
+      <div class="exemplos__lista" id="exemplos" role="group" aria-labelledby="exemplos-titulo"></div>
+    </div>
 
     <section id="passo-resultado" class="pilha" aria-labelledby="resultado-titulo" hidden>
       <div class="passo passo--titulo">
