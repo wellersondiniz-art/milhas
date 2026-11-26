@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Milhas da Vez</string>
+    <string name="title_activity_main">Milhas da Vez</string>
+    <string name="package_name">br.com.milhasdavez.app</string>
+    <string name="custom_url_scheme">br.com.milhasdavez.app</string>
+</resources>

@@ -16,7 +16,17 @@ test('package.json não tem dependências de runtime; ferramenta de teste só a 
   assert.equal(pacote.optionalDependencies, undefined);
   assert.equal(pacote.peerDependencies, undefined);
   // Playwright é só para testar no navegador; nada dele vai para o site.
-  assert.deepEqual(Object.keys(pacote.devDependencies ?? {}), ['@playwright/test']);
+  // Capacitor e o plugin do cofre: pedidos pelo usuário em 23/11/2026 para
+  // empacotar o app Android/iOS. Ficam dentro do app nativo, nunca no site
+  // (o site não importa nada de node_modules; ver o teste abaixo).
+  assert.deepEqual(Object.keys(pacote.devDependencies ?? {}).sort(), [
+    '@aparajita/capacitor-secure-storage',
+    '@capacitor/android',
+    '@capacitor/cli',
+    '@capacitor/core',
+    '@capacitor/ios',
+    '@playwright/test',
+  ]);
   for (const versao of Object.values(pacote.devDependencies)) assert.match(versao, /^\d+\.\d+\.\d+$/);
 });
 

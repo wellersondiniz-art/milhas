@@ -86,3 +86,14 @@ extensao/pacote/
 testes/extensao/pacote/
 testes/extensao/resultados/
 testes/extensao/relatorio/
+# App Android/iOS (Capacitor): app/www/ é gerada por npm run app:montar.
+app/www/
+# Assinatura dos apps: NUNCA no repositório (ver app/PUBLICAR.md).
+*.p8
+*.mobileprovision
+*.provisionprofile
+keystore.properties
+assinatura.properties
+*.aab
+*.apk
+*.ipa

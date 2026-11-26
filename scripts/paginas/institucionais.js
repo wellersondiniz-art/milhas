@@ -233,6 +233,11 @@ function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alert
         juntar('Em ', meuPerfil(), ', toque em "Apagar tudo". Some tudo o que você marcou neste aparelho.'),
         'Ou apague os dados do site nas configurações do navegador. Isso também tira a cópia usada sem internet.',
       ])),
+      secao('app', 'No app para Android e iPhone',
+        p('O app tem a mesma calculadora do site. O que você marca em ', meuPerfil(), ' fica só no celular, guardado no cofre do próprio sistema: no iPhone, nas Chaves (Keychain), só neste aparelho; no Android, criptografado com uma chave que não sai do aparelho. O perfil não entra no backup na nuvem e não passa para outro celular.'),
+        p('Para mostrar as ofertas da semana, o app baixa deste site a mesma lista pública de lojas e ofertas que qualquer visitante vê. Esse pedido não leva nada do seu perfil nem cookie. Sem internet, o app usa a cópia da lista que veio com ele.'),
+        p('O app não pede acesso a câmera, localização, contatos, fotos ou notificações, não mostra anúncios e não usa ferramenta de métrica. Os links para lojas abrem no navegador do celular, com as regras de privacidade de cada loja.'),
+        p('Para apagar, toque em "Apagar tudo" em ', meuPerfil(), ' ou desinstale o app. No iPhone, o sistema pode manter os dados das Chaves depois de desinstalar; para ter certeza, use "Apagar tudo" antes.')),
       medindo ? secaoMetricas()
         : secao('cookies', 'Cookies, métricas e anúncios',
           p('O site não cria cookies. Hoje não usamos nenhuma ferramenta de métrica de visitas e não mostramos anúncios.'),

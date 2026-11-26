@@ -1,0 +1,78 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace = "br.com.milhasdavez.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "br.com.milhasdavez.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // Cada envio para o Google Play precisa de um versionCode maior.
+        // No GitHub Actions ele vem do número da execução (ANDROID_VERSION_CODE).
+        versionCode((System.getenv('ANDROID_VERSION_CODE') ?: '1') as Integer)
+        versionName "1.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    // Assinatura: a chave NUNCA fica no repositório. Só é usada quando as
+    // quatro variáveis de ambiente existem (no GitHub Actions elas vêm dos
+    // segredos do ambiente "lojas"). No Android Studio, use
+    // Build > Generate Signed App Bundle (ver app/PUBLICAR.md).
+    def chave = [
+        arquivo: System.getenv('ANDROID_CHAVE_ARQUIVO'),
+        senhaDoArquivo: System.getenv('ANDROID_CHAVE_SENHA_ARQUIVO'),
+        apelido: System.getenv('ANDROID_CHAVE_APELIDO'),
+        senha: System.getenv('ANDROID_CHAVE_SENHA'),
+    ]
+    def temChave = chave.values().every { it }
+    signingConfigs {
+        if (temChave) {
+            envio {
+                storeFile file(chave.arquivo)
+                storePassword chave.senhaDoArquivo
+                keyAlias chave.apelido
+                keyPassword chave.senha
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (temChave) signingConfig signingConfigs.envio
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
