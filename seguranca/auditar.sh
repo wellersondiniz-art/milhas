@@ -28,6 +28,12 @@ EXCLUIR=(':!seguranca/auditar.sh' ':!seguranca/CHECKLIST.md')
 # Padrões de segredos comuns.
 SEGREDOS='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|(sk|rk)_test_[A-Za-z0-9]{20,}|whsec_[A-Za-z0-9]{24,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|sb_secret_[A-Za-z0-9_-]{10,}|\bre_[A-Za-z0-9]{6,}_[A-Za-z0-9_]{10,}|(api[_-]?key|secret|token|senha|password|passwd)["'\'']?[[:space:]]*[:=][[:space:]]*["'\''][^"'\'' ]{8,}["'\'']'
 
+# Valores falsos que os testes usam de propósito (não são segredo): linhas
+# com eles saem da lista. Se um valor real aparecer na mesma linha de um
+# falso, ele passa despercebido; por isso a lista é curta e bem específica.
+FALSOS='chave-de-teste|segredo-amazon|tok-secreto|APP_USR-1[^0-9]|senha-errada-senha-errada|URL_TOKEN = .https://'
+tirar_falsos() { grep -vE "$FALSOS" || true; }
+
 # Dados pessoais: CPF formatado e número de cartão (16 dígitos).
 PESSOAIS='[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|\b[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}\b'
 
@@ -41,7 +47,7 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "1. Segredos nos arquivos atuais"
-achados="$(git grep -nIiE "$SEGREDOS" -- . "${EXCLUIR[@]}" 2>/dev/null || true)"
+achados="$(git grep -nIiE "$SEGREDOS" -- . "${EXCLUIR[@]}" 2>/dev/null | tirar_falsos)"
 if [ -n "$achados" ]; then
   falha "possível segredo em arquivo rastreado (revogue a chave antes de apagar):"
   printf '%s\n' "$achados" | listar 1,2
@@ -53,7 +59,7 @@ fi
 secao "2. Segredos no histórico do Git"
 historico=""
 for commit in $(git rev-list --all); do
-  r="$(git grep -nIiE "$SEGREDOS" "$commit" -- . "${EXCLUIR[@]}" 2>/dev/null || true)"
+  r="$(git grep -nIiE "$SEGREDOS" "$commit" -- . "${EXCLUIR[@]}" 2>/dev/null | tirar_falsos)"
   [ -n "$r" ] && historico+="$r"$'\n'
 done
 if [ -n "$historico" ]; then
@@ -67,7 +73,7 @@ fi
 secao "3. Arquivos sensíveis rastreados"
 sensiveis="$(git ls-files | grep -iE '(^|/)\.env($|\.)|\.(pem|key|p12|pfx|jks|keystore|gpg|sql|dump|bak|xls|xlsx|xlsm|ods|csv|pdf|docx?)$|(^|/)id_(rsa|ed25519)|credentials.*\.json$|service-account.*\.json$|(^|/)\.npmrc$|(^|/)\.dev\.vars$' || true)"
 # Migrações e testes SQL do Supabase são código (esquema), não dump de dados.
-sensiveis="$(printf '%s\n' "$sensiveis" | grep -vE '^supabase/(migrations|testes)/[A-Za-z0-9_.-]+\.sql$' | grep -v '^$' || true)"
+sensiveis="$(printf '%s\n' "$sensiveis" | grep -vE '^(supabase/(migrations|testes)|scripts/operacao/backup)/[A-Za-z0-9_.-]+\.sql$' | grep -v '^$' || true)"
 if [ -n "$sensiveis" ]; then
   falha "arquivo que não deveria estar no Git:"
   printf '%s\n' "$sensiveis" | sed 's/^/           - /'
