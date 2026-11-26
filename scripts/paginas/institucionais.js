@@ -115,7 +115,7 @@ function comoFunciona(plano, explicarLigado) {
 // ---------------------------------------------------------------------------
 // Sobre os dados
 
-function sobreDados() {
+function sobreDados({ temProdutos }) {
   return {
     pasta: 'sobre-os-dados',
     titulo: 'Sobre os dados',
@@ -138,6 +138,14 @@ function sobreDados() {
           'Quando um dado foi conferido há mais de 14 dias, a conta avisa que ele pode estar desatualizado.',
           'Oferta conferida há mais de 30 dias sai da conta até ser conferida de novo.',
         ])),
+      temProdutos ? secao('precos-de-produtos', 'Preços de produtos',
+        p('Alguns produtos aparecem com nome e preço. Esses dados vêm da API oficial de cada loja ou da rede de afiliados dela, nunca de cópia do site da loja.'),
+        lista([
+          'Cada preço mostra a data e a hora em que foi consultado, no horário de Brasília.',
+          'Um preço vale por no máximo 24 horas. Depois disso ele sai da página, e a página pede para você conferir na loja.',
+          'O preço e a disponibilidade podem mudar a qualquer momento. Vale o que a loja mostrar na hora da compra.',
+          'Os pontos de cada produto são a nossa conta, com as ofertas que conferimos, e seguem as mesmas regras do resto do site.',
+        ])) : null,
       secao('estimativas', 'O que é estimativa',
         p('Alguns números não são regra da loja nem do banco. São estimativas, e você pode trocar pelos seus em ', meuPerfil(), ':'),
         lista([
@@ -256,7 +264,7 @@ function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alert
       secao('links-fora', 'Links para outros sites',
         p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.'),
         temAfiliado
-          ? p('Alguns links para lojas são links de afiliado. Eles têm, logo abaixo, o aviso "', AVISO_COMISSAO, '" Esses links levam no endereço um código do ', NOME_DO_SITE, ', para a loja saber que a visita veio daqui. O código é o mesmo para todo mundo e não identifica você. No site dela, a loja pode guardar esse código num cookie dela, com as regras de privacidade dela.')
+          ? p('Alguns links para lojas ou produtos são links de afiliado. Eles têm, logo abaixo, o aviso "', AVISO_COMISSAO, '" Esses links levam no endereço um código do ', NOME_DO_SITE, ', para a loja saber que a visita veio daqui. O código é o mesmo para todo mundo e não identifica você. No site dela, a loja pode guardar esse código num cookie dela, com as regras de privacidade dela.')
           : null,
         temAfiliado && usaAwin
           ? p('Alguns desses links passam antes, por um instante, pela Awin, a empresa que cuida do programa de afiliados de algumas lojas. A Awin registra o clique e leva você para o site da loja. Ela pode guardar um cookie dela, com as regras de privacidade dela, que estão no site da Awin.')
@@ -384,7 +392,7 @@ function paginaTermos(temAfiliado, plano, explicarLigado) {
         plano.ligado ? p('O site se mantém com o plano pago opcional. Quem não assina usa a calculadora inteira, de graça.') : null,
         temAfiliado
           ? juntar(
-            p('Alguns links para lojas são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você. Esses links têm, logo abaixo, o aviso "', AVISO_COMISSAO, '" Os links sem esse aviso não rendem nada para a gente.'),
+            p('Alguns links para lojas ou produtos são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você. Esses links têm, logo abaixo, o aviso "', AVISO_COMISSAO, '" Os links sem esse aviso não rendem nada para a gente.'),
             p('Não recebemos de bancos nem de programas de pontos. Os nomes deles aparecem só para identificar cada um.'))
           : juntar(
             p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
@@ -503,6 +511,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   alertas          padrão: ALERTAS_LIGADO (config.js); muda a Privacidade
  *   plano            padrão: configDoPlano() (config.js); com ligado, muda Privacidade e Termos
  *   explicarLigado   padrão: EXPLICAR_LIGADO (site/js/explicar/config.js)
+ *   temProdutos      a vitrine tem produto com preço (explica em Sobre os dados)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -519,10 +528,11 @@ export function paginasInstitucionais({
   plano = configDoPlano(),
   explicarLigado = EXPLICAR_LIGADO,
   responsavel = RESPONSAVEL_PELOS_DADOS,
+  temProdutos = false,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email, reporteLigado);
-  const todas = [comoFunciona(plano, explicarLigado), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado, responsavel, temEmail: contatoPagina.temEmail }), paginaTermos(temAfiliado, plano, explicarLigado), contatoPagina];
+  const todas = [comoFunciona(plano, explicarLigado), sobreDados({ temProdutos }), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado, responsavel, temEmail: contatoPagina.temEmail }), paginaTermos(temAfiliado, plano, explicarLigado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

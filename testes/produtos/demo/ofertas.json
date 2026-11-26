@@ -1,0 +1,64 @@
+[
+  {
+    "id": "demo-livelo-amazon",
+    "loja_id": "amazon",
+    "programa_id": "livelo",
+    "regras": [
+      { "condicao": { "clube_ativo": true }, "pontos_por_real": 10 },
+      { "condicao": {}, "pontos_por_real": 6 }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": false,
+    "clube_ativo_ha_horas": 0,
+    "exige_cupom": false,
+    "inicio": "__INICIO__",
+    "fim": "__FIM__",
+    "credito_prazo_dias": 30,
+    "link_oferta": "A_CONFIRMAR",
+    "fonte_url": "https://exemplo.invalid/demonstracao",
+    "verificado_em": "__HOJE__",
+    "observacoes": "DEMONSTRAÇÃO: oferta inventada, não existe."
+  },
+  {
+    "id": "demo-esfera-casas-bahia",
+    "loja_id": "casas-bahia",
+    "programa_id": "esfera",
+    "regras": [
+      { "condicao": { "clube_ativo": true }, "pontos_por_real": 8 },
+      { "condicao": {}, "pontos_por_real": 5 }
+    ],
+    "escopo": "categorias_selecionadas",
+    "categorias_incluidas": ["Eletrodomésticos"],
+    "pontos_fora_do_escopo_por_real": 1,
+    "acumula_com_cartao": false,
+    "clube_ativo_ha_horas": 0,
+    "exige_cupom": false,
+    "inicio": "__INICIO__",
+    "fim": "__FIM__",
+    "credito_prazo_dias": 45,
+    "link_oferta": "A_CONFIRMAR",
+    "fonte_url": "https://exemplo.invalid/demonstracao",
+    "verificado_em": "__HOJE__",
+    "observacoes": "DEMONSTRAÇÃO: oferta inventada, não existe."
+  },
+  {
+    "id": "demo-smiles-mercado-livre",
+    "loja_id": "mercado-livre",
+    "programa_id": "smiles",
+    "regras": [
+      { "condicao": {}, "pontos_por_real": 4 }
+    ],
+    "escopo": "vendido_e_entregue_pela_loja",
+    "pontos_fora_do_escopo_por_real": 1,
+    "acumula_com_cartao": false,
+    "clube_ativo_ha_horas": 0,
+    "exige_cupom": false,
+    "inicio": "__INICIO__",
+    "fim": "__FIM__",
+    "credito_prazo_dias": 30,
+    "link_oferta": "A_CONFIRMAR",
+    "fonte_url": "https://exemplo.invalid/demonstracao",
+    "verificado_em": "__HOJE__",
+    "observacoes": "DEMONSTRAÇÃO: oferta inventada, não existe."
+  }
+]

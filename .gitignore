@@ -98,3 +98,5 @@ assinatura.properties
 *.aab
 *.apk
 *.ipa
+# Demonstração da vitrine de produtos (npm run produtos:demo)
+demo-produtos/

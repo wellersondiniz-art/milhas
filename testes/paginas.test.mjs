@@ -118,7 +118,7 @@ test('conferir: módulo do próprio site passa; script de fora, inline ou sem ti
   assert.equal(com('<script type="module" src="../js/metricas/paginas.js"></script>'), '');
   assert.match(com('<script type="module" src="https://plausible.io/js/script.js"></script>'), /script que executa/);
   assert.match(com('<script type="module" src="//cdn.exemplo/x.js"></script>'), /script que executa/);
-  assert.match(com('<script type="module" src="../js/x.js">alert(1)</script>'), /script que executa/);
+  assert.match(com('<script type="module" src="../js/x.js">alert(1)</script>'), /script que executa|não pode ter código dentro/);
   assert.match(com('<script type="module">alert(1)</script>'), /script que executa/);
   assert.match(com('<script src="../js/x.js"></script>'), /script que executa/);
 });

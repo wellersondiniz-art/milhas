@@ -175,11 +175,11 @@ test('afiliado: com link de afiliado, os textos mudam, mostram o aviso e o build
   const termos = textoVisivel(p['termos/index.html']);
   const privacidade = textoVisivel(p['privacidade/index.html']);
   assert.doesNotMatch(termos, /não usamos link de afiliado|não recebemos de lojas/);
-  assert.match(termos, /Alguns links para lojas são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você\./);
+  assert.match(termos, /Alguns links para lojas ou produtos são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você\./);
   assert.match(termos, /"Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você\."/);
   assert.match(termos, /Não recebemos de bancos nem de programas de pontos\./);
   assert.match(termos, /A comissão nunca muda a ordem do resultado/);
-  assert.match(privacidade, /Alguns links para lojas são links de afiliado/);
+  assert.match(privacidade, /Alguns links para lojas ou produtos são links de afiliado/);
   assert.match(privacidade, /O código é o mesmo para todo mundo e não identifica você\./);
   assert.doesNotMatch(privacidade, /Awin/);
   const comAwin = textoVisivel(porCaminho(paginasInstitucionais({ temAfiliado: true, usaAwin: true }).paginas)['privacidade/index.html']);
@@ -196,7 +196,7 @@ test('afiliado: o build escolhe o texto pelos dados de dados/links.json', async 
   const termos = (d) => textoVisivel(gerarPaginas(d, { hoje: '2026-11-22', urlBase: BASE }).arquivos.find((a) => a.caminho === 'termos/index.html').conteudo);
   assert.match(termos(dados), /não usamos link de afiliado/);
   const pago = { ...dados, links: dados.links.map((l, i) => (i === 0 ? { ...l, parametro_afiliado: { nome: 'tag', valor: 'x' } } : l)) };
-  assert.match(termos(pago), /Alguns links para lojas são links de afiliado/);
+  assert.match(termos(pago), /Alguns links para lojas ou produtos são links de afiliado/);
   const soAConfirmar = { ...dados, links: dados.links.map((l) => ({ ...l, parametro_afiliado: 'A_CONFIRMAR' })) };
   assert.match(termos(soAConfirmar), /não usamos link de afiliado/);
 });

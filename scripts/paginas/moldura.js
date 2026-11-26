@@ -43,8 +43,9 @@ export function rodape(raiz, atual = null) {
  * Página completa. `atual` marca o link do topo (inicio, ofertas, perfil) ou
  * do rodapé (pasta da página institucional) como página atual.
  * `semIndexar` pede aos buscadores para não listar a página (rascunho).
+ * `scripts`: arquivos do próprio site (ex.: 'js/produtos-validade.js'), como módulo.
  */
-export function documento({ titulo, descricao, caminho, raiz, urlBase, atual, dadosEstruturados, principal, semIndexar = false }) {
+export function documento({ titulo, descricao, caminho, raiz, urlBase, atual, dadosEstruturados, principal, semIndexar = false, scripts = [] }) {
   const url = urlAbsoluta(urlBase, caminho);
   const og = (prop, valor) => h('meta', { property: prop, content: valor });
   return `<!doctype html>\n${h('html', { lang: 'pt-BR' },
@@ -69,7 +70,8 @@ export function documento({ titulo, descricao, caminho, raiz, urlBase, atual, da
       h('link', { rel: 'stylesheet', href: `${raiz}css/base.css` }),
       h('link', { rel: 'stylesheet', href: `${raiz}css/estilo.css` }),
       h('link', { rel: 'stylesheet', href: `${raiz}css/paginas.css` }),
-      dadosEstruturados ? jsonLd(dadosEstruturados) : null),
+      dadosEstruturados ? jsonLd(dadosEstruturados) : null,
+      scripts.map((src) => h('script', { type: 'module', src: `${raiz}${src}` }))),
     h('body', {},
       h('a', { class: 'pular-para-conteudo', href: '#conteudo' }, 'Pular para o conteúdo'),
       cabecalho(raiz, atual),

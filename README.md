@@ -375,6 +375,17 @@ Os nomes dos botões dos painéis são de memória: se algum estiver diferente, 
 ## Operação de produção
 
 Monitor de disponibilidade, logs de erro sem dado pessoal, alerta de ofertas paradas, backup diário do banco com teste de restauração, painel de custos e plano de resposta a incidente: tudo em [docs/operacao.md](docs/operacao.md), em linguagem de quem não é de TI. Os robôs ficam em `.github/workflows/` (`disponibilidade`, `vigia`, `custos`, `backup`) e avisam abrindo uma issue com a etiqueta `operacao`. Cada um fica desligado até receber a configuração descrita no guia.
+## Produtos com preço (APIs oficiais das lojas)
+
+Algumas lojas mostram produtos com nome, preço e quantos pontos rendem. Nome e preço vêm **só da API oficial** da loja ou da rede de afiliados dela, nunca de cópia do site da loja. Começa **desligado**: sem credencial, nenhuma API é chamada e o site fica igual.
+
+- **Ver como fica, sem credencial:** `npm run produtos:demo` monta uma cópia do site em `demo-produtos/` (fora do Git) com produtos e ofertas inventados e abre em `http://127.0.0.1:8081/onde-rende-mais/`. Essa vitrine nunca vai para o ar: no build da Cloudflare ou no CI, o gerador para se a vitrine for de demonstração.
+- **Escolher os produtos:** em `dados/produtos.json` (schema em `dados/schemas/produtos.schema.json`), até 10 por loja, pelo código da loja (ASIN, MLB..., itemId da Shopee, aw_product_id da Awin), com a categoria com o mesmo nome usado nas ofertas e se é vendido pela própria loja. Depois troque `"ligado"` para `true`.
+- **Credenciais:** só por variável de ambiente, como segredo, em Cloudflare Pages → Settings → Environment variables (Production). Amazon: `AMAZON_CREDENCIAL_ID`, `AMAZON_CREDENCIAL_SEGREDO`, `AMAZON_TAG_DE_ASSOCIADO`. Mercado Livre: `ML_ACCESS_TOKEN`. Shopee: `SHOPEE_APP_ID`, `SHOPEE_SEGREDO`. Awin: `AWIN_CHAVE_FEED` (e o número do anunciante e do feed em `produtos.json`).
+- **Como roda:** `npm run build` chama `npm run produtos` (`scripts/produtos/atualizar.js`) antes de gerar as páginas. Cada loja tem um adaptador em `scripts/produtos/adaptadores/`. Todo produto passa por `normalizarProduto`: preço em centavos inteiros, moeda BRL, link https no domínio da loja; o que não passa fica de fora, com aviso no log do build. A resposta fica guardada em `.cache/produtos/` por 1 hora; se a API falhar, ficam os preços guardados que ainda valem.
+- **Regras de exibição:** preço com data e hora da consulta (Brasília) e aviso de que pode mudar; validade de no máximo 24 horas (regra da Amazon, usada para todas). Depois disso o preço some da página: no build e, se a página ficou guardada no aparelho, pelo `site/js/produtos-validade.js`. Sem foto de produto (a Amazon proíbe guardar imagem). A ordem é pelos pontos, nunca pelo preço de uma loja contra outra.
+- **Remontar todo dia:** o trabalho `.github/workflows/remontar-site.yml` chama o deploy hook da Cloudflare às 06:17 (Brasília). Fica parado até existir o segredo `CLOUDFLARE_DEPLOY_HOOK` no GitHub.
+- **Afiliado:** se algum produto na vitrine tem link de afiliado, as páginas Termos e Privacidade mudam sozinhas para dizer isso, e cada link ganha `rel="sponsored"` e o aviso de comissão. Ao ligar, troque `TEXTOS_ATUALIZADOS_EM` em `scripts/paginas/config.js`.
 
 ## Pastas
 

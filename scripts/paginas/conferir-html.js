@@ -5,6 +5,8 @@
 
 const VAZIOS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 const TOKEN = /<!--[\s\S]*?-->|<!doctype html>|<(\/?)([a-z][a-z0-9-]*)((?:\s+[a-z][a-z0-9:-]*(?:="[^"<]*")?)*)\s*>/gi;
+/** Módulo JS do próprio site, por caminho relativo: ../../js/nome.js */
+const SCRIPT_DO_SITE = /^(\.\.\/)*js\/([a-z0-9-]+\/)*[a-z0-9-]+\.js$/;
 const ATRIBUTO = /([a-z][a-z0-9:-]*)(?:="([^"]*)")?/gi;
 
 function atributos(texto) {
@@ -56,16 +58,16 @@ export function conferirHtml(html) {
     if (nome === 'script') {
       const tipo = attrs.find(([a]) => a === 'type')?.[1];
       const src = attrs.find(([a]) => a === 'src')?.[1];
+      // Só dois tipos: JSON-LD (dado, não executa) ou módulo do próprio site em js/, sem código na página.
+      const moduloDoSite = tipo === 'module' && SCRIPT_DO_SITE.test(src ?? '');
+      if (tipo !== 'application/ld+json' && !moduloDoSite) problemas.push(`script que executa código na página (type=${tipo ?? 'nenhum'})`);
       const fim = html.indexOf('</script>', posicao);
       if (fim < 0) { problemas.push('<script> sem </script>'); break; }
       const corpo = html.slice(posicao, fim);
-      // Só dois tipos: JSON-LD (dado, não executa) e módulo do próprio site
-      // (arquivo .js deste site, sem código dentro da tag).
-      const moduloDoSite = tipo === 'module' && src && !/^([a-z]+:|\/\/)/i.test(src) && src.endsWith('.js') && !corpo.trim();
-      if (tipo === 'application/ld+json') {
+      if (moduloDoSite) {
+        if (corpo.trim()) problemas.push('script com src não pode ter código dentro');
+      } else {
         try { JSON.parse(corpo); } catch (erro) { problemas.push(`JSON-LD inválido: ${erro.message}`); }
-      } else if (!moduloDoSite) {
-        problemas.push(`script que executa código na página (type=${tipo ?? 'nenhum'})`);
       }
       posicao = fim + '</script>'.length;
       TOKEN.lastIndex = posicao;

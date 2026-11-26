@@ -11,6 +11,7 @@ import { NOME_DO_SITE } from './config.js';
 import { h, juntar, linkExterno } from './html.js';
 import { documento, termosExplicados, urlAbsoluta } from './moldura.js';
 import { naLoja } from './montar.js';
+import { SCRIPT_VALIDADE, secaoQueMaisRende } from './produtos.js';
 
 export const PASTA_ONDE_RENDE_MAIS = 'onde-rende-mais';
 
@@ -105,11 +106,12 @@ function fraseDoTopo(lista, dados, hoje) {
 }
 
 /** Página "Onde rende mais hoje": todas as ofertas ativas, da que mais rende para a que menos rende. */
-export function paginaOndeRendeMais(dados, { hoje, urlBase }) {
+export function paginaOndeRendeMais(dados, { hoje, urlBase, vitrine = null, agora = null }) {
   const raiz = '../';
   const caminho = `${PASTA_ONDE_RENDE_MAIS}/`;
   const lista = rankearOportunidades(dados, hoje);
   const frase = fraseDoTopo(lista, dados, hoje);
+  const produtos = vitrine ? secaoQueMaisRende(dados, vitrine, { hoje, agora }) : null;
   const titulo = `Onde rende mais pontos e milhas hoje | ${NOME_DO_SITE}`;
   const descricao = 'Lojas, categorias e produtos em campanha que mais rendem pontos e milhas hoje, com pontos por real, validade, data de conferência e fonte.';
 
@@ -118,12 +120,15 @@ export function paginaOndeRendeMais(dados, { hoje, urlBase }) {
       h('h1', {}, 'Onde rende mais hoje'),
       h('p', { class: 'resposta' }, frase),
       h('p', { class: 'texto-suave texto-pequeno' },
-        'Numa mesma oferta, todo produto que entra rende os mesmos pontos por real. Por isso a lista mostra lojas, categorias e produtos citados nas campanhas, e não preços. ',
+        produtos
+          ? 'Numa mesma oferta, todo produto que entra rende os mesmos pontos por real. Por isso a lista de ofertas mostra lojas e categorias. Mais abaixo, alguns produtos com preço consultado na loja mostram quanto isso dá em pontos. '
+          : 'Numa mesma oferta, todo produto que entra rende os mesmos pontos por real. Por isso a lista mostra lojas, categorias e produtos citados nas campanhas, e não preços. ',
         'A ordem vale para qualquer pessoa, sem clube e sem cartão específico. "Até" é o máximo da oferta.')),
     lista.length
       ? h('ol', { class: 'pilha lista-oportunidades', 'aria-label': 'Ofertas ativas, da que mais rende para a que menos rende' },
         lista.map((o, i) => cartaoDaOportunidade(o, dados, raiz, i + 1)))
       : null,
+    produtos,
     h('p', {}, h('a', { class: 'botao botao--secundario', href: raiz }, 'Calcular com os meus cartões e clubes')),
   );
 
@@ -155,8 +160,9 @@ export function paginaOndeRendeMais(dados, { hoje, urlBase }) {
       titulo, descricao, caminho, raiz, urlBase, atual: null,
       dadosEstruturados: estruturados,
       principal: juntar(conteudo, termosExplicados(conteudo)),
+      scripts: produtos ? [SCRIPT_VALIDADE] : [],
     }),
-    resumo: { oportunidades: lista.length },
+    resumo: { oportunidades: lista.length, produtos: Boolean(produtos) },
   };
 }
 

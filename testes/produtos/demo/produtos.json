@@ -1,0 +1,11 @@
+{
+  "descricao": "DEMONSTRAÇÃO: produtos e preços inventados, no formato que os adaptadores devolvem. Os links levam só para a página inicial da loja.",
+  "produtos": [
+    { "loja_id": "amazon", "id_na_loja": "DEMO000001", "nome": "Fone de ouvido sem fio (exemplo)", "preco": "249.90", "categoria": "A_CONFIRMAR", "vendido_pela_loja": true, "afiliado": true, "link": "https://www.amazon.com.br/" },
+    { "loja_id": "amazon", "id_na_loja": "DEMO000002", "nome": "Air fryer 4 litros (exemplo)", "preco": "399.00", "categoria": "A_CONFIRMAR", "vendido_pela_loja": "A_CONFIRMAR", "afiliado": true, "link": "https://www.amazon.com.br/" },
+    { "loja_id": "casas-bahia", "id_na_loja": "DEMO000003", "nome": "Geladeira frost free 375 litros (exemplo)", "preco": "3299.00", "categoria": "Eletrodomésticos", "vendido_pela_loja": true, "afiliado": false, "link": "https://www.casasbahia.com.br/" },
+    { "loja_id": "casas-bahia", "id_na_loja": "DEMO000004", "nome": "Smart TV 50 polegadas (exemplo)", "preco": "2199.90", "categoria": "Eletrônicos", "vendido_pela_loja": true, "afiliado": false, "link": "https://www.casasbahia.com.br/" },
+    { "loja_id": "mercado-livre", "id_na_loja": "MLBDEMO0005", "nome": "Liquidificador 1200 W (exemplo)", "preco": "189.9", "categoria": "A_CONFIRMAR", "vendido_pela_loja": "A_CONFIRMAR", "afiliado": false, "link": "https://www.mercadolivre.com.br/" },
+    { "loja_id": "shopee", "id_na_loja": "1234567890", "nome": "Garrafa térmica 1 litro (exemplo)", "preco": "59.9", "a_partir_de": true, "categoria": "A_CONFIRMAR", "vendido_pela_loja": "A_CONFIRMAR", "afiliado": true, "link": "https://shopee.com.br/" }
+  ]
+}

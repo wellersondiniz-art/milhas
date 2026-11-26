@@ -55,3 +55,21 @@
 
 .card .tabela tr { background: var(--cor-superficie-2); }
 .lista-conta dd { overflow-wrap: anywhere; }
+
+/* Produtos com preço consultado na API da loja (scripts/paginas/produtos.js). */
+.lista-produtos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.produto__preco strong {
+  font-size: var(--texto-lg);
+  white-space: nowrap;
+}
+
+.produto__preco,
+.produto__pontos { overflow-wrap: anywhere; }
+
+/* O script de validade esconde preço vencido com o atributo hidden. */
+.produto [hidden] { display: none !important; }
