@@ -118,8 +118,8 @@ if [ -d dist ]; then
 fi
 
 # ---------------------------------------------------------------------------
-secao "5. XSS e execução de código (site/)"
-xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa 2>/dev/null || true)"
+secao "5. XSS e execução de código (site/, functions/ e servidor/)"
+xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa functions servidor 2>/dev/null || true)"
 if [ -n "$xss" ]; then
   falha "uso de innerHTML/eval ou similar (use textContent / createElement):"
   printf '%s\n' "$xss" | listar 1,2
@@ -133,6 +133,24 @@ if [ -n "$inline" ]; then
   printf '%s\n' "$inline" | listar 1,2
 else
   ok "sem script, evento ou estilo inline no HTML"
+fi
+
+if [ -d functions ]; then
+  # Com functions/, a Cloudflare roda a função em todo pedido, a não ser que
+  # _routes.json diga quais caminhos são dela. Sem isso, o site estático
+  # passaria a gastar a cota de Workers e a responder mais devagar.
+  if [ -f dist/_routes.json ] && node -e 'const r=require("./dist/_routes.json");process.exit(r.version===1&&r.include.every((c)=>c.startsWith("/api/"))?0:1)' 2>/dev/null; then
+    ok "dist/_routes.json limita as funções a /api/*"
+  else
+    falha "functions/ existe, mas dist/_routes.json não limita as funções a /api/*"
+  fi
+  segredo_fixo="$(git grep -nIiE '(GITHUB_TOKEN|REPORTES_REPO)[[:space:]]*[:=][[:space:]]*["'\'']' -- functions servidor 2>/dev/null || true)"
+  if [ -n "$segredo_fixo" ]; then
+    falha "token ou repositório de reportes escrito no código (use segredo e variável na Cloudflare):"
+    printf '%s\n' "$segredo_fixo" | listar 1,2
+  else
+    ok "token e repositório de reportes só vêm do ambiente da Cloudflare"
+  fi
 fi
 
 # ---------------------------------------------------------------------------

@@ -238,6 +238,42 @@ main {
 
 .alerta .botao { margin-top: var(--espaco-3); }
 
+/* "Essa informação está errada?" (js/reporte/formulario.js) */
+.reporte {
+  margin-top: var(--espaco-4);
+  padding-top: var(--espaco-3);
+  border-top: 1px solid var(--cor-borda);
+}
+
+.reporte__abrir {
+  min-height: 44px;
+  padding-inline: 0;
+  font-size: var(--texto-sm);
+}
+
+.reporte__painel { margin-top: var(--espaco-2); }
+
+.reporte__titulo { font-weight: var(--peso-forte); }
+
+.reporte__texto { min-height: 6rem; resize: vertical; }
+
+.reporte__status:empty { display: none; }
+.reporte__status { font-weight: var(--peso-medio); }
+
+.reporte__feito {
+  color: var(--cor-sucesso-texto);
+  font-weight: var(--peso-forte);
+}
+
+/* Isca para robô: fora da tela, sem ocupar espaço. */
+.reporte__isca {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 /* Perfil ----------------------------------------------------------------- */
 
 .perfil__programa {

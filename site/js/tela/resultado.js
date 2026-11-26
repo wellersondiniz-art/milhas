@@ -2,6 +2,8 @@
 // A tela só exibe: toda conta vem de calcularJeitosDeComprar.
 
 import { el } from './dom.js';
+import { REPORTE_LIGADO } from '../reporte/config.js';
+import { montarReporte } from '../reporte/formulario.js';
 import {
   destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, seloDeVencimento, textoValidade, textosAntesDeComprar, textosConferido,
 } from './textos.js';
@@ -62,7 +64,8 @@ function blocoAntesDeComprar(jeito) {
   );
 }
 
-function card(jeito, posicao, nomeLoja) {
+function card(jeito, posicao, loja, reporteLigado) {
+  const nomeLoja = loja.nome;
   const id = `jeito-${posicao}`;
   const destaque = destaqueDoJeito(jeito);
   const conferido = textosConferido(jeito);
@@ -90,15 +93,16 @@ function card(jeito, posicao, nomeLoja) {
           conferido.map((c) => el('li', { class: c.antigo ? 'resultado__antigo' : null }, c.texto)))
         : null),
     el('div', { class: 'card__acoes' }, blocoAntesDeComprar(jeito), blocoComoCalcular(jeito)),
+    reporteLigado ? montarReporte({ id, loja, jeito }) : null,
   );
 }
 
 /**
  * @param {object[]} jeitos   saída do motor, do melhor ao pior
- * @param {object} contexto   { loja, valorTexto, semPerfil }
+ * @param {object} contexto   { loja, valorTexto, semPerfil, reporteLigado? }
  */
 export function montarResultado(jeitos, contexto) {
-  const { loja, valorTexto, semPerfil } = contexto;
+  const { loja, valorTexto, semPerfil, reporteLigado = REPORTE_LIGADO } = contexto;
   const partes = [];
   const [melhor, ...demais] = jeitos;
   const temOferta = jeitos.some((j) => j.tipo === 'oferta');
@@ -120,7 +124,7 @@ export function montarResultado(jeitos, contexto) {
   }
 
   partes.push(el('h3', { class: 'resultado__secao' }, 'O melhor jeito de comprar'));
-  partes.push(card(melhor, 0, loja.nome));
+  partes.push(card(melhor, 0, loja, reporteLigado));
 
   const palavras = palavrasQueAparecem(jeitos);
   if (palavras.milheiro || palavras.clube) {
@@ -131,7 +135,7 @@ export function montarResultado(jeitos, contexto) {
 
   if (demais.length) {
     partes.push(el('h3', { class: 'resultado__secao' }, demais.length === 1 ? 'Outro jeito' : `Outros ${demais.length} jeitos`));
-    partes.push(el('div', { class: 'pilha resultado__demais' }, demais.map((j, i) => card(j, i + 1, loja.nome))));
+    partes.push(el('div', { class: 'pilha resultado__demais' }, demais.map((j, i) => card(j, i + 1, loja, reporteLigado))));
   }
 
   const botaoDeSaida = linkDeSaida(contexto.saida, loja.nome);

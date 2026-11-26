@@ -23,6 +23,7 @@
 import { formatarData } from '../../site/js/motor/index.js';
 import { AVISO_COMISSAO } from '../../site/js/saida/links.js';
 import { EVENTOS, metricasLigadas } from '../../site/js/metricas/metricas.js';
+import { REPORTE_LIGADO } from '../../site/js/reporte/config.js';
 import { EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
 import { h, juntar } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
@@ -142,7 +143,24 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade({ temAfiliado, usaAwin, medindo }) {
+// Só entra quando o botão "Essa informação está errada?" está ligado
+// (site/js/reporte/config.js). Diz o que a função /api/reportar guarda.
+function secaoAvisos() {
+  return secao('avisos', 'Quando você avisa de um erro',
+    p('Em cada resultado há o botão "Essa informação está errada?". Se você mandar um aviso, a gente recebe só isto:'),
+    lista([
+      'a loja, a oferta, o programa e o cartão do resultado em que você tocou;',
+      'o que você escreveu e o link que você colou;',
+      'o seu e-mail, só se você quiser resposta.',
+    ]),
+    p('O aviso vira uma tarefa num repositório privado do GitHub, a ferramenta que a gente usa para organizar as correções. Só quem cuida do site vê. O GitHub guarda os dados nos Estados Unidos.'),
+    p(forte('O e-mail é apagado quando a gente resolve o aviso, ou em até 90 dias, o que vier primeiro.'), ' Ele serve só para responder sobre o aviso.'),
+    p('O texto e o link ficam guardados como histórico das correções. Por isso, não escreva dados pessoais no texto.'),
+    p('Para evitar abuso, o servidor conta quantos avisos chegam de cada conexão. Para isso, usa um código embaralhado feito a partir do endereço de internet (IP), que some sozinho depois de uma hora. O IP não vai para o aviso.'),
+    p('Quer apagar um aviso que você mandou? Fale com a gente em ', contato(), ', dizendo a loja e o dia.'));
+}
+
+function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado }) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -193,6 +211,7 @@ function paginaPrivacidade({ temAfiliado, usaAwin, medindo }) {
           : null,
         temAfiliado ? null
           : p('Hoje os links para as lojas são links comuns: não levam nenhum código nosso.')),
+      reporteLigado ? secaoAvisos() : null,
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
     ],
@@ -245,7 +264,7 @@ function paginaTermos(temAfiliado) {
 // ---------------------------------------------------------------------------
 // Contato
 
-function paginaContato(email) {
+function paginaContato(email, reporteLigado) {
   const temEmail = typeof email === 'string' && EMAIL.test(email);
   return {
     pasta: 'contato',
@@ -258,7 +277,9 @@ function paginaContato(email) {
           ? p('Escreva para ', h('a', { href: `mailto:${email}` }, email), '.')
           : alerta('info', 'i', 'Canal de contato em preparação', p('Ainda estamos preparando o canal de contato. Assim que ele estiver pronto, o endereço aparece aqui.'))),
       secao('o-que-mandar', 'O que ajuda na mensagem', lista([
-        'Erro numa oferta: diga a loja e, se tiver, mande o link da página oficial.',
+        reporteLigado
+          ? 'Erro numa oferta: o mais rápido é o botão "Essa informação está errada?", embaixo de cada resultado. Por aqui, diga a loja e, se tiver, mande o link da página oficial.'
+          : 'Erro numa oferta: diga a loja e, se tiver, mande o link da página oficial.',
         'Loja, cartão ou programa que falta: diga o nome.',
         'Dúvida sobre a conta: diga a loja e o valor que você usou.',
       ])),
@@ -342,6 +363,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   temAfiliado      algum link de dados/links.json é de afiliado (siteTemLinkDeAfiliado)
  *   usaAwin          algum link passa pela Awin (siteUsaAwin)
  *   medindo          padrão: metricasLigadas() (site/js/metricas/config.js)
+ *   reporteLigado    padrão: REPORTE_LIGADO (site/js/reporte/config.js)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -353,10 +375,11 @@ export function paginasInstitucionais({
   temAfiliado = false,
   usaAwin = false,
   medindo = metricasLigadas(),
+  reporteLigado = REPORTE_LIGADO,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
-  const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo }), paginaTermos(temAfiliado), contatoPagina];
+  const contatoPagina = paginaContato(email, reporteLigado);
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado }), paginaTermos(temAfiliado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

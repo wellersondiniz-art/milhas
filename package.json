@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "npm run test:unidade && npm run validar && npm run test:navegador",
-    "test:unidade": "node --test --experimental-test-coverage --test-coverage-include=\"site/js/**\" --test-coverage-include=\"scripts/**\" --test-coverage-lines=95 --test-coverage-branches=88 --test-coverage-functions=95",
+    "test:unidade": "node --test --experimental-test-coverage --test-coverage-include=\"site/js/**\" --test-coverage-include=\"scripts/**\" --test-coverage-include=\"servidor/**\" --test-coverage-include=\"functions/**\" --test-coverage-lines=95 --test-coverage-branches=88 --test-coverage-functions=95",
     "test:navegador": "playwright test",
     "test:fotos": "docker run --rm --ipc=host -v \"$PWD\":/trabalho -w /trabalho -e FOTOS=1 mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test fotos",
     "test:fotos:atualizar": "docker run --rm --ipc=host -v \"$PWD\":/trabalho -w /trabalho -e FOTOS=1 mcr.microsoft.com/playwright:v1.63.0-noble npx playwright test fotos --update-snapshots",
