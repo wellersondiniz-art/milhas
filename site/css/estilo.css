@@ -1,7 +1,8 @@
 /* Estilos das páginas do site. Tokens e componentes ficam em base.css. */
 
 main {
-  padding-block: var(--espaco-6) var(--espaco-10);
+  --main-topo: var(--espaco-6);
+  padding-block: var(--main-topo) var(--espaco-10);
 }
 
 [hidden] { display: none !important; }
@@ -9,8 +10,8 @@ main {
 /* Topo ------------------------------------------------------------------- */
 
 .topo {
-  background: var(--cor-primaria);
-  color: var(--cor-sobre-primaria);
+  background: var(--cor-faixa);
+  color: var(--cor-sobre-faixa);
 }
 
 .topo__linha {
@@ -22,24 +23,28 @@ main {
 }
 
 .topo__marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-2);
+  min-height: var(--altura-toque);
   margin: 0;
   color: inherit;
   text-decoration: none;
-  padding-block: var(--espaco-3);
   font-weight: var(--peso-extra);
   font-size: var(--texto-lg);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
+/* A moeda do cofrinho: amarelo-manga com brilho e borda cunhada. */
 .topo__marca::before {
   content: "";
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  margin-right: var(--espaco-2);
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 50%;
-  background: var(--cor-destaque);
-  vertical-align: 0.05em;
+  background: radial-gradient(circle at 35% 30%, #fff6d8 0 18%, #ffd25e 19% 58%, #f0b43a 59% 100%);
+  box-shadow: inset 0 0 0 2px #c98f12, 0 2px 0 rgb(0 0 0 / 0.18);
 }
 
 .topo__marca:hover { color: inherit; }
@@ -51,53 +56,90 @@ main {
   border-radius: var(--raio-sm);
 }
 
+/* Celular: o menu é uma fileira de pílulas que rola para o lado, encostada
+   nas bordas da tela (o corte do último item mostra que tem mais). */
 .topo__menu {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--espaco-1);
-  margin-inline-end: calc(-1 * var(--espaco-3));
+  width: calc(100% + 2 * var(--espaco-4));
+  margin-inline: calc(-1 * var(--espaco-4));
+  padding: 0 var(--espaco-4) var(--espaco-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-padding-inline: var(--espaco-4);
 }
 
-/* Celular estreito: com quatro links, o menu desce para a linha de baixo. */
-@media (max-width: 30rem) {
-  .topo__link { padding-inline: var(--espaco-2); }
+.topo__menu::-webkit-scrollbar { display: none; }
+
+/* Celular: "Meu perfil" sobe para o lado da marca, e os outros quatro cabem
+   na fileira de baixo a partir de 360 px. */
+@media (max-width: 47.99rem) {
+  .topo__linha { position: relative; }
+  .topo__menu > .topo__link:last-child {
+    position: absolute;
+    top: 0.125rem;
+    right: var(--espaco-4);
+  }
 }
 
 .topo__link {
   display: inline-flex;
   align-items: center;
-  min-height: var(--altura-toque);
-  padding-inline: var(--espaco-3);
+  flex: none;
+  min-height: var(--alvo-minimo);
+  padding-inline: 0.6875rem;
+  border-radius: var(--raio-pilula);
   white-space: nowrap;
-  color: var(--cor-sobre-primaria);
-  font-weight: var(--peso-medio);
+  color: var(--cor-sobre-faixa);
+  background: rgb(255 255 255 / 0.08);
+  font-size: 0.875rem;
+  font-weight: var(--peso-forte);
   text-decoration: none;
-  border-bottom: 3px solid transparent;
+  transition: background-color var(--transicao);
 }
 
-.topo__link:hover { color: var(--cor-sobre-primaria); text-decoration: underline; }
-
-/* Celular: os quatro links cabem numa linha a partir de 360 px.
-   Em tela menor ainda, o menu quebra a linha em vez de vazar. */
-@media (max-width: 30rem) {
-  .topo__menu {
-    gap: 0;
-    margin-inline-end: -0.375rem;
-  }
-
-  .topo__link {
-    padding-inline: 0.375rem;
-    font-size: var(--texto-sm);
-  }
+.topo__link:hover {
+  color: var(--cor-sobre-faixa);
+  background: rgb(255 255 255 / 0.16);
 }
 
 .topo__link[aria-current="page"] {
-  font-weight: var(--peso-extra);
-  border-bottom-color: var(--cor-foco-topo);
+  background: var(--cor-faixa-destaque);
+  color: var(--cor-sobre-destaque);
 }
 
+.topo__link[aria-current="page"]:focus-visible { outline-color: var(--cor-sobre-faixa); }
+
+@media (forced-colors: active) {
+  .topo__link[aria-current="page"] { outline: 2px solid CanvasText; }
+}
+
+@media (min-width: 48rem) {
+  .topo__linha { flex-wrap: nowrap; padding-block: var(--espaco-2); }
+  .topo__link { padding-inline: var(--espaco-4); font-size: var(--texto-sm); }
+  .topo__menu {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+/* Rodapé: faixa de creme mais fundo, encostada nas bordas da tela. */
 .rodape {
-  padding-bottom: var(--espaco-8);
+  margin-top: var(--espaco-4);
+  padding-block: var(--espaco-6) var(--espaco-8);
+  background: var(--cor-fundo-2);
+  box-shadow: 0 0 0 100vmax var(--cor-fundo-2);
+  clip-path: inset(0 -100vmax -100vmax -100vmax);
+}
+
+.rodape::before {
+  content: "Milhas da Vez";
+  display: block;
+  margin-bottom: var(--espaco-2);
+  font-weight: var(--peso-extra);
+  color: var(--cor-primaria);
 }
 
 .rodape__links {
@@ -137,6 +179,7 @@ main {
   background: var(--cor-destaque);
   color: var(--cor-sobre-destaque);
   font-weight: var(--peso-extra);
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.12);
 }
 
 .passo__corpo {
@@ -199,9 +242,27 @@ main {
 
 /* Resultado -------------------------------------------------------------- */
 
+/* "O melhor jeito de comprar", "Outros 3 jeitos": rótulo curto de seção. */
 .resultado__secao {
-  margin: var(--espaco-2) 0 0;
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+  margin: var(--espaco-4) 0 0;
+  color: var(--cor-texto-suave);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-extra);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
+
+.resultado__secao::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--cor-borda);
+}
+
+.passo--titulo h2 { font-size: var(--texto-xl); letter-spacing: -0.015em; }
 
 .resultado__card .card__valor { overflow-wrap: anywhere; }
 
@@ -211,6 +272,7 @@ main {
 }
 
 .resultado__demais .card__valor { font-size: var(--texto-2xl); }
+.resultado__demais .card { box-shadow: none; }
 .resultado__demais .card__valor--pontos { font-size: var(--texto-xl); }
 
 .resultado__card .card__bloco p { overflow-wrap: anywhere; }
@@ -260,11 +322,15 @@ main {
   margin-top: var(--espaco-4);
   padding: var(--espaco-3) var(--espaco-4);
   border-radius: var(--raio-md);
-  background: var(--cor-superficie-2);
+  border: 1px dashed var(--cor-borda-campo);
 }
+
+.resultado__destaques > :last-child,
+.resultado__avisos > :last-child { margin-bottom: 0; }
 
 .resultado__avisos {
   margin-top: var(--espaco-4);
+  border-left: 4px solid currentColor;
   padding: var(--espaco-3) var(--espaco-4);
   border-radius: var(--raio-md);
   background: var(--cor-aviso-fundo);
@@ -290,6 +356,8 @@ main {
 
 .resultado__datas {
   margin-top: var(--espaco-4);
+  padding-top: var(--espaco-3);
+  border-top: 1px dashed var(--cor-borda);
   color: var(--cor-texto-suave);
 }
 
@@ -503,7 +571,25 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 .exemplos { min-height: 5.5rem; }
 .exemplos__titulo { margin: 0 0 var(--espaco-2); font-size: var(--texto-sm); }
 .exemplos__lista { display: flex; flex-wrap: wrap; gap: var(--espaco-2); }
-.exemplos__botao { min-height: var(--altura-toque); font-variant-numeric: tabular-nums; }
+
+/* Fichas pequenas, com a moedinha do cofrinho na frente. */
+.exemplos__botao {
+  min-height: var(--alvo-minimo);
+  padding: var(--espaco-2) var(--espaco-4) var(--espaco-2) var(--espaco-3);
+  border-width: 1.5px;
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.exemplos__botao::before {
+  content: "";
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: var(--cor-destaque);
+  box-shadow: inset 0 0 0 2px #e0a92e;
+}
 
 /* O que a conta supôs ------------------------------------------------------ */
 
@@ -552,7 +638,7 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 /* Telas maiores ---------------------------------------------------------- */
 
 @media (min-width: 40rem) {
-  main { padding-block: var(--espaco-10) var(--espaco-12); }
+  main { --main-topo: var(--espaco-10); padding-bottom: var(--espaco-12); }
 }
 
 /* Avisos do modo app: versão nova e sem internet. Somem quando vazios. */
@@ -576,22 +662,168 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 .campo__entrada--curta { max-width: 8rem; }
 
 /* Mais jeitos de ganhar pontos (atalhos da tela inicial) ------------------ */
-.mais-jeitos__titulo { font-size: var(--texto-lg); margin: 0; }
-.mais-jeitos__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espaco-2); }
+.mais-jeitos__titulo { font-size: var(--texto-xl); margin: 0; }
+.mais-jeitos__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espaco-3); }
+
 .mais-jeitos__link {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espaco-1);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: var(--espaco-3);
   min-height: var(--altura-toque);
-  padding: var(--espaco-3) var(--espaco-4);
+  height: 100%;
+  padding: var(--espaco-4);
   background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
-  border-left: 4px solid var(--cor-destaque);
   border-radius: var(--raio-lg);
+  box-shadow: var(--sombra-1);
   color: var(--cor-texto);
   text-decoration: none;
+  transition: transform var(--transicao-mola), box-shadow var(--transicao), border-color var(--transicao);
 }
-.mais-jeitos__link:hover { border-color: var(--cor-primaria); border-left-color: var(--cor-destaque); }
-.mais-jeitos__nome { font-weight: var(--peso-extra); color: var(--cor-primaria); text-decoration: underline; text-underline-offset: 0.15em; }
+
+/* Setinha "ir" no fim do cartão. */
+.mais-jeitos__link::after {
+  content: "";
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-top: 2px solid var(--cor-primaria);
+  border-right: 2px solid var(--cor-primaria);
+  transform: rotate(45deg);
+  transition: transform var(--transicao);
+}
+
+.mais-jeitos__link:hover {
+  color: var(--cor-texto);
+  border-color: var(--cor-primaria);
+  box-shadow: var(--sombra-2);
+  transform: translateY(-2px);
+}
+
+.mais-jeitos__link:hover::after { transform: translateX(3px) rotate(45deg); }
+
+.mais-jeitos__link:focus-visible {
+  outline: 3px solid transparent;
+  box-shadow: var(--anel-foco);
+}
+
+.mais-jeitos__icone {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--raio-md);
+  background: var(--cor-primaria-suave);
+  color: var(--cor-primaria);
+}
+
+.mais-jeitos__icone svg { width: 1.5rem; height: 1.5rem; }
+
+.mais-jeitos__nome { font-weight: var(--peso-extra); color: var(--cor-primaria); }
 .mais-jeitos__texto { font-size: var(--texto-sm); color: var(--cor-texto-suave); }
-@media (min-width: 48rem) { .mais-jeitos__lista { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 48rem) { .mais-jeitos__lista { grid-template-columns: repeat(2, 1fr); } }
+
+/* Abertura da tela inicial ------------------------------------------------
+ * A faixa verde do topo continua por trás do título e o formulário sobe por
+ * cima da borda dela. O fundo da faixa é o do próprio bloco (o leitor de
+ * contraste enxerga) e uma sombra cheia o estende até as bordas da tela e até
+ * o topo; o clip-path corta a sombra embaixo. Sombra não cria rolagem lateral.
+ */
+.heroi {
+  position: relative;
+  padding-bottom: 4.5rem;
+  background: var(--cor-faixa);
+  color: var(--cor-sobre-faixa);
+  box-shadow: 0 0 0 100vmax var(--cor-faixa);
+  clip-path: inset(calc(-1 * var(--main-topo)) -100vmax 0 -100vmax);
+}
+
+@media (forced-colors: active) {
+  .heroi { background: Canvas; color: CanvasText; box-shadow: none; }
+  .heroi__sub, .heroi__chamada { color: CanvasText; }
+}
+
+.heroi h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.875rem, 1.5rem + 2vw, 2.75rem);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+/* Traço amarelo-manga embaixo de "mais pontos", como marca-texto. */
+.heroi__marca {
+  text-decoration: underline;
+  text-decoration-color: var(--cor-faixa-destaque);
+  text-decoration-thickness: 0.14em;
+  text-underline-offset: 0.14em;
+  text-decoration-skip-ink: none;
+}
+
+.heroi__sub {
+  margin-bottom: 0;
+  max-width: 34rem;
+  color: var(--cor-sobre-faixa-suave);
+  font-size: var(--texto-lg);
+}
+
+.heroi__topo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-3);
+}
+
+.heroi__arte { flex: none; width: 4.5rem; height: auto; }
+
+.heroi__chamada {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-1) var(--espaco-2);
+  margin: 0;
+  padding: var(--espaco-1) var(--espaco-3);
+  border-radius: var(--raio-pilula);
+  background: rgb(255 255 255 / 0.1);
+  color: var(--cor-sobre-faixa);
+  font-size: var(--texto-xs);
+  font-weight: var(--peso-forte);
+}
+
+.heroi__chamada > span + span::before { content: "· "; color: var(--cor-faixa-destaque); }
+
+@media (min-width: 48rem) {
+  .heroi { padding-bottom: 5.5rem; padding-right: 11rem; }
+  .heroi__arte {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 9.5rem;
+    transform: translateY(-60%);
+  }
+}
+
+/* O formulário sobe por cima da faixa. */
+.pilha--lg > .heroi + * { margin-top: -3.5rem; position: relative; }
+
+.passos {
+  border-radius: var(--raio-xl);
+  box-shadow: var(--sombra-3);
+  padding: var(--espaco-5) var(--espaco-4);
+}
+
+@media (min-width: 30rem) { .passos { padding: var(--espaco-6); } }
+
+.botao__seta { width: 1.25rem; height: 1.25rem; transition: transform var(--transicao-mola); }
+.botao:hover .botao__seta { transform: translateX(3px); }
+
+/* Resultado chega com uma subida curta (some com "reduzir movimento"). */
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: none; }
+}
+
+#resultado > .pilha > * { animation: surgir 320ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+#resultado > .pilha > :nth-child(2) { animation-delay: 60ms; }
+#resultado > .pilha > :nth-child(3) { animation-delay: 120ms; }
+#resultado > .pilha > :nth-child(n + 4) { animation-delay: 180ms; }

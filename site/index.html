@@ -38,16 +38,28 @@
     <div id="aviso-conexao" role="status"></div>
    </div>
    <div id="tela-inicio" class="pilha--lg">
-    <section class="pilha--sm">
-      <h1>Onde e com qual cartão comprar para ganhar mais pontos</h1>
-      <p class="texto-suave">Diga a loja e o valor. A gente faz a conta e mostra o melhor jeito de comprar.</p>
+    <section class="heroi pilha">
+      <div class="heroi__topo">
+        <svg class="heroi__arte" viewBox="0 0 96 80" width="72" height="60" aria-hidden="true" focusable="false">
+          <circle cx="50" cy="13" r="10" fill="#fff3cf" stroke="#c98f12" stroke-width="2.5"/>
+          <circle cx="50" cy="13" r="5" fill="none" stroke="#e0a92e" stroke-width="2"/>
+          <path d="M14 47c-7 1-8-7-2-7" fill="none" stroke="#f0b43a" stroke-width="3" stroke-linecap="round"/>
+          <ellipse cx="46" cy="50" rx="32" ry="23" fill="#ffd25e"/>
+          <path d="M28 33l3-13 12 9z" fill="#f0b43a"/>
+          <rect x="24" y="64" width="10" height="12" rx="3" fill="#f0b43a"/>
+          <rect x="54" y="64" width="10" height="12" rx="3" fill="#f0b43a"/>
+          <ellipse cx="78" cy="51" rx="8" ry="9" fill="#f0b43a"/>
+          <circle cx="76" cy="49" r="1.6" fill="#8a5a00"/>
+          <circle cx="80.5" cy="53" r="1.6" fill="#8a5a00"/>
+          <circle cx="64" cy="42" r="3" fill="#1f2a22"/>
+          <rect x="38" y="29" width="16" height="4" rx="2" fill="#c98f12"/>
+          <ellipse cx="38" cy="44" rx="10" ry="5" fill="#fff6d8" opacity="0.55"/>
+        </svg>
+        <p class="heroi__chamada"><span>Grátis</span><span>Sem cadastro</span><span>Sem CPF</span></p>
+      </div>
+      <h1>Onde e com qual cartão comprar para <span class="heroi__marca">ganhar mais pontos</span></h1>
+      <p class="heroi__sub">Diga a loja e o valor. A gente faz a conta e mostra o melhor jeito de comprar.</p>
     </section>
-
-    <!-- Já vem no HTML para o formulário não pular quando o JavaScript roda.
-         Se houver perfil guardado, o app troca por uma linha com o resumo. -->
-    <div id="convite-perfil">
-      <p class="texto-suave convite">Não precisa cadastrar nada: a conta usa padrões que aparecem junto com o resultado, e você muda ali mesmo. <a href="#/perfil">Cadastrar meus cartões</a></p>
-    </div>
 
     <form id="formulario" class="card pilha passos" novalidate autocomplete="off">
       <div class="passo">
@@ -78,8 +90,14 @@
         </div>
       </div>
 
-      <button class="botao botao--bloco" id="ver-resultado" type="submit">Ver o resultado</button>
+      <button class="botao botao--bloco" id="ver-resultado" type="submit">Ver o resultado <svg class="botao__seta" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </form>
+
+    <!-- Já vem no HTML para a tela não pular quando o JavaScript roda.
+         Se houver perfil guardado, o app troca por uma linha com o resumo. -->
+    <div id="convite-perfil">
+      <p class="texto-suave convite">Não precisa cadastrar nada: a conta usa padrões que aparecem junto com o resultado, e você muda ali mesmo. <a href="#/perfil">Cadastrar meus cartões</a></p>
+    </div>
 
     <div class="exemplos">
       <p class="exemplos__titulo texto-suave" id="exemplos-titulo">Sem compra em mente? Toque num exemplo:</p>
@@ -103,10 +121,10 @@
     <nav class="mais-jeitos pilha--sm" aria-labelledby="mais-jeitos-titulo">
       <h2 id="mais-jeitos-titulo" class="mais-jeitos__titulo">Mais jeitos de ganhar pontos</h2>
       <ul class="mais-jeitos__lista">
-        <li><a class="mais-jeitos__link" href="onde-rende-mais/"><span class="mais-jeitos__nome">Onde rende mais hoje</span><span class="mais-jeitos__texto">As lojas e categorias que dão mais pontos por real, sem digitar nada.</span></a></li>
-        <li><a class="mais-jeitos__link" href="viagens/"><span class="mais-jeitos__nome">Milhas em viagens</span><span class="mais-jeitos__texto">Transferir pontos na hora do bônus, passagem e hotel.</span></a></li>
-        <li><a class="mais-jeitos__link" href="salas-vip/"><span class="mais-jeitos__nome">Salas VIP pelo cartão</span><span class="mais-jeitos__texto">Quais cartões dão entrada grátis no aeroporto, quantas vezes e com quem.</span></a></li>
-        <li><a class="mais-jeitos__link" href="abastecer/"><span class="mais-jeitos__nome">Quanto rende abastecer</span><span class="mais-jeitos__texto">Pontos nos postos, somando o programa do posto e o cartão.</span></a></li>
+        <li><a class="mais-jeitos__link" href="onde-rende-mais/"><span class="mais-jeitos__icone" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></span><span class="mais-jeitos__nome">Onde rende mais hoje</span><span class="mais-jeitos__texto">As lojas e categorias que dão mais pontos por real, sem digitar nada.</span></a></li>
+        <li><a class="mais-jeitos__link" href="viagens/"><span class="mais-jeitos__icone" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></span><span class="mais-jeitos__nome">Milhas em viagens</span><span class="mais-jeitos__texto">Transferir pontos na hora do bônus, passagem e hotel.</span></a></li>
+        <li><a class="mais-jeitos__link" href="salas-vip/"><span class="mais-jeitos__icone" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11V8a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v3M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v5H3zM6 18v2M18 18v2"/></svg></span><span class="mais-jeitos__nome">Salas VIP pelo cartão</span><span class="mais-jeitos__texto">Quais cartões dão entrada grátis no aeroporto, quantas vezes e com quem.</span></a></li>
+        <li><a class="mais-jeitos__link" href="abastecer/"><span class="mais-jeitos__icone" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V8l-3-3M7 7h4"/></svg></span><span class="mais-jeitos__nome">Quanto rende abastecer</span><span class="mais-jeitos__texto">Pontos nos postos, somando o programa do posto e o cartão.</span></a></li>
       </ul>
     </nav>
 

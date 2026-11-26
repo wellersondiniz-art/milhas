@@ -45,6 +45,15 @@
 
   --cor-foco: #1e4e86;
   --cor-foco-topo: #ffd25e;        /* foco e página atual no topo verde */
+
+  /* Faixa verde do topo e da abertura da tela inicial (nos dois temas é um
+     verde escuro, com texto claro; o amarelo-manga marca o que está ativo). */
+  --cor-faixa: #1f6b3a;
+  --cor-sobre-faixa: #ffffff;
+  --cor-sobre-faixa-suave: #d7ebdc;
+  --cor-faixa-destaque: #ffd25e;
+  --cor-destaque-suave: #fff3cf;   /* fundo manga claro: topo do melhor jeito */
+  --cor-fundo-2: #f4ecdc;          /* creme mais fundo: rodapé */
   --cor-esqueleto: #ece4d3;
   --cor-esqueleto-brilho: #f7f1e5;
 
@@ -84,12 +93,14 @@
   --raio-sm: 0.5rem;
   --raio-md: 0.875rem;
   --raio-lg: 1.375rem;
+  --raio-xl: 1.75rem;
   --raio-pilula: 999px;
 
   /* Sombras */
-  --sombra-1: 0 1px 2px rgb(31 74 46 / 0.08);
-  --sombra-2: 0 6px 18px rgb(31 74 46 / 0.12);
-  --sombra-3: 0 12px 32px rgb(31 74 46 / 0.16);
+  /* Sombras em duas camadas, puxadas para o verde: parecem papel sobre a mesa. */
+  --sombra-1: 0 1px 2px rgb(31 74 46 / 0.06), 0 2px 6px rgb(31 74 46 / 0.06);
+  --sombra-2: 0 2px 4px rgb(31 74 46 / 0.06), 0 10px 24px rgb(31 74 46 / 0.12);
+  --sombra-3: 0 4px 8px rgb(31 74 46 / 0.08), 0 18px 40px rgb(31 74 46 / 0.18);
 
   /* Medidas */
   --largura-conteudo: 42rem;
@@ -98,6 +109,7 @@
   --alvo-minimo: 2.75rem; /* 44px: menor alvo de toque aceito (links soltos) */
   --anel-foco: 0 0 0 3px var(--cor-fundo), 0 0 0 6px var(--cor-foco);
   --transicao: 150ms ease;
+  --transicao-mola: 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 
 /* Cores: tema escuro (usadas pelo aparelho ou forçadas com data-tema) */
@@ -126,7 +138,13 @@
     --cor-info-fundo: #16273a;
     --cor-info-texto: #9cc6f2;
     --cor-foco: #9cc6f2;
-    --cor-foco-topo: #0e2316;
+    --cor-foco-topo: #ffd25e;
+    --cor-faixa: #183b27;
+    --cor-sobre-faixa: #f3f7f1;
+    --cor-sobre-faixa-suave: #c3d3c8;
+    --cor-faixa-destaque: #ffd25e;
+    --cor-destaque-suave: #352d12;
+    --cor-fundo-2: #0e1310;
     --cor-esqueleto: #26302a;
     --cor-esqueleto-brilho: #313d35;
     --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -159,7 +177,13 @@
   --cor-info-fundo: #16273a;
   --cor-info-texto: #9cc6f2;
   --cor-foco: #9cc6f2;
-  --cor-foco-topo: #0e2316;
+  --cor-foco-topo: #ffd25e;
+  --cor-faixa: #183b27;
+  --cor-sobre-faixa: #f3f7f1;
+  --cor-sobre-faixa-suave: #c3d3c8;
+  --cor-faixa-destaque: #ffd25e;
+  --cor-destaque-suave: #352d12;
+  --cor-fundo-2: #0e1310;
   --cor-esqueleto: #26302a;
   --cor-esqueleto-brilho: #313d35;
   --sombra-1: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -317,16 +341,19 @@ img, svg { max-width: 100%; height: auto; }
   text-align: center;
   text-decoration: none;
   cursor: pointer;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.08), 0 4px 12px -4px var(--cor-primaria);
   transition: background-color var(--transicao), border-color var(--transicao),
-    transform var(--transicao);
+    transform var(--transicao-mola), box-shadow var(--transicao);
 }
 
 .botao:hover {
   background: var(--cor-primaria-forte);
   color: var(--cor-sobre-primaria);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.08), 0 8px 18px -6px var(--cor-primaria);
 }
 
-.botao:active { transform: translateY(1px); }
+.botao:active { transform: translateY(1px) scale(0.98); }
 
 .botao:focus-visible {
   outline: 3px solid transparent;
@@ -334,10 +361,13 @@ img, svg { max-width: 100%; height: auto; }
 }
 
 .botao--secundario {
-  background: transparent;
+  background: var(--cor-superficie);
   color: var(--cor-primaria);
   border-color: var(--cor-primaria);
+  box-shadow: none;
 }
+
+.botao--secundario:hover { box-shadow: var(--sombra-1); }
 
 .botao--secundario:hover {
   background: var(--cor-primaria-suave);
@@ -346,6 +376,7 @@ img, svg { max-width: 100%; height: auto; }
 
 .botao--fantasma {
   background: transparent;
+  box-shadow: none;
   color: var(--cor-primaria);
   padding-inline: var(--espaco-3);
   text-decoration: underline;
@@ -355,6 +386,8 @@ img, svg { max-width: 100%; height: auto; }
 .botao--fantasma:hover {
   background: var(--cor-primaria-suave);
   color: var(--cor-primaria);
+  box-shadow: none;
+  transform: none;
 }
 
 .botao--bloco {
@@ -369,6 +402,7 @@ img, svg { max-width: 100%; height: auto; }
   border-color: var(--cor-borda);
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 /* 5. Campo --------------------------------------------------------------- */
@@ -415,6 +449,8 @@ img, svg { max-width: 100%; height: auto; }
 }
 
 .campo__entrada:hover { border-color: var(--cor-texto-suave); }
+
+.campo__entrada:focus-visible { background: var(--cor-superficie); }
 
 /* No campo de data, o botão do calendário fica dentro do campo e, com o foco
    nele, o Chrome não marca o campo nem com :focus. :focus-within marca. */
@@ -502,16 +538,26 @@ select.campo__entrada {
   background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio-lg);
-  padding: var(--espaco-5);
+  padding: var(--espaco-4);
   box-shadow: var(--sombra-1);
+}
+
+@media (min-width: 30rem) {
+  .card { padding: var(--espaco-5); }
 }
 
 .card > :last-child { margin-bottom: 0; }
 
+/* Destaque: moldura manga e um "bilhete" amarelo-claro no alto do card. */
 .card--destaque {
-  box-shadow: var(--sombra-2);
+  position: relative;
+  box-shadow: var(--sombra-3);
   border-color: var(--cor-destaque);
   border-width: 2px;
+  background:
+    linear-gradient(180deg, var(--cor-destaque-suave) 0, var(--cor-destaque-suave) 4rem,
+      var(--cor-superficie) 11rem) no-repeat;
+  background-color: var(--cor-superficie);
 }
 
 .card__topo {
@@ -535,7 +581,7 @@ select.campo__entrada {
   font-size: var(--texto-valor);
   font-weight: var(--peso-extra);
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .card__legenda {
@@ -549,6 +595,7 @@ select.campo__entrada {
   padding: var(--espaco-3) var(--espaco-4);
   background: var(--cor-superficie-2);
   border-radius: var(--raio-md);
+  border-left: 4px solid var(--cor-primaria);
 }
 
 .card__bloco > :last-child { margin-bottom: 0; }
@@ -592,6 +639,7 @@ select.campo__entrada {
   font-weight: var(--peso-forte);
   line-height: 1.4;
   white-space: nowrap;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.04);
 }
 
 .selo--destaque { background: var(--cor-destaque); color: var(--cor-sobre-destaque); }
@@ -607,17 +655,24 @@ select.campo__entrada {
   gap: var(--espaco-3);
   padding: var(--espaco-4);
   border-radius: var(--raio-md);
-  border-left: 0.375rem solid currentColor;
+  border-left: 0.3125rem solid currentColor;
   background: var(--cor-info-fundo);
   color: var(--cor-info-texto);
 }
 
+/* Ícone numa bolinha da mesma cor do texto do alerta. */
 .alerta__icone {
   flex: none;
-  width: 1.25rem;
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid currentColor;
   text-align: center;
+  font-size: var(--texto-xs);
   font-weight: var(--peso-extra);
-  line-height: var(--altura-linha);
+  line-height: 1;
 }
 
 .alerta__corpo > :last-child { margin-bottom: 0; }
@@ -637,6 +692,7 @@ select.campo__entrada {
 .termo {
   border-radius: var(--raio-md);
   background: var(--cor-superficie-2);
+  transition: background-color var(--transicao);
 }
 
 .termo > summary {
@@ -668,6 +724,23 @@ select.campo__entrada {
 }
 
 .termo[open] > summary::before { content: "−"; }
+
+/* Setinha no fim da linha, que gira quando abre. */
+.termo > summary::after {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.125rem) rotate(45deg);
+  transition: transform var(--transicao);
+}
+
+.termo[open] > summary::after { transform: translateY(0.125rem) rotate(-135deg); }
+
+.termo > summary:hover { background: var(--cor-primaria-suave); border-radius: var(--raio-md); }
 
 .termo > summary:focus-visible {
   outline: 3px solid transparent;
@@ -730,7 +803,8 @@ select.campo__entrada {
    tabela cresce até a frase mais longa e passa da tela em 320px. */
 @media (max-width: 39.99rem) {
   .tabela,
-  .tabela tbody { display: block; }
+  .tabela tbody,
+  .tabela caption { display: block; }
   .tabela td { overflow-wrap: anywhere; }
   .tabela td > * { min-width: 0; }
 }
