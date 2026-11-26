@@ -137,7 +137,7 @@ test('sem perfil: conta com todos os cartões e avisa', async ({ pagina }) => {
   await pagina.goto('https://www.outra-loja.invalid/p/geladeira');
   await expect.poll(() => lerSelo(pagina)).toEqual(expect.objectContaining({
     titulo: 'Melhor jeito: 2.598 pontos com Cartão Alfa Platinum',
-    detalhe: 'no Programa Beta · contando todos os cartões; escolha os seus nas opções da extensão',
+    detalhe: 'no Programa Alfa · vale cerca de R$ 51,96 · contando todos os cartões; escolha os seus nas opções da extensão',
   }));
 });
 
@@ -155,15 +155,16 @@ test('preço lido de atributo com ponto decimal (seletor quebrado no arquivo é 
 
 test('preço que chega depois e troca de produto sem recarregar a página', async ({ pagina }) => {
   await pagina.goto('https://www.outra-loja.invalid/p/atrasado');
-  await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 750 pontos com Cartão Beta Gold');
+  // Ordem pelo valor em reais: o Alfa (com milheiro) vem antes do Beta (sem).
+  await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 500 pontos com Cartão Alfa Platinum');
   await pagina.getByRole('button', { name: 'Ver outro produto' }).click();
-  await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 150 pontos com Cartão Beta Gold');
+  await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 100 pontos com Cartão Alfa Platinum');
 });
 
 test('loja que destaca o preço no Pix: usa o preço no cartão, da linha das parcelas', async ({ pagina }) => {
   await pagina.goto('https://www.outra-loja.invalid/p/parcelado');
-  // R$ 3.699,00 no cartão × 3 pontos por real (no Pix, R$ 3.329,10, daria 9.987,3).
-  await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 11.097 pontos com Cartão Beta Gold');
+  // R$ 3.699,00 no cartão × 2 pontos por real (no Pix, R$ 3.329,10, daria 6.658,2).
+  await expect.poll(async () => (await lerSelo(pagina))?.titulo).toBe('Melhor jeito: 7.398 pontos com Cartão Alfa Platinum');
 });
 
 test('falha em silêncio: preço fora do formato', async ({ pagina }) => {

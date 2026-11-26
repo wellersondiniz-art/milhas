@@ -61,12 +61,12 @@ test('passagem LATAM nacional: R$ 400 rendem 600 pontos e a categoria muda a con
   await expect(page.locator('#categoria-latam-pass')).toHaveValue(/platinum/i);
 });
 
-test('passagem internacional pede a cotação do dólar e usa a digitada', async ({ page }) => {
+test('passagem internacional usa a PTAX do cadastro e aceita a cotação digitada', async ({ page }) => {
   await page.locator('#passagem-companhia').selectOption('GOL');
   await page.getByLabel('Fora da América do Sul').check();
   await page.locator('#passagem-valor').fill('300000');
   await page.locator('#passagem-ver').click();
-  await expect(page.locator('#passagem-resultado')).toContainText('falta a cotação');
+  await expect(page.locator('#passagem-resultado')).toContainText(/PTAX de \d{2}\/\d{2}\/\d{4}/);
   await page.getByText('Cotação do dólar (opcional)').click();
   await page.locator('#passagem-dolar').fill('60000');
   await page.locator('#passagem-ver').click();

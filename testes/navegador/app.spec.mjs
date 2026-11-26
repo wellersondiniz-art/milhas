@@ -107,7 +107,7 @@ test('busca as ofertas atualizadas no site e a conta funciona', async ({ page })
   await abrirApp(page);
   const doSite = () => pedidos.filter((p) => p.url().startsWith(`${ENDERECO_DO_SITE}/dados/`));
   // Os eventos de pedido chegam ao teste um pouco depois da página usar a resposta.
-  await expect.poll(() => doSite().length).toBe(5);
+  await expect.poll(() => doSite().length).toBe(6);
   for (const p of doSite()) {
     expect(p.method()).toBe('GET');
     expect(await p.allHeaders()).not.toHaveProperty('cookie');

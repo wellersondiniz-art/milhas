@@ -12,7 +12,7 @@ import { aplicarMascara, erroDoValor, mascaraCotacao } from './tela/moeda.js';
 import { abrirArmazem } from './perfil/armazem.js';
 import { ehVazio, perfilParaConta } from './perfil/formato.js';
 import { alerta } from './tela/resultado.js';
-import { agoraLocal } from './tela/textos.js';
+import { dataHoraEmSaoPaulo } from './motor/datas.js';
 import { el } from './tela/dom.js';
 import {
   TERMOS_VIAGEM, anuncioDaTransferencia, anuncioDaViagem, destaqueDaRota, destaqueDaViagem, erroDosPontos, fraseDaViagem,
@@ -31,7 +31,7 @@ let niveis = lerCategorias();
 const bonusDigitado = {};
 
 function hoje() {
-  return agoraLocal(new Date()).slice(0, 10);
+  return dataHoraEmSaoPaulo(new Date()).slice(0, 10);
 }
 
 function lerCategorias() {

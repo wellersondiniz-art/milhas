@@ -56,10 +56,10 @@ test.describe('métricas ligadas', () => {
     await page.evaluate(() => {
       const a = document.createElement('a');
       a.href = 'https://www.loja-teste.invalid/produto?id=1';
-      a.textContent = 'Ir para a loja';
+      a.textContent = 'Link posto pelo teste';
       document.getElementById('resultado').append(a);
     });
-    await page.getByRole('link', { name: 'Ir para a loja' }).click();
+    await page.getByRole('link', { name: 'Link posto pelo teste' }).click();
     await expect.poll(() => nomes(envios)).toEqual(['busca_loja', 'calculo', 'clique_saida']);
 
     const [busca, conta, clique] = envios.map((e) => e.corpo);
@@ -101,7 +101,9 @@ test.describe('métricas ligadas', () => {
     await expect.poll(() => envios.map((e) => e.corpo.p)).toEqual([{ loja: 'magalu', origem: 'pagina-da-loja' }]);
     await page.getByRole('link', { name: 'Ver a fonte' }).first().click();
     await expect.poll(() => nomes(envios)).toEqual(['busca_loja', 'clique_saida']);
-    expect(envios[1].corpo.p).toEqual({ destino: 'magazineluiza.com.br', pagina: 'loja', loja: 'magalu' });
+    // A primeira fonte da página da Magalu é a da oferta mais vantajosa (dados reais).
+    expect(envios[1].corpo.p).toMatchObject({ pagina: 'loja', loja: 'magalu' });
+    expect(envios[1].corpo.p.destino).toMatch(/^[a-z0-9.-]+\.com(\.br)?$/);
     expect(envios[1].corpo.u).toBe('http://127.0.0.1:4173/loja/magalu/');
   });
 

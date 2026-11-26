@@ -65,6 +65,9 @@ test.describe('reporte de erro', () => {
     await calcular(page, { inicioDoNome: 'loj', loja: 'Loja Teste', digitos: '10000' });
     const cartoes = cartoesDoResultado(page);
     await expect(cartoes).toHaveCount(4);
+    // Os três primeiros jeitos aparecem; o quarto fica em "Ver mais 1 jeito".
+    await expect(page.getByRole('button', { name: 'Essa informação está errada?' })).toHaveCount(3);
+    await page.getByText('Ver mais 1 jeito').click();
     await expect(page.getByRole('button', { name: 'Essa informação está errada?' })).toHaveCount(4);
 
     const primeiro = cartoes.nth(0);
@@ -111,7 +114,7 @@ test.describe('reporte de erro', () => {
     const servidor = await ligarReporte(page);
     await abrirInicio(page);
     await calcular(page, { inicioDoNome: 'loj', loja: 'Loja Teste', digitos: '10000' });
-    const ultimo = cartoesDoResultado(page).nth(3);
+    const ultimo = cartoesDoResultado(page).filter({ hasText: 'Sem oferta' }).first();
     await ultimo.getByRole('button', { name: 'Essa informação está errada?' }).click();
     await ultimo.getByRole('textbox', { name: 'O que está errado?' }).fill('O cartão agora dá 3 pontos por real.');
     await ultimo.getByRole('textbox', { name: 'Link da prova' }).fill('https://banco.exemplo.com.br/cartao');
