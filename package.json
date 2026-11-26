@@ -31,7 +31,8 @@
     "extensao": "node scripts/extensao/montar.js",
     "extensao:conferir": "node scripts/extensao/montar.js --conferir",
     "alertas": "node scripts/alertas/enviar.js",
-    "test:banco": "bash supabase/testes/rodar-local.sh"
+    "test:banco": "bash supabase/testes/rodar-local.sh",
+    "explicar:injecao": "node scripts/explicar-injecao.js"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0"

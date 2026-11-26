@@ -289,6 +289,43 @@ main {
   height: 1px;
   overflow: hidden;
 }
+/* Explica pra mim -------------------------------------------------------- */
+
+.explicar__campo {
+  min-height: calc(var(--altura-toque) * 1.75);
+  resize: vertical;
+}
+
+.explicar__sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+}
+
+/* As sugestões quebram linha no celular: texto à esquerda, altura livre. */
+.explicar__sugestao {
+  height: auto;
+  min-height: var(--altura-toque);
+  white-space: normal;
+  text-align: left;
+  font-size: var(--texto-sm);
+}
+
+.explicar__saida:empty { display: none; }
+
+.explicar__saida {
+  padding: var(--espaco-3) var(--espaco-4);
+  border-left: 4px solid var(--cor-primaria);
+  border-radius: var(--raio-md);
+  background: var(--cor-primaria-suave);
+  overflow-wrap: anywhere;
+}
+
+.explicar__saida p { margin: 0; }
+
+.explicar__saida > * + * { margin-top: var(--espaco-2); }
+
+.explicar__erro { font-weight: var(--peso-medio); }
 
 /* Perfil ----------------------------------------------------------------- */
 

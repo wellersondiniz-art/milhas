@@ -161,6 +161,14 @@ if [ -d functions ]; then
   else
     ok "chaves do Supabase, do Resend e do Stripe só vêm do ambiente"
   fi
+  # A chave da IA só pode existir no servidor, vinda do ambiente da Cloudflare.
+  chave_ia="$(git grep -nIE 'ANTHROPIC_API_KEY|api\.anthropic\.com' -- site 2>/dev/null || true)"
+  if [ -n "$chave_ia" ]; then
+    falha "o código do navegador fala com a API de IA ou cita a chave (use /api/explicar):"
+    printf '%s\n' "$chave_ia" | listar 1,2
+  else
+    ok "o navegador não fala com a API de IA nem conhece a chave"
+  fi
 fi
 
 # ---------------------------------------------------------------------------

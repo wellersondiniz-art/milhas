@@ -340,6 +340,36 @@ Para ligar no **modo de teste** (o dono faz o cadastro; nada é cobrado):
 Para o **modo real**, só depois do ok do dono e do advogado: trocar a chave e o segredo do webhook pelos de produção, definir `PLANO_MODO_REAL=ligado` na Cloudflare e trocar `PLANO_MODO_REAL`, os links e o preço no `config.js`.
 
 O que cada parte faz: regras e webhook em `servidor/plano/`, rota em `functions/api/plano/stripe.js`, página em `scripts/paginas/plano.js`, banco em `supabase/migrations/20261124000001_plano_pago.sql` (testes SQL em `supabase/testes/plano_pago.sql`, rodam com `npm run test:banco`).
+## Explica pra mim
+
+Embaixo do resultado pode aparecer o bloco **"Ficou com dúvida?"**, com o botão **"Explica pra mim"**. Ele escreve, em português simples, uma explicação do resultado e responde dúvidas como "vale a pena assinar o clube só para essa compra?".
+
+Como funciona (e por que é seguro):
+
+- O navegador **nunca** fala com o provedor de IA. Ele manda a loja, o valor, o perfil (ids, clube, milheiro) e a pergunta para a função `functions/api/explicar.js`, que roda na própria Cloudflare Pages. A chave da API fica só lá, como segredo.
+- A função **refaz a conta com o nosso motor** e os dados publicados. O modelo recebe esse resultado pronto (com as diferenças já calculadas, como "6.000 pontos a mais") e só explica. Se o melhor jeito do servidor não for o mesmo da tela (dados mudaram), ela pede para refazer a conta.
+- Modelo: **Claude Haiku 5.5** (o mais barato, US$ 0,10 / 0,50 por milhão de tokens; cerca de US$ 0,0005 por explicação). Reserva: **Claude Haiku 4.5**. Tempo-limite de 12 s por tentativa e 25 s no total, nova tentativa com espera crescente nos erros passageiros (429, 5xx, 529, rede) e troca para a reserva quando o principal não responde.
+- Injeção de prompt: a pergunta é tratada como dado. Ela vai neutralizada (sem `<` `>` nem caracteres invisíveis), dentro de uma etiqueta, e as regras ficam só no `system`. A resposta é **conferida por código** antes de chegar à tela: todo número precisa estar no resultado do motor, não pode citar loja/programa/cartão de fora do resultado, nem ter link, e-mail, HTML, Markdown ou pedido de dado pessoal. Se não passar, a pessoa vê um recado fixo. A tela monta tudo com `textContent`.
+- Pergunta com algo parecido com número de cartão, CPF, telefone ou e-mail nem sai do aparelho (e o servidor confere de novo).
+- Limites: 10 explicações por pessoa por dia (resumo HMAC do IP, que some em 2 dias), 200 por dia no total e **teto de US$ 5 por mês** (o servidor soma o custo real de cada chamada e não chama se a próxima não couber).
+
+O botão vem **desligado** (`EXPLICAR_LIGADO = false` em `site/js/explicar/config.js`). Sem a chave, a função responde 503 e não chama nada.
+
+### Para ligar
+
+1. **Conta na Anthropic** (<https://console.anthropic.com>): crie a conta, ponha crédito (o mínimo basta por meses) e, em **Limits**, defina um limite de gasto mensal baixo (por exemplo US$ 10). É a segunda trava, caso o teto do site falhe.
+2. Crie uma chave em **API Keys** com o nome `milhasdavez-explicar`. Copie: ela aparece uma vez só. Não cole em arquivo, chat nem commit.
+3. Antes de ligar, confira o modelo de verdade contra as tentativas de injeção, no seu computador: `ANTHROPIC_API_KEY=... npm run explicar:injecao` (custa menos de US$ 0,02). Tem que terminar com "Nenhum golpe chegou à tela".
+4. **Cloudflare**: **Storage & Databases** → **Workers KV** → **Create**, nome `milhasdavez-explicar-limite`.
+5. Em **Workers & Pages** → `milhasdavez` → **Settings**, só no ambiente **Production**:
+   - **Bindings** → **Add** → **KV namespace**. Variable name: `EXPLICAR_LIMITE`. Namespace: `milhasdavez-explicar-limite`.
+   - **Variables and Secrets** → **Add** → Type **Secret**, nome `ANTHROPIC_API_KEY`, valor: a chave do passo 2.
+   - Opcional (Type **Text**): `EXPLICAR_TETO_MENSAL_USD` (padrão `5`) e `EXPLICAR_POR_DIA_TOTAL` (padrão `200`).
+   - Em **Deployments**, na publicação mais recente da `main`: **...** → **Retry deployment**.
+6. **Revisão jurídica**: com o botão ligado, Privacidade e Termos ganham um trecho novo (envio da pergunta para a Anthropic, nos Estados Unidos). Mostre ao advogado junto com os outros textos.
+7. Troque `EXPLICAR_LIGADO` para `true` (num PR) e atualize `TEXTOS_ATUALIZADOS_EM` em `scripts/paginas/config.js`.
+
+Os nomes dos botões dos painéis são de memória: se algum estiver diferente, procure o mais parecido. Para desligar de novo: `EXPLICAR_LIGADO = false`, ou apague o segredo `ANTHROPIC_API_KEY` (a função passa a responder 503 na hora).
 
 ## Pastas
 
@@ -349,8 +379,8 @@ O que cada parte faz: regras e webhook em `servidor/plano/`, rota em `functions/
 - `testes/`: testes com `node --test`.
 - `scripts/`: validação dos dados, geração de páginas por loja, montagem de `dist/` (`scripts/publicar/`) e o fluxo semanal de ofertas (`coletar.js`, `extrair.js`, `propor-mudancas.js`, `aprovar-mudancas.js` e `scripts/atualizacao/`).
 - `coleta/`: gerada pelo fluxo semanal, fica fora do Git.
-- `functions/`: funções da Cloudflare Pages (hoje só `api/reportar.js`). `site/_routes.json` faz só `/api/*` passar por elas; o resto do site continua estático.
-- `servidor/`: o código dessas funções, testado com `node --test` (`servidor/reportar/`).
+- `functions/`: funções da Cloudflare Pages (`api/reportar.js`, `api/alertas/`, `api/plano/stripe.js` e `api/explicar.js`). `site/_routes.json` faz só `/api/*` passar por elas; o resto do site continua estático.
+- `servidor/`: o código dessas funções, testado com `node --test` (`servidor/reportar/`, `servidor/alertas/`, `servidor/plano/` e `servidor/explicar/`).
 - `seguranca/`: auditoria de segurança e checklist.
 
 ## Testes

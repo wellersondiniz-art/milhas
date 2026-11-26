@@ -29,6 +29,7 @@ import { h, juntar, linkExterno } from './html.js';
 import { configDoPlano } from './plano.js';
 import { BENEFICIOS } from '../../servidor/plano/regras.js';
 import { formatarCentavos } from '../../site/js/motor/formatar.js';
+import { EXPLICAR_LIGADO } from '../../site/js/explicar/config.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 
 const A_CONFIRMAR = 'A_CONFIRMAR';
@@ -165,13 +166,32 @@ function secaoAvisos() {
     p('Quer apagar um aviso que você mandou? Fale com a gente em ', contato(), ', dizendo a loja e o dia.'));
 }
 
-function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano }) {
+// Só entra quando o botão "Explica pra mim" está ligado
+// (site/js/explicar/config.js). Diz o que a função /api/explicar envia e
+// guarda. REVISÃO JURÍDICA: texto novo, ainda não revisado pelo advogado.
+function secaoExplicar() {
+  return secao('explica-pra-mim', 'Quando você pede "Explica pra mim"',
+    p('Embaixo do resultado há o botão "Explica pra mim", que escreve uma explicação do resultado em palavras simples. Ele é opcional. Só quando você toca nele, o seu aparelho manda para o nosso servidor:'),
+    lista([
+      'a loja e o valor da compra;',
+      juntar('o que você marcou em ', meuPerfil(), ' (programas, clube, cartões pelo nome, milheiro e cotação do dólar), para o servidor refazer a mesma conta;'),
+      'a pergunta que você escreveu, se escreveu.',
+    ]),
+    p('O nosso servidor refaz a conta e manda o resultado e a sua pergunta para a Anthropic, a empresa que faz o Claude, o modelo de inteligência artificial que escreve a explicação. A Anthropic fica nos Estados Unidos, então esse texto é processado fora do Brasil, conforme a ',
+      h('a', { href: 'https://www.anthropic.com/legal/privacy', rel: 'noopener noreferrer' }, 'política de privacidade da Anthropic'), '. Não mandamos o seu IP nem nada que identifique você.'),
+    p(forte('Não escreva dados pessoais na pergunta.'), ' Se a pergunta tiver algo parecido com número de cartão, CPF, telefone ou e-mail, o site nem envia.'),
+    p('A gente não guarda a pergunta nem a explicação. Para limitar o uso por dia, o servidor guarda por 2 dias um código embaralhado feito a partir do endereço de internet (IP), com um contador. O IP em si não fica guardado.'));
+}
+
+function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado }) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
     descricao: `O que o ${NOME_DO_SITE} guarda, onde guarda e o que nunca pede: sem número de cartão, sem CPF e sem cadastro.`,
     abertura: alertas
       ? 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho, a não ser que você peça um alerta por e-mail.'
+      : explicarLigado
+      ? 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho, a não ser que você peça uma explicação no "Explica pra mim".'
       : 'Resumo: não pedimos número de cartão, CPF nem cadastro. O que você marca fica só no seu aparelho.',
     corpo: [
       secao('nunca-pedimos', 'O que a gente nunca pede',
@@ -192,9 +212,11 @@ function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alert
           'o valor do milheiro, se você trocou o nosso pelo seu;',
           'a cotação do dólar, se você informou uma.',
         ]),
-        p(alertas
-          ? 'Esses dados não vão para nenhum servidor, nem para a gente, a não ser que você peça um alerta por e-mail (veja abaixo). A conta da calculadora é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'
-          : 'Esses dados não vão para nenhum servidor, nem para a gente. A conta é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'),
+        alertas
+          ? p('Esses dados não vão para nenhum servidor, nem para a gente, a não ser que você peça um alerta por e-mail (veja abaixo). A conta da calculadora é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).')
+          : explicarLigado
+          ? p('A conta é feita no seu aparelho. Esses dados só saem dele se você tocar em "Explica pra mim" (veja abaixo), e mesmo assim não ficam guardados. Se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).')
+          : p('Esses dados não vão para nenhum servidor, nem para a gente. A conta é feita no seu aparelho. Por isso, se você trocar de celular ou de navegador, o perfil não vai junto (veja abaixo como levar).'),
         p('Em janela anônima, o perfil some quando você fecha a janela.')),
       alertas ? secaoDeAlertas() : null,
       plano.ligado ? secaoDoPlanoNaPrivacidade() : null,
@@ -225,6 +247,7 @@ function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alert
         temAfiliado ? null
           : p('Hoje os links para as lojas são links comuns: não levam nenhum código nosso.')),
       reporteLigado ? secaoAvisos() : null,
+      explicarLigado ? secaoExplicar() : null,
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
     ],
@@ -288,7 +311,7 @@ function secaoDoPlanoNosTermos(plano) {
 // ---------------------------------------------------------------------------
 // Termos de uso
 
-function paginaTermos(temAfiliado, plano) {
+function paginaTermos(temAfiliado, plano, explicarLigado) {
   return {
     pasta: 'termos',
     titulo: 'Termos de uso',
@@ -314,6 +337,13 @@ function paginaTermos(temAfiliado, plano) {
       secao('nao-e-conselho', 'Não é conselho financeiro',
         p('O site não diz se vale a pena fazer um cartão, assinar um clube ou comprar alguma coisa. Ele só compara pontos. Anuidade, juros e o preço do produto em outras lojas ficam por sua conta.')),
       plano.ligado ? secaoDoPlanoNosTermos(plano) : null,
+      explicarLigado
+        ? secao('explica-pra-mim', 'O "Explica pra mim"',
+          p('O botão "Explica pra mim" mostra um texto automático, escrito por inteligência artificial a partir do resultado da calculadora. Ele não busca ofertas novas e não refaz a conta, mas pode errar ou se expressar mal.'),
+          p(forte('Se a explicação disser uma coisa e o resultado disser outra, vale o resultado. E se a loja ou o programa disserem outra, vale o que eles disserem.')),
+          p('A explicação não é conselho financeiro: ela não decide por você se vale assinar um clube, fazer um cartão ou comprar. Quando a resposta depende de algo que não está nos nossos dados, como o preço do clube, ela diz que não sabe.'),
+          p('Use o botão só para perguntas sobre a conta. Há um limite de explicações por dia, e pedidos abusivos podem ser bloqueados.'))
+        : null,
       secao('como-se-mantem', 'Como o site se mantém',
         plano.ligado ? p('O site se mantém com o plano pago opcional. Quem não assina usa a calculadora inteira, de graça.') : null,
         temAfiliado
@@ -435,6 +465,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   reporteLigado    padrão: REPORTE_LIGADO (site/js/reporte/config.js)
  *   alertas          padrão: ALERTAS_LIGADO (config.js); muda a Privacidade
  *   plano            padrão: configDoPlano() (config.js); com ligado, muda Privacidade e Termos
+ *   explicarLigado   padrão: EXPLICAR_LIGADO (site/js/explicar/config.js)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -449,10 +480,11 @@ export function paginasInstitucionais({
   reporteLigado = REPORTE_LIGADO,
   alertas = ALERTAS_LIGADO,
   plano = configDoPlano(),
+  explicarLigado = EXPLICAR_LIGADO,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email, reporteLigado);
-  const todas = [comoFunciona(plano), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano }), paginaTermos(temAfiliado, plano), contatoPagina];
+  const todas = [comoFunciona(plano), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado }), paginaTermos(temAfiliado, plano, explicarLigado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

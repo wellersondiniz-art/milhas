@@ -16,6 +16,8 @@ import { anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { montarLinkDeSaida } from './saida/links.js';
+import { EXPLICAR_LIGADO } from './explicar/config.js';
+import { montarExplicar } from './explicar/painel.js';
 import { maisAntiga } from './pwa/textos.js';
 import { criarMetricas, observarCliquesDeSaida, observarInstalacao } from './metricas/metricas.js';
 
@@ -150,6 +152,9 @@ function calcular({ focar = true, contar = true } = {}) {
     // A ordem já veio do motor. O link de saída só entra depois, sem mexer nela.
     const saida = montarLinkDeSaida(loja.id, dados);
     resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil, saida }));
+    if (EXPLICAR_LIGADO && jeitos.length) {
+      resultado.append(montarExplicar({ lojaId: loja.id, centavos, perfil: perfilSalvo, melhor: jeitos[0] }));
+    }
     anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
     lojaDaConta = loja.id;
     if (contar) metricas.registrar('calculo', { loja: loja.id });
