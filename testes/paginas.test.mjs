@@ -201,6 +201,63 @@ test('ofertas de hoje: só as ativas, da que mais rende para a que menos rende',
   assert.match(texto, /Magalu · sem oferta ativa hoje/);
 });
 
+// ---------------------------------------------------------------------------
+// Ciclo de vida nas páginas (as regras estão em site/js/motor/ciclo.js)
+
+async function dadosDoCiclo() {
+  const dados = await dadosDeTeste();
+  const base = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  dados.ofertas.push(
+    { ...base, id: 'livelo-shopee-vence', loja_id: 'shopee', fim: '2026-11-25' },
+    { ...base, id: 'livelo-centauro-antiga', loja_id: 'centauro', verificado_em: '2026-11-01' },
+    { ...base, id: 'livelo-netshoes-reconferir', loja_id: 'netshoes', verificado_em: '2026-10-20' },
+  );
+  return dados;
+}
+
+test('ciclo: oferta que vence em até 3 dias ganha selo na loja e na lista de ofertas', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  assert.match(p['loja/shopee/index.html'], /<span class="selo selo--aviso">Vence em 3 dias<\/span>/);
+  assert.doesNotMatch(p['loja/amazon/index.html'], /Vence em/);
+  const linhas = p['ofertas/index.html'].match(/<tbody>[\s\S]*<\/tbody>/)[0];
+  assert.match(linhas, /até 25\/11\/2026 <span class="selo selo--aviso">Vence em 3 dias<\/span>/);
+});
+
+test('ciclo: conferida há mais de 14 dias fica na lista, com aviso', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  assert.match(p['loja/centauro/index.html'], /Conferida há 21 dias/);
+  assert.match(textoVisivel(p['loja/centauro/index.html']), /Dado verificado há mais de 14 dias \(21 dias\)/);
+  const linhas = p['ofertas/index.html'].match(/<tbody>[\s\S]*<\/tbody>/)[0];
+  assert.match(linhas, /Centauro/);
+  assert.match(linhas, /01\/11\/2026 <span class="selo selo--aviso">dado antigo<\/span>/);
+});
+
+test('ciclo: conferida há mais de 30 dias sai do ranking até reconferir', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  const ofertas = p['ofertas/index.html'];
+  assert.doesNotMatch(ofertas.match(/<tbody>[\s\S]*<\/tbody>/)[0], /Netshoes/);
+  assert.match(textoVisivel(ofertas), /Fora da lista até a gente conferir de novo Netshoes · Livelo: conferida pela última vez em 20\/10\/2026, há 33 dias; fica fora da conta até ser conferida de novo\./);
+  const loja = textoVisivel(p['loja/netshoes/index.html']);
+  assert.match(loja, /hoje não há oferta de pontos ativa/);
+  assert.match(loja, /Ofertas fora da conta hoje Oferta Livelo: conferida pela última vez em 20\/10\/2026, há 33 dias/);
+});
+
+test('ciclo: vencida some do ranking e vai para o histórico', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  assert.match(textoVisivel(p['loja/magalu/index.html']), /Histórico: ofertas que já acabaram Oferta Azul Fidelidade: terminou em 12\/11\/2026/);
+  assert.doesNotMatch(textoVisivel(p['loja/magalu/index.html']), /Ofertas fora da conta hoje/);
+  assert.match(textoVisivel(p['ofertas/index.html']), /Histórico: ofertas que já acabaram Magalu · Azul Fidelidade: terminou em 12\/11\/2026\./);
+});
+
+test('ciclo: no dia seguinte ao último, a oferta sai da lista e entra no histórico', async () => {
+  const dados = await dadosDoCiclo();
+  const ultimoDia = porCaminho(gerarPaginas(dados, { hoje: '2026-11-25', urlBase: BASE }).arquivos);
+  assert.match(ultimoDia['loja/shopee/index.html'], /Vence hoje/);
+  const depois = porCaminho(gerarPaginas(dados, { hoje: '2026-11-26', urlBase: BASE }).arquivos);
+  assert.doesNotMatch(depois['ofertas/index.html'].match(/<tbody>[\s\S]*<\/tbody>/)[0], /Shopee/);
+  assert.match(textoVisivel(depois['loja/shopee/index.html']), /Histórico: ofertas que já acabaram Oferta Livelo: terminou em 25\/11\/2026/);
+});
+
 test('ofertas de hoje sem nenhuma ativa: diz isso com clareza', async () => {
   const dados = await lerDados(new URL('dados/', RAIZ));
   const texto = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['ofertas/index.html']);

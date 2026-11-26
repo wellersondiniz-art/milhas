@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { aplicarMascara, erroDoValor, MAX_DIGITOS, VALOR_MAXIMO_CENTAVOS } from '../site/js/tela/moeda.js';
 import { filtrarLojas, lojaPeloNome, normalizar } from '../site/js/tela/lojas.js';
 import {
-  agoraLocal, anuncioDoResultado, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  anuncioDoResultado, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, seloDeVencimento, textosAntesDeComprar, textosConferido,
 } from '../site/js/tela/textos.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
 import { copiarDados, ARQUIVOS } from '../scripts/copiar-dados.js';
@@ -113,8 +113,13 @@ const calc = (perfil, valor = 10000) =>
   calcularJeitosDeComprar(perfil, { loja_id: 'loja-a', valor_centavos: valor, tipo_vendedor: 'loja' }, DADOS_MOTOR, HOJE);
 const PERFIL = { programas: [{ programa_id: 'prog-a', clube_ativo: false }, { programa_id: 'prog-b', clube_ativo: false }], cartoes: ['cartao-a'] };
 
-test('agoraLocal monta "AAAA-MM-DDTHH:MM" com a hora do aparelho', () => {
-  assert.equal(agoraLocal(new Date(2026, 0, 5, 7, 3)), '2026-01-05T07:03');
+test('selo de vencimento: só quando a oferta vence em até 3 dias', () => {
+  const com = (estado, dias) => ({ situacao_da_oferta: { estado, dias_para_vencer: dias } });
+  assert.equal(seloDeVencimento(com('vence_logo', 0)), 'Vence hoje');
+  assert.equal(seloDeVencimento(com('vence_logo', 1)), 'Vence amanhã');
+  assert.equal(seloDeVencimento(com('vence_logo', 3)), 'Vence em 3 dias');
+  assert.equal(seloDeVencimento(com('ativa', 10)), null);
+  assert.equal(seloDeVencimento({ situacao_da_oferta: null }), null);
 });
 
 test('frase do jeito: com oferta, sem oferta e sem nada', () => {

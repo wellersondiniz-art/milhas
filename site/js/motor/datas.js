@@ -47,3 +47,25 @@ export function horasGarantidasDesde(desde, agora) {
   const inicio = lerDataHora(desde) + (temHora(desde) ? 0 : MS_POR_DIA);
   return (lerDataHora(agora) - inicio) / MS_POR_HORA;
 }
+
+const RELOGIO_SAO_PAULO = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Sao_Paulo',
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
+
+/**
+ * Data e hora de um instante no horário de São Paulo: "AAAA-MM-DDTHH:MM".
+ * As datas das ofertas são de Brasília; assim a virada do dia é a mesma para
+ * todo mundo, em qualquer fuso do aparelho. Recebe o instante (Date ou
+ * milissegundos): quem chama decide qual é o "agora".
+ */
+export function dataHoraEmSaoPaulo(instante) {
+  const partes = {};
+  for (const { type, value } of RELOGIO_SAO_PAULO.formatToParts(instante)) partes[type] = value;
+  return `${partes.year}-${partes.month}-${partes.day}T${partes.hour}:${partes.minute}`;
+}
+
+/** "AAAA-MM-DD" + n dias de calendário → "AAAA-MM-DD". */
+export function somarDias(data, n) {
+  return new Date(lerDataHora(soData(data)) + n * MS_POR_DIA).toISOString().slice(0, 10);
+}
