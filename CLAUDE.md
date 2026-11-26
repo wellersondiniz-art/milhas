@@ -82,4 +82,5 @@ Vamos preenchendo conforme o projeto cresce.
 | Servir localmente | `npm run servir` (serve `dist/`) |
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
+| Produtos com preço (APIs oficiais) | `npm run produtos` (o build já roda); ver sem credencial: `npm run produtos:demo` |
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |

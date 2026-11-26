@@ -1,0 +1,38 @@
+name: remontar o site (preços de produtos)
+
+# Os preços de produto valem no máximo 24 horas (regra da Amazon, usada para
+# todas as lojas). Para eles não sumirem da página, o site precisa ser montado
+# de novo todo dia. Este trabalho só chama o "deploy hook" da Cloudflare Pages:
+# quem busca os preços é o próprio build da Cloudflare (npm run build).
+#
+# Fica parado até existir o segredo CLOUDFLARE_DEPLOY_HOOK no repositório
+# (Settings > Secrets and variables > Actions). Sem ele, termina sem fazer nada.
+
+on:
+  schedule:
+    # 09:17 UTC = 06:17 em Brasília, todo dia.
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  remontar:
+    name: Pedir build novo à Cloudflare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Chamar o deploy hook
+        env:
+          GANCHO: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$GANCHO" ]; then
+            echo "Sem CLOUDFLARE_DEPLOY_HOOK: nada a fazer (vitrine de produtos ainda não ligada)."
+            exit 0
+          fi
+          case "$GANCHO" in
+            https://api.cloudflare.com/*) ;;
+            *) echo "CLOUDFLARE_DEPLOY_HOOK precisa começar com https://api.cloudflare.com/"; exit 1 ;;
+          esac
+          curl --fail --silent --show-error --max-time 30 -X POST "$GANCHO" > /dev/null
+          echo "Build novo pedido à Cloudflare."

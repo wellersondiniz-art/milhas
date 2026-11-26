@@ -13,6 +13,7 @@ import { escaparXml, h, juntar, linkExterno } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 import { paginasInstitucionais } from './institucionais.js';
 import { PASTA_ONDE_RENDE_MAIS, blocoDaLoja, paginaOndeRendeMais } from './onde-rende-mais.js';
+import { SCRIPT_VALIDADE, produtosQueValem, secaoDaLoja, vitrineTemAfiliado } from './produtos.js';
 
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const ID_SEGURO = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -250,7 +251,7 @@ function cartaoDaResposta(dados, loja, melhor, resposta, raiz) {
     botao);
 }
 
-export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
+export function paginaDaLoja(dados, loja, { hoje, urlBase, vitrine = null, agora = null }) {
   const raiz = '../../';
   const caminho = `loja/${loja.id}/`;
   const ativas = ofertasAtivasDaLoja(dados, loja.id, hoje);
@@ -259,6 +260,7 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
   const idsAtivas = new Set(ativas.map((a) => a.oferta.id));
   const foraDaConta = dados.ofertas.filter((o) => o.loja_id === loja.id && !idsAtivas.has(o.id));
   const nomeProg = (id) => dados.programas.find((p) => p.id === id)?.nome ?? id;
+  const produtos = vitrine ? secaoDaLoja(dados, loja, vitrine, { hoje, agora }) : null;
 
   const titulo = `${loja.nome}: pontos e milhas hoje | ${NOME_DO_SITE}`;
   const descricao = resposta.comOferta
@@ -273,6 +275,7 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
       h('p', { class: 'texto-suave texto-pequeno' }, `Situação em ${formatarData(hoje)}, com os dados conferidos até agora.`)),
     cartaoDaResposta(dados, loja, melhor, resposta, raiz),
     blocoDaLoja(dados, loja, hoje, raiz),
+    produtos,
     h('section', { class: 'pilha', 'aria-labelledby': 'regras-titulo' },
       h('h2', { id: 'regras-titulo', class: 'pagina__subtitulo' }, ativas.length ? 'Regras das ofertas ativas' : 'Ofertas ativas'),
       ativas.length
@@ -319,8 +322,9 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
       titulo, descricao, caminho, raiz, urlBase, atual: null,
       dadosEstruturados: estruturados,
       principal: juntar(conteudo, termosExplicados(conteudo)),
+      scripts: produtos ? [SCRIPT_VALIDADE] : [],
     }),
-    resumo: { loja: loja.id, ofertasAtivas: ativas.length, rende: resposta.rende, frase: resposta.frase },
+    resumo: { loja: loja.id, ofertasAtivas: ativas.length, rende: resposta.rende, frase: resposta.frase, produtos: Boolean(produtos) },
   };
 }
 
@@ -443,16 +447,25 @@ export function normalizarUrlBase(url) {
  * @param {object} opcoes { hoje: "AAAA-MM-DD", urlBase: string|null }
  * @returns {{ arquivos: {caminho, conteudo}[], resumo: object, avisos: string[] }}
  */
-export function gerarPaginas(dados, { hoje, urlBase = null }) {
+/**
+ * vitrine: produtos com preço vindo das APIs (scripts/produtos/atualizar.js), ou null.
+ * agora:   data e hora ISO do build; produto com preço vencido nesse momento fica de fora.
+ */
+export function gerarPaginas(dados, { hoje, urlBase = null, vitrine = null, agora = null }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(hoje ?? '')) throw new Error(`hoje precisa ser AAAA-MM-DD (recebido: ${hoje})`);
   const base = normalizarUrlBase(urlBase);
   for (const loja of dados.lojas) {
     if (!ID_SEGURO.test(loja.id)) throw new Error(`id de loja inválido para virar pasta: ${JSON.stringify(loja.id)}`);
   }
-  const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base }));
+  if (vitrine && !Number.isFinite(Date.parse(agora))) throw new Error(`com vitrine, agora precisa ser data e hora ISO (recebido: ${agora})`);
+  const comVitrine = { vitrine, agora };
+  const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base, ...comVitrine }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
-  const ondeRendeMais = paginaOndeRendeMais(dados, { hoje, urlBase: base });
-  const institucionais = paginasInstitucionais({ hoje, urlBase: base });
+  const ondeRendeMais = paginaOndeRendeMais(dados, { hoje, urlBase: base, ...comVitrine });
+  const temProdutos = Boolean(vitrine) && produtosQueValem(vitrine, dados, agora).length > 0;
+  const institucionais = paginasInstitucionais({
+    hoje, urlBase: base, temProdutos, temAfiliado: temProdutos && vitrineTemAfiliado(vitrine, dados, agora),
+  });
   const arquivos = [ofertas, ondeRendeMais, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {
@@ -461,7 +474,8 @@ export function gerarPaginas(dados, { hoje, urlBase = null }) {
   } else {
     avisos.push('URL base do site A_CONFIRMAR: sem link canônico, sem og:url e sem sitemap.xml. Defina em scripts/paginas/config.js, ou use URL_DO_SITE / --url-base.');
   }
+  if (vitrine?.demo) avisos.push('Vitrine de DEMONSTRAÇÃO: produtos e preços inventados. Não publique estas páginas.');
   arquivos.push({ caminho: 'robots.txt', conteudo: robots(base) });
-  return { arquivos, resumo: { ofertas: ofertas.resumo, ondeRendeMais: ondeRendeMais.resumo, lojas: lojas.map((l) => l.resumo) }, avisos };
+  return { arquivos, resumo: { ofertas: ofertas.resumo, ondeRendeMais: ondeRendeMais.resumo, lojas: lojas.map((l) => l.resumo), produtos: temProdutos }, avisos };
 }
 

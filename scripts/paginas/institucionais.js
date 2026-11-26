@@ -96,7 +96,7 @@ function comoFunciona() {
 // ---------------------------------------------------------------------------
 // Sobre os dados
 
-function sobreDados() {
+function sobreDados({ temProdutos }) {
   return {
     pasta: 'sobre-os-dados',
     titulo: 'Sobre os dados',
@@ -118,6 +118,14 @@ function sobreDados() {
           'Quando falta uma semana ou menos para a oferta acabar, a conta avisa.',
           'Quando um dado foi conferido há mais de 14 dias, a conta avisa que ele pode estar desatualizado.',
         ])),
+      temProdutos ? secao('precos-de-produtos', 'Preços de produtos',
+        p('Alguns produtos aparecem com nome e preço. Esses dados vêm da API oficial de cada loja ou da rede de afiliados dela, nunca de cópia do site da loja.'),
+        lista([
+          'Cada preço mostra a data e a hora em que foi consultado, no horário de Brasília.',
+          'Um preço vale por no máximo 24 horas. Depois disso ele sai da página, e a página pede para você conferir na loja.',
+          'O preço e a disponibilidade podem mudar a qualquer momento. Vale o que a loja mostrar na hora da compra.',
+          'Os pontos de cada produto são a nossa conta, com as ofertas que conferimos, e seguem as mesmas regras do resto do site.',
+        ])) : null,
       secao('estimativas', 'O que é estimativa',
         p('Alguns números não são regra da loja nem do banco. São estimativas, e você pode trocar pelos seus em ', meuPerfil(), ':'),
         lista([
@@ -135,7 +143,7 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade() {
+function paginaPrivacidade({ temAfiliado }) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -176,7 +184,10 @@ function paginaPrivacidade() {
         p('O site fica hospedado na Cloudflare. Como em qualquer site, para entregar as páginas o servidor recebe dados técnicos de cada acesso, como o endereço de internet (IP) e o tipo de navegador. A gente não usa esses dados para saber quem você é. Veja também a ',
           h('a', { href: 'https://www.cloudflare.com/privacypolicy/', rel: 'noopener noreferrer' }, 'política de privacidade da Cloudflare'), '.')),
       secao('links-fora', 'Links para outros sites',
-        p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.')),
+        p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.'),
+        temAfiliado
+          ? p('A exceção são os links de produto marcados como de afiliado: eles levam um código do site, para a loja saber que a visita veio daqui. Esse código é o mesmo para todo mundo e não identifica você.')
+          : null),
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
     ],
@@ -186,7 +197,7 @@ function paginaPrivacidade() {
 // ---------------------------------------------------------------------------
 // Termos de uso
 
-function paginaTermos() {
+function paginaTermos({ temAfiliado }) {
   return {
     pasta: 'termos',
     titulo: 'Termos de uso',
@@ -211,9 +222,15 @@ function paginaTermos() {
         p(`O ${NOME_DO_SITE} não é loja, banco nem programa de pontos. Não vendemos produtos, não emitimos cartão e não creditamos pontos. Se os pontos não caírem, quem resolve é o programa ou a loja. Se quiser, avise a gente também, para corrigirmos a informação.`)),
       secao('nao-e-conselho', 'Não é conselho financeiro',
         p('O site não diz se vale a pena fazer um cartão, assinar um clube ou comprar alguma coisa. Ele só compara pontos. Anuidade, juros e o preço do produto em outras lojas ficam por sua conta.')),
-      secao('como-se-mantem', 'Como o site se mantém',
-        p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
-        p('Se um dia isso mudar, vamos avisar de forma clara, perto de cada link, que podemos ganhar uma comissão sem custo extra para você. E a ordem do resultado vai continuar sendo só pelos pontos.')),
+      secao('como-se-mantem', 'Como o site se mantém', ...(temAfiliado
+        ? [
+          p('Alguns links de produto são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você. Cada um desses links tem esse aviso logo abaixo.'),
+          p('A comissão não muda a conta nem a ordem: a lista é sempre pelos pontos. Não recebemos de bancos nem de programas de pontos.'),
+        ]
+        : [
+          p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
+          p('Se um dia isso mudar, vamos avisar de forma clara, perto de cada link, que podemos ganhar uma comissão sem custo extra para você. E a ordem do resultado vai continuar sendo só pelos pontos.'),
+        ])),
       secao('mudancas', 'Mudanças neste texto',
         p('Se este texto mudar, a data no começo da página muda junto. Dúvidas? Fale com a gente em ', contato(), '.')),
     ],
@@ -302,6 +319,9 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   revisaoPendente  padrão: REVISAO_JURIDICA_PENDENTE (config.js)
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
+ *   temProdutos      a vitrine tem produto com preço (explica em Sobre os dados)
+ *   temAfiliado      algum produto tem link de afiliado (muda Termos e Privacidade;
+ *                    troque TEXTOS_ATUALIZADOS_EM quando isso passar a valer)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -310,10 +330,12 @@ export function paginasInstitucionais({
   revisaoPendente = REVISAO_JURIDICA_PENDENTE,
   email = EMAIL_DE_CONTATO,
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
+  temProdutos = false,
+  temAfiliado = false,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(), paginaTermos(), contatoPagina];
+  const todas = [comoFunciona(), sobreDados({ temProdutos }), paginaPrivacidade({ temAfiliado }), paginaTermos({ temAfiliado }), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

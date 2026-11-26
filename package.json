@@ -16,7 +16,7 @@
     "auditar": "bash seguranca/auditar.sh",
     "dados": "node scripts/copiar-dados.js",
     "paginas": "node scripts/gerar-paginas.js",
-    "build": "node scripts/copiar-dados.js && node scripts/gerar-paginas.js && node scripts/gerar-sw.js && node scripts/publicar/montar-dist.js",
+    "build": "node scripts/copiar-dados.js && node scripts/produtos/atualizar.js && node scripts/gerar-paginas.js && node scripts/gerar-sw.js && node scripts/publicar/montar-dist.js",
     "sw": "node scripts/gerar-sw.js",
     "servir:fonte": "node scripts/copiar-dados.js && node scripts/gerar-paginas.js && node scripts/gerar-sw.js && python3 -m http.server 8080 --bind 127.0.0.1 --directory site",
     "dist": "node scripts/publicar/montar-dist.js",
@@ -24,7 +24,9 @@
     "extrair": "node scripts/extrair.js",
     "propor": "node scripts/propor-mudancas.js",
     "aprovar": "node scripts/aprovar-mudancas.js",
-    "atualizacao:demo": "node testes/atualizacao/demo.mjs"
+    "atualizacao:demo": "node testes/atualizacao/demo.mjs",
+    "produtos": "node scripts/produtos/atualizar.js",
+    "produtos:demo": "node scripts/produtos/demo.js && PASTA_DO_SITE=demo-produtos/site PORTA=8081 node testes/navegador/servidor.mjs"
 
   },
   "devDependencies": {

@@ -77,3 +77,6 @@ testes/navegador/relatorio/
 # Coleta semanal de ofertas (scripts/coletar.js): texto bruto das páginas,
 # respostas do modelo e relatórios. Fica só no seu computador.
 coleta/
+
+# Demonstração da vitrine de produtos (npm run produtos:demo)
+demo-produtos/

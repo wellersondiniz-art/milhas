@@ -4,3 +4,4 @@ export {
   ESCALA_PONTOS, ESCALA_VALOR, arredondarParaCentavos, formatarCentavos, formatarCotacao, formatarData, formatarPontos, formatarValor,
 } from './formatar.js';
 export { rankearOportunidades } from './oportunidades.js';
+export { pontosDoProduto, rankearProdutos } from './produtos.js';
