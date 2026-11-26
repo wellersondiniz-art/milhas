@@ -11,6 +11,7 @@ import {
   textosAntesDeComprar, textosConferido,
 } from './textos.js';
 import { formatarData, naLoja } from '../motor/index.js';
+import { dataHoraEmSaoPaulo, diasEntre } from '../motor/datas.js';
 
 /** Link para fora do site: só https, sem passar quem somos. */
 function linkDaFonte(url, texto, rotuloOculto) {
@@ -146,12 +147,12 @@ function blocoSemParceria(loja, nomePrograma = (id) => id) {
       linkDaFonte(s.fonte_url, `Fonte: ${siteDaFonte(s.fonte_url)}`, ` (${nomePrograma(s.programa_id)})`)))));
 }
 
-/** Dias entre a data (AAAA-MM-DD) e hoje no aparelho. Só para o texto "há N dias". */
-function diasDesde(data) {
-  const [a, m, d] = data.split('-').map(Number);
-  const hoje = new Date();
-  const ms = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) - Date.UTC(a, m - 1, d);
-  return Math.max(0, Math.round(ms / 86_400_000));
+/**
+ * Dias entre a data (AAAA-MM-DD) e hoje em São Paulo, como no resto da conta
+ * (num aparelho em outro fuso, à noite, "hoje" virava "ontem"). Só para o texto "há N dias".
+ */
+function diasDesde(data, agora = new Date()) {
+  return Math.max(0, diasEntre(data, dataHoraEmSaoPaulo(agora)));
 }
 
 /**

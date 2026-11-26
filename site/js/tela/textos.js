@@ -98,7 +98,7 @@ export function destaqueDoJeito(jeito) {
 
 /** Linha da validade. Sem oferta, os pontos do cartão não vencem com a loja. */
 export function textoValidade(jeito) {
-  if (jeito.validade_da_oferta) return `Validade da oferta: ${jeito.validade_da_oferta.texto.replace(/^De /, 'de ')}`;
+  if (jeito.validade_da_oferta) return `Validade da oferta: ${jeito.validade_da_oferta.texto.replace(/^(De|Regra|Início) /, (m) => m.toLowerCase())}`;
   return 'Sem oferta da loja: só os pontos normais do cartão.';
 }
 

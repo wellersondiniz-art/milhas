@@ -166,6 +166,10 @@ test('anúncio para leitor de tela: valor, pontos, como comprar e quantos jeitos
 test('validade: da oferta, ou explica que é ponto de sempre do cartão', () => {
   const { comOferta, semOferta } = porTipo(calc(PERFIL));
   assert.equal(textoValidade(comOferta), 'Validade da oferta: de 01/11/2026 até 30/11/2026.');
+  assert.equal(textoValidade({ validade_da_oferta: { texto: 'Regra de sempre do programa, sem data de fim publicada.' } }),
+    'Validade da oferta: regra de sempre do programa, sem data de fim publicada.');
+  assert.equal(textoValidade({ validade_da_oferta: { texto: 'Início não confirmado, fim não confirmado.' } }),
+    'Validade da oferta: início não confirmado, fim não confirmado.');
   assert.equal(textoValidade(semOferta), 'Sem oferta da loja: só os pontos normais do cartão.');
 });
 
