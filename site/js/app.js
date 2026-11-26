@@ -5,7 +5,7 @@
 // Ficar numa página só deixa o perfil vivo na memória quando o navegador
 // não deixa salvar (modo privado): trocar de tela não perde nada.
 
-import { calcularJeitosDeComprar, formatarCentavos } from './motor/index.js';
+import { calcularJeitosDeComprar, formatarCentavos, naLoja } from './motor/index.js';
 import { criarBuscaDeLoja } from './tela/busca-loja.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
 import { abrirArmazem } from './perfil/armazem.js';
@@ -129,7 +129,7 @@ function calcular({ focar } = { focar: true }) {
   const valorTexto = formatarCentavos(centavos);
   passoResultado.hidden = false;
   mostrandoResultado = true;
-  titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} na ${loja.nome}`;
+  titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} ${naLoja(loja)}`;
   const { perfil, semPerfil } = perfilDaConta();
   try {
     const hoje = agoraLocal(new Date());
@@ -157,10 +157,11 @@ function calcular({ focar } = { focar: true }) {
       ajuste: ajuste.elemento,
       valeAPena: montarValeAPena({ jeitos, valorCentavos: centavos, dados, perfil }),
       faltaDolar: premissas.some((p) => p.chave === 'dolar' && p.falta),
+      nomePrograma: (id) => dados.programas.find((p) => p.id === id)?.nome ?? id,
     }));
     // Quem estava mexendo no painel continua onde estava.
     if (ativo && ajuste.elemento.contains(ativo)) ativo.focus();
-    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
+    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja, valorTexto }));
   } catch (erro) {
     anunciar('');
     console.error(erro);

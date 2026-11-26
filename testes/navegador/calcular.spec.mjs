@@ -111,14 +111,37 @@ test.describe('quando os dados não carregam', () => {
 test.describe('com os dados reais do repositório', () => {
   test.use({ serviceWorkers: 'block' });
 
+  test('Magalu sem perfil: oferta real com selo de data e fonte, e destaque da campanha', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-25T15:00:00-03:00'));
+    await abrirInicio(page, '/?loja=magalu');
+    await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('100000');
+    await page.getByRole('button', { name: 'Ver o resultado' }).click();
+    const melhor = cartoesDoResultado(page).first();
+    await expect(melhor).toContainText('Conferido hoje (25/11/2026)');
+    await expect(melhor.getByRole('link', { name: 'livelo.com.br', exact: true })).toHaveAttribute('href', /^https:\/\/www\.livelo\.com\.br\//);
+    await expect(melhor).toContainText('Rende mais nesta oferta');
+  });
+
+  test('Amazon: diz o que conferimos e por que não há oferta, com fonte', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-25T15:00:00-03:00'));
+    await abrirInicio(page, '/?loja=amazon');
+    await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('10000');
+    await page.getByRole('button', { name: 'Ver o resultado' }).click();
+    await expect(page.getByText('A Amazon não tem oferta de pontos valendo hoje')).toBeVisible();
+    await expect(page.getByText(/A Livelo diz que a parceria para juntar pontos na Amazon está inativa\. Conferido hoje/)).toBeVisible();
+  });
+
   test('toda loja calcula sem erro', async ({ page }) => {
     const lojas = JSON.parse(await readFile(new URL('../../dados/lojas.json', import.meta.url), 'utf8'));
     for (const loja of lojas) {
       await abrirInicio(page, `/?loja=${loja.id}`);
       await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('129900');
       await page.getByRole('button', { name: 'Ver o resultado' }).click();
-      await expect(page.getByRole('heading', { level: 2, name: `R$ 1.299,00 na ${loja.nome}` })).toBeVisible();
+      const na = { o: 'no', as: 'nas', os: 'nos' }[loja.artigo] ?? 'na';
+      await expect(page.getByRole('heading', { level: 2, name: `R$ 1.299,00 ${na} ${loja.nome}` })).toBeVisible();
       await expect(cartoesDoResultado(page).first()).toContainText('Melhor jeito');
+      // Todo card mostra quando o dado foi conferido.
+      await expect(cartoesDoResultado(page).first()).toContainText('Conferido');
       await expect(page.getByText('Não deu para calcular')).toHaveCount(0);
     }
   });

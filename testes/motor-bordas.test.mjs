@@ -212,7 +212,7 @@ describe('dado antigo (14 dias)', () => {
     const d = dadosCom((x) => { x.ofertas[0].verificado_em = '2026-10-27'; });
     const ofertaConferida = (hoje) => ofertaDe(calcular(perfil(), compra(), d, hoje)).conferido_em
       .find((c) => c.rotulo === 'oferta Programa A na Loja X');
-    assert.deepEqual(ofertaConferida('2026-11-10'), { rotulo: 'oferta Programa A na Loja X', verificado_em: '2026-10-27', dias: 14, antigo: false });
+    assert.deepEqual(ofertaConferida('2026-11-10'), { rotulo: 'oferta Programa A na Loja X', verificado_em: '2026-10-27', dias: 14, antigo: false, fonte_url: FONTE });
     assert.equal(ofertaConferida('2026-11-11').antigo, true);
   });
 

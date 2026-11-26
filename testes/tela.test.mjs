@@ -9,7 +9,8 @@ import { pathToFileURL } from 'node:url';
 import { aplicarMascara, erroDoValor, MAX_DIGITOS, VALOR_MAXIMO_CENTAVOS } from '../site/js/tela/moeda.js';
 import { filtrarLojas, lojaPeloNome, normalizar } from '../site/js/tela/lojas.js';
 import {
-  agoraLocal, anuncioDoResultado, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  aLoja, agoraLocal, anuncioDoResultado, destaqueDoJeito, fraseDoJeito, haQuantoTempo, palavrasQueAparecem, seloDeConferencia, siteDaFonte,
+  textoValidade, textosAntesDeComprar, textosConferido,
 } from '../site/js/tela/textos.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
 import { copiarDados, ARQUIVOS } from '../scripts/copiar-dados.js';
@@ -163,6 +164,35 @@ test('conferido: uma linha por dado usado, marcando o antigo', () => {
   const linhas = textosConferido(comOferta);
   assert.ok(linhas.some((l) => l.texto === 'Oferta Programa B na Loja A: conferido em 09/11/2026 (ontem)' && !l.antigo));
   assert.ok(linhas.some((l) => l.texto === 'Cartão Cartão A: conferido em 01/10/2026 (há 40 dias)' && l.antigo));
+});
+
+test('selo de confiança: data da oferta e site da fonte; sem oferta, a do cartão', () => {
+  const [comOferta, semOferta] = calc(PERFIL);
+  const selo = seloDeConferencia(comOferta);
+  assert.equal(selo.texto, 'Conferido ontem (09/11/2026)');
+  assert.equal(selo.site, siteDaFonte(FONTE));
+  assert.equal(selo.antigo, false);
+  const doCartao = seloDeConferencia(semOferta);
+  assert.equal(doCartao.texto, 'Conferido há 40 dias (01/10/2026)');
+  assert.equal(doCartao.antigo, true);
+  assert.equal(seloDeConferencia({ conferido_em: [] }), null);
+  const linhas = textosConferido(comOferta);
+  assert.ok(linhas.every((l) => l.fonte_url === FONTE));
+});
+
+test('siteDaFonte, haQuantoTempo e artigos da loja', () => {
+  assert.equal(siteDaFonte('https://www.livelo.com.br/juntar-pontos/parceiros/magalu/MZL'), 'livelo.com.br');
+  assert.equal(siteDaFonte('http://inseguro.com'), null);
+  assert.equal(siteDaFonte('https://'), null);
+  assert.equal(siteDaFonte(undefined), null);
+  assert.equal(haQuantoTempo(0), 'hoje');
+  assert.equal(haQuantoTempo(1), 'ontem');
+  assert.equal(haQuantoTempo(5), 'há 5 dias');
+  assert.equal(aLoja({ nome: 'Casas Bahia', artigo: 'as' }), 'As Casas Bahia');
+  assert.equal(aLoja({ nome: 'Mercado Livre', artigo: 'o' }), 'O Mercado Livre');
+  assert.equal(aLoja('Loja A'), 'A Loja A');
+  const [comOferta] = calc(PERFIL);
+  assert.equal(fraseDoJeito(comOferta, { nome: 'Mercado Livre', artigo: 'o' }), 'Compre no Mercado Livre pela oferta do Programa B e pague com o cartão Cartão A.');
 });
 
 test('antes de comprar: condições, prazo e o que renderia mais (clube 24 horas antes)', () => {

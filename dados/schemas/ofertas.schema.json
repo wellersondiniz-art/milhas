@@ -67,6 +67,14 @@
       "fonte_url": { "$ref": "#/$defs/url" },
       "verificado_em": { "$ref": "#/$defs/data" },
       "observacoes": { "type": "string" },
+      "vigencia": {
+        "description": "Opcional. \"regra_padrao\" = regra de sempre do parceiro, sem data de fim publicada (fim fica A_CONFIRMAR). Sem o campo, é uma campanha com datas.",
+        "enum": ["campanha", "regra_padrao"]
+      },
+      "destaques": {
+        "description": "Opcional. Frases curtas com o que rende mais dentro da oferta (ex.: categoria com pontos extras). Só aparecem na tela; não entram na conta.",
+        "$ref": "#/$defs/lista_de_textos"
+      },
       "status": {
         "description": "Opcional. A_CONFIRMAR tira a oferta do ranking.",
         "enum": ["confirmado", "A_CONFIRMAR"]

@@ -17,7 +17,21 @@
     "aceita_cupom": true,
     "observacoes": "Rodapé tem \"Venda na Amazon\"; página inicial tem seção de cupons.",
     "fonte_url": "https://www.amazon.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "livelo",
+        "motivo": "A Livelo diz que a parceria para juntar pontos na Amazon está inativa.",
+        "fonte_url": "https://www.livelo.com.br/intermediaria-amazon",
+        "verificado_em": "2026-11-25"
+      },
+      {
+        "programa_id": "esfera",
+        "motivo": "A Amazon não aparece na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "mercado-livre",
@@ -28,7 +42,15 @@
     "aceita_cupom": true,
     "observacoes": "Site tem área \"Vender\" para terceiros; página inicial mostra preços com cupom.",
     "fonte_url": "https://www.mercadolivre.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "esfera",
+        "motivo": "O Mercado Livre não aparece na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "casas-bahia",
@@ -39,7 +61,15 @@
     "aceita_cupom": true,
     "observacoes": "Página inicial mostra produtos de lojistas parceiros e cupons de desconto.",
     "fonte_url": "https://www.casasbahia.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "esfera",
+        "motivo": "As Casas Bahia não aparecem na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "shopee",
@@ -59,7 +89,21 @@
     "aceita_cupom": true,
     "observacoes": "Página inicial mostra loja de parceiro e página de cupons de desconto.",
     "fonte_url": "https://www.americanas.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "livelo",
+        "motivo": "A Americanas não aparece na lista de parceiros da Livelo.",
+        "fonte_url": "https://www.livelo.com.br/juntar-pontos/todos-os-parceiros",
+        "verificado_em": "2026-11-25"
+      },
+      {
+        "programa_id": "esfera",
+        "motivo": "A Americanas não aparece na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "kabum",
