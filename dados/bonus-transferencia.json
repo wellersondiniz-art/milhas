@@ -1,0 +1,31 @@
+[
+  {
+    "id": "livelo-smiles-2026-11-25",
+    "transferencia_id": "livelo-smiles",
+    "inicio": "2026-11-25",
+    "fim": "2026-11-25",
+    "faixas": [
+      { "id": "todos", "quem": "Todos os clientes", "bonus_percentual": 40 },
+      { "id": "clube-ou-categoria", "quem": "Assinantes do Clube Livelo ou do Clube Smiles, e clientes Diamante ou Magno da Smiles", "bonus_percentual": 80 }
+    ],
+    "limite_bonus": 300000,
+    "exige_cadastro": true,
+    "observacoes": "Válida das 10h às 23h59 de 25/11/2026. Limite de 300.000 milhas bônus por CPF e Conta Família. Milhas creditadas em até 10 dias úteis; bônus válido por 12 meses.",
+    "fonte_url": "https://www.livelo.com.br/livelo-para-parceiros/smiles/SMLTransfer",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "livelo-latam-pass-2026-11-23",
+    "transferencia_id": "livelo-latam-pass",
+    "inicio": "2026-11-23",
+    "fim": "2026-11-24",
+    "faixas": [
+      { "id": "todos", "quem": "Todos os clientes", "bonus_percentual": 27 }
+    ],
+    "limite_bonus": 300000,
+    "exige_cadastro": true,
+    "observacoes": "Válida das 10h de 23/11 às 23h59 de 24/11/2026. Quem fez a primeira transferência ganhou também 2.000 milhas (fora da conta). Bônus creditado em até 30 dias depois do fim, válido por 36 meses.",
+    "fonte_url": "https://www.livelo.com.br/livelo-para-parceiros/latam/MTPTransfer",
+    "verificado_em": "2026-11-25"
+  }
+]

@@ -58,6 +58,11 @@ main {
   margin-inline-end: calc(-1 * var(--espaco-3));
 }
 
+/* Celular estreito: com quatro links, o menu desce para a linha de baixo. */
+@media (max-width: 30rem) {
+  .topo__link { padding-inline: var(--espaco-2); }
+}
+
 .topo__link {
   display: inline-flex;
   align-items: center;
@@ -514,3 +519,18 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 .avisos-app > :not(:empty) { margin-bottom: var(--espaco-6); }
 .avisos-app .alerta .linha { margin-top: var(--espaco-3); }
 .avisos-app .alerta .linha .botao { margin-top: 0; }
+
+/* Milhas em viagens */
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+}
+
+.lista-limpa {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.campo__entrada--curta { max-width: 8rem; }

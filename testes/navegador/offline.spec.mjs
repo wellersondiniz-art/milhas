@@ -6,12 +6,16 @@ import { abrirInicio, cartoesDoResultado, expect, test } from './apoio.mjs';
 
 /** Abre o site e espera o service worker assumir a página e guardar os dados. */
 /**
- * Quantos arquivos de dados a calculadora usa (dist/dados/*.json). Os de
- * postos (redes-postos, regras-postos) só a tela "Quanto rende abastecer" pede.
+ * Arquivos que a tela inicial não pede: os de postos (só "Quanto rende
+ * abastecer") e os de viagens (só a página de viagens).
  */
-const SO_DA_TELA_DE_ABASTECER = new Set(['redes-postos.json', 'regras-postos.json']);
+const SO_DE_OUTRAS_TELAS = new Set([
+  'redes-postos.json', 'regras-postos.json',
+  'cotacoes.json', 'transferencias.json', 'bonus-transferencia.json', 'viagens.json',
+]);
+/** Quantos arquivos de dados a tela inicial pede (dist/dados/*.json). */
 const arquivosDeDados = async () => (await readdir(new URL('../../dist/dados/', import.meta.url)))
-  .filter((n) => n.endsWith('.json') && !SO_DA_TELA_DE_ABASTECER.has(n)).length;
+  .filter((n) => n.endsWith('.json') && !SO_DE_OUTRAS_TELAS.has(n)).length;
 
 async function abrirComServiceWorker(page) {
   await abrirInicio(page);

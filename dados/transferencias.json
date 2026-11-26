@@ -1,0 +1,122 @@
+[
+  {
+    "id": "livelo-smiles",
+    "origem_id": "livelo",
+    "destino_id": "smiles",
+    "paridade": { "pontos_origem": 1, "pontos_destino": 1 },
+    "minimo_origem": 10000,
+    "multiplo_origem": 1000,
+    "prazo": "até 7 dias úteis",
+    "observacoes": "Página da Smiles: 1 ponto Livelo = 1 milha; mínimo de 10.000 pontos, em lotes de 1.000. Assinantes de alguns planos do Clube Livelo podem ter mínimo menor.",
+    "fonte_url": "https://www.smiles.com.br/livelo",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "livelo-latam-pass",
+    "origem_id": "livelo",
+    "destino_id": "latam-pass",
+    "paridade": { "pontos_origem": 1, "pontos_destino": 1 },
+    "minimo_origem": 12000,
+    "multiplo_origem": 1000,
+    "prazo": "até 1 dia útil",
+    "observacoes": "Página da Livelo: 1 ponto Livelo = 1 milha LATAM Pass; mínimo de 12.000 milhas, em múltiplos de 1.000. Nos planos Clube Especial e Clube Premium da Livelo o mínimo é 1.000.",
+    "fonte_url": "https://www.livelo.com.br/livelo-para-parceiros/latam/MTPTransfer",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "livelo-azul-fidelidade",
+    "origem_id": "livelo",
+    "destino_id": "azul-fidelidade",
+    "paridade": { "pontos_origem": 1, "pontos_destino": 1 },
+    "minimo_origem": 1000,
+    "multiplo_origem": 1000,
+    "prazo": "até 1 dia útil (até 2 horas na transferência imediata do Clube Livelo)",
+    "observacoes": "Página da Livelo: 1 ponto Livelo = 1 ponto Azul Fidelidade; mínimo e múltiplos de 1.000.",
+    "fonte_url": "https://www.livelo.com.br/livelo-para-parceiros/azul/AZLTransfer",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "livelo-all-accor",
+    "origem_id": "livelo",
+    "destino_id": "all-accor",
+    "paridade": { "pontos_origem": 7, "pontos_destino": 2 },
+    "minimo_origem": 7000,
+    "multiplo_origem": "A_CONFIRMAR",
+    "prazo": "até 7 dias úteis",
+    "observacoes": "Página da Livelo: 3,5 pontos Livelo = 1 ponto ALL; mínimo de 7.000 pontos Livelo (2.000 pontos ALL). Os termos falam em múltiplos de 1.000, sem dizer se de pontos Livelo ou ALL: o múltiplo fica A_CONFIRMAR.",
+    "fonte_url": "https://www.livelo.com.br/livelo-para-parceiros/accor/ACRTransfer",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "esfera-smiles",
+    "origem_id": "esfera",
+    "destino_id": "smiles",
+    "paridade": { "pontos_origem": 1, "pontos_destino": 1 },
+    "minimo_origem": 30000,
+    "multiplo_origem": "A_CONFIRMAR",
+    "prazo": "3 dias úteis",
+    "observacoes": "Página da Smiles: 1 ponto Esfera = 1 milha; transferência mínima de 30.000 pontos (a Esfera tem outros pisos, conforme o cartão).",
+    "fonte_url": "https://www.smiles.com.br/esfera",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "pontos-itau-smiles",
+    "origem_id": "pontos-itau",
+    "destino_id": "smiles",
+    "paridade": { "pontos_origem": 1, "pontos_destino": 1 },
+    "minimo_origem": "A_CONFIRMAR",
+    "multiplo_origem": "A_CONFIRMAR",
+    "prazo": "conforme o Itaú",
+    "observacoes": "Página da Smiles: em todos os programas de pontos dos cartões Itaú, 1 ponto = 1 milha Smiles. Mínimo e prazo não aparecem na página.",
+    "fonte_url": "https://www.smiles.com.br/banco-itau",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "esfera-azul-fidelidade",
+    "origem_id": "esfera",
+    "destino_id": "azul-fidelidade",
+    "paridade": "A_CONFIRMAR",
+    "minimo_origem": "A_CONFIRMAR",
+    "multiplo_origem": "A_CONFIRMAR",
+    "prazo": "a confirmar",
+    "observacoes": "A Azul lista a Esfera entre os parceiros de transferência, mas a página não diz a proporção.",
+    "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade/bancos-e-cartoes",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "pontos-itau-azul-fidelidade",
+    "origem_id": "pontos-itau",
+    "destino_id": "azul-fidelidade",
+    "paridade": "A_CONFIRMAR",
+    "minimo_origem": "A_CONFIRMAR",
+    "multiplo_origem": "A_CONFIRMAR",
+    "prazo": "a confirmar",
+    "observacoes": "A Azul lista o Itaú entre os parceiros de transferência, mas a página não diz a proporção.",
+    "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade/bancos-e-cartoes",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "c6-atomos-azul-fidelidade",
+    "origem_id": "c6-atomos",
+    "destino_id": "azul-fidelidade",
+    "paridade": "A_CONFIRMAR",
+    "minimo_origem": "A_CONFIRMAR",
+    "multiplo_origem": "A_CONFIRMAR",
+    "prazo": "a confirmar",
+    "observacoes": "A Azul lista o C6 Bank entre os parceiros de transferência, mas a página não diz a proporção.",
+    "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade/bancos-e-cartoes",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "pontos-btg-azul-fidelidade",
+    "origem_id": "pontos-btg",
+    "destino_id": "azul-fidelidade",
+    "paridade": "A_CONFIRMAR",
+    "minimo_origem": "A_CONFIRMAR",
+    "multiplo_origem": "A_CONFIRMAR",
+    "prazo": "a confirmar",
+    "observacoes": "A Azul lista o Fidelidade BTG entre os parceiros de transferência, mas a página não diz a proporção.",
+    "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade/bancos-e-cartoes",
+    "verificado_em": "2026-11-25"
+  }
+]
