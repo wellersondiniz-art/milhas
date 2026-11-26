@@ -122,3 +122,19 @@ test('navegador que não deixa guardar (modo privado): avisa e o perfil vale nes
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Comparar' }).click();
   await expect(page.locator('#convite-perfil')).toContainText('A conta usa o seu perfil');
 });
+
+test('vencimento dos pontos: a data do extrato vira aviso no topo e fica no aparelho', async ({ page }) => {
+  await marcarPerfil(page);
+  const vencimentos = page.locator('#perfil-vencimentos');
+  await expect(vencimentos).toBeHidden();
+  // Relógio do teste: 10/11/2026. 20/11 está a 10 dias.
+  await page.getByLabel('Quando vencem os próximos pontos Programa Alfa?').fill('2026-11-20');
+  await expect(vencimentos).toContainText('Pontos vencendo');
+  await expect(vencimentos).toContainText('Programa Alfa: vence em 10 dias (20/11/2026).');
+  await page.reload();
+  await expect(page.locator('#perfil-programa-alfa-vence')).toHaveValue('2026-11-20');
+  await expect(vencimentos).toContainText('vence em 10 dias');
+  // Longe: some o alerta e fica só a confirmação.
+  await page.locator('#perfil-programa-alfa-vence').fill('2027-06-01');
+  await expect(vencimentos).toContainText('Nenhum ponto vence nos próximos 90 dias');
+});

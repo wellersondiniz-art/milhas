@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Salas VIP pelo cartão · Milhas da Vez</title>
+  <meta name="description" content="Quais cartões dão acesso grátis a salas VIP de aeroporto, por qual rede, quantas vezes por ano e com quantos acompanhantes, com a fonte de cada regra.">
+  <meta name="theme-color" content="#1f6b3a">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../img/icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../img/icones/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <script type="module" src="../js/salas-vip.js"></script>
+</head>
+<body>
+  <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <div class="container topo__linha">
+      <a class="topo__marca" href="../">Milhas da Vez</a>
+      <nav class="topo__menu" aria-label="Principal">
+        <a class="topo__link" href="../">Comparar</a>
+        <a class="topo__link" href="../abastecer/">Abastecer</a>
+        <a class="topo__link" href="../viagens/">Viagens</a>
+        <a class="topo__link" href="../ofertas/">Ofertas</a>
+        <a class="topo__link" href="../#/perfil">Meu perfil</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="container">
+   <div class="pilha--lg">
+    <section class="pilha--sm">
+      <p class="texto-pequeno"><a href="../viagens/">← Milhas em viagens</a></p>
+      <h1>Salas VIP pelo cartão</h1>
+      <p class="texto-suave">Quais cartões do nosso cadastro dão entrada grátis em sala VIP de aeroporto, por qual rede, quantas vezes por ano e quem pode ir junto. Do cartão que dá mais acesso ao que dá menos.</p>
+      <details class="termo">
+        <summary>O que é sala VIP?</summary>
+        <p class="termo__texto">É um espaço no aeroporto, longe do portão, com poltrona, comida, bebida e wi-fi para esperar o voo. Alguns cartões pagam algumas entradas por ano. Quem entra pelo cartão usa uma rede de salas, como Visa Airport Companion, LoungeKey, DragonPass ou Priority Pass: cada rede tem o seu app, onde você cadastra o cartão e vê as salas de cada aeroporto.</p>
+      </details>
+      <details class="termo">
+        <summary>O que é titular, adicional e acompanhante?</summary>
+        <p class="termo__texto">Titular é quem pediu o cartão. Adicional é o cartão extra que o titular dá para outra pessoa. Acompanhante é quem entra junto sem ter o cartão: em muitos cartões a entrada dele gasta um dos acessos grátis.</p>
+      </details>
+    </section>
+
+    <section class="pilha" aria-labelledby="salas-lista-titulo">
+      <h2 id="salas-lista-titulo" class="visualmente-oculto">Cartões com sala VIP</h2>
+      <form id="salas-filtro" class="card pilha--sm" novalidate autocomplete="off" hidden>
+        <label class="opcao"><input type="checkbox" id="salas-so-meus"> Só os cartões do meu perfil</label>
+        <p class="campo__ajuda" id="salas-so-meus-ajuda"></p>
+      </form>
+      <div id="salas-lista" class="pilha" aria-busy="true"><p class="texto-suave">Buscando os cartões…</p></div>
+    </section>
+
+    <p id="salas-anuncio" class="visualmente-oculto" role="status"></p>
+
+    <section class="pilha--sm texto-pequeno texto-suave">
+      <h2 class="resultado__subtitulo">De onde vêm as regras</h2>
+      <p>Usamos só o que o banco ou a bandeira publica, com o link e a data em que conferimos. O que a página oficial não diz aparece como "a confirmar". Essas regras mudam com frequência: antes de ir, confira no app da rede quantos acessos você ainda tem.</p>
+    </section>
+   </div>
+  </main>
+
+  <footer class="container rodape">
+    <nav aria-label="Sobre o site">
+      <ul class="rodape__links">
+        <li><a href="../como-funciona/">Como funciona</a></li>
+        <li><a href="../sobre-os-dados/">Sobre os dados</a></li>
+        <li><a href="../privacidade/">Privacidade</a></li>
+        <li><a href="../termos/">Termos de uso</a></li>
+        <li><a href="../contato/">Contato</a></li>
+      </ul>
+    </nav>
+    <p class="texto-suave texto-pequeno">Não pedimos número de cartão nem CPF. O que você marca fica só neste aparelho. Os números são estimativas a partir das regras publicadas pelos programas: confira sempre antes de transferir ou comprar.</p>
+  </footer>
+</body>
+</html>

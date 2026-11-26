@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { ARQUIVOS, dataValida, linkNoDominio, validarDados, validarSchema } from '../scripts/validar-dados.js';
 
 const DADOS = new URL('../dados/', import.meta.url);
-const HOJE = '2026-11-25';
+const HOJE = '2026-11-26';
 
 async function lerReais() {
   const dados = {};
@@ -354,7 +354,7 @@ test('regra de posto: avisa o que está A_CONFIRMAR e o que já terminou', async
   const { avisos } = await validarDados(DADOS, { hoje: HOJE });
   assert.ok(avisos.includes('regra de posto "ipiranga-km-de-vantagens": pontos_por_unidade está "A_CONFIRMAR"'));
   const comFim = await validarCom((d) => { Object.assign(d['regras-postos'][1], { inicio: '2026-11-01', fim: '2026-11-10' }); });
-  assert.ok(comFim.avisos.includes('regra de posto "petrobras-premmia": já terminou (fim 2026-11-10, hoje 2026-11-25)'));
+  assert.ok(comFim.avisos.includes('regra de posto "petrobras-premmia": já terminou (fim 2026-11-10, hoje 2026-11-26)'));
 });
 
 test('regras de posto do repositório: todo registro tem fonte oficial https e nenhum guarda preço', async () => {

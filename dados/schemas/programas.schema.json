@@ -77,6 +77,56 @@
       },
       "verificado_em": {
         "$ref": "#/$defs/data"
+      },
+      "validade_pontos": {
+        "description": "Quanto tempo os pontos valem, pela regra geral publicada pelo programa. Fatos curtos, com a fonte; o prazo de cada pessoa está no extrato do programa.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "meses",
+          "resumo",
+          "fonte_url",
+          "verificado_em"
+        ],
+        "properties": {
+          "meses": {
+            "description": "Prazo padrão em meses, contado do acúmulo. \"nao_expira\" e \"depende_do_cartao\" quando o programa diz isso; A_CONFIRMAR quando não achamos.",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "enum": [
+                  "nao_expira",
+                  "depende_do_cartao"
+                ]
+              },
+              {
+                "$ref": "#/$defs/a_confirmar"
+              }
+            ]
+          },
+          "resumo": {
+            "description": "A regra em uma ou duas frases, com as palavras do site (não copiar texto da fonte).",
+            "type": "string",
+            "minLength": 1
+          },
+          "como_prorrogar": {
+            "description": "O que o programa oferece para não perder os pontos (se houver).",
+            "type": "string",
+            "minLength": 1
+          },
+          "como_prorrogar_fonte_url": {
+            "$ref": "#/$defs/url"
+          },
+          "fonte_url": {
+            "$ref": "#/$defs/url"
+          },
+          "verificado_em": {
+            "$ref": "#/$defs/data"
+          }
+        }
       }
     }
   },

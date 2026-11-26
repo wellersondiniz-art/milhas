@@ -364,6 +364,7 @@ function aoChegaremOsDados(pedidos) {
     elementos: {
       formulario: $('perfil-formulario'),
       aviso: $('perfil-aviso'),
+      vencimentos: $('perfil-vencimentos'),
       status: $('perfil-status'),
       exportar: $('perfil-exportar'),
       importar: $('perfil-importar'),

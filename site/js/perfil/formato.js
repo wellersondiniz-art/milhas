@@ -8,13 +8,14 @@
 // Formato atual (versão 2):
 // {
 //   versao: 2,
-//   programas: [{ programa_id, clube_ativo, clube_ativo_desde? }],
+//   programas: [{ programa_id, clube_ativo, clube_ativo_desde?, pontos_vencem_em? }],
 //   cartoes: [cartao_id],
 //   valor_milheiro_brl: { programa_id: centavos },
 //   cotacao_dolar?: reais × 10.000 (53456 = R$ 5,3456)
 // }
-// cotacao_dolar é opcional e entrou depois, sem mudar a versão: perfis
-// antigos simplesmente não têm o campo.
+// cotacao_dolar e pontos_vencem_em (data em que vencem os próximos pontos,
+// copiada pela pessoa do extrato do programa) são opcionais e entraram depois,
+// sem mudar a versão: perfis antigos simplesmente não têm os campos.
 // Versão 1 (tela inicial, antes desta tela): o mesmo, mas sem o campo versao.
 
 export const VERSAO_ATUAL = 2;
@@ -97,6 +98,7 @@ export function limparPerfil(bruto, dados) {
     vistos.add(p.programa_id);
     const item = { programa_id: p.programa_id, clube_ativo: p.clube_ativo === true };
     if (item.clube_ativo && dataValida(p.clube_ativo_desde)) item.clube_ativo_desde = p.clube_ativo_desde;
+    if (dataValida(p.pontos_vencem_em)) item.pontos_vencem_em = p.pontos_vencem_em;
     programas.push(item);
   }
   const cartoes = [...new Set(perfil.cartoes.filter((id) => cartoesConhecidos.has(id)))];
@@ -215,7 +217,7 @@ export function validarImportacao(texto, dados, hoje) {
     bruto.programas.forEach((p, i) => {
       const onde = `Programa nº ${i + 1}`;
       if (!objetoSimples(p)) { erros.push(`${onde}: formato inválido.`); return; }
-      const sobraP = chavesSobrando(p, ['programa_id', 'clube_ativo', 'clube_ativo_desde']);
+      const sobraP = chavesSobrando(p, ['programa_id', 'clube_ativo', 'clube_ativo_desde', 'pontos_vencem_em']);
       if (sobraP.length) erros.push(`${onde}: campo que não conhecemos: ${sobraP.map(trecho).join(', ')}.`);
       if (typeof p.programa_id !== 'string' || !nomePrograma.has(p.programa_id)) {
         erros.push(`${onde}: não conhecemos o programa ${trecho(p.programa_id)}.`);
@@ -231,6 +233,10 @@ export function validarImportacao(texto, dados, hoje) {
         else if (!dataValida(p.clube_ativo_desde)) erros.push(`${nome}: a data do clube ${trecho(p.clube_ativo_desde)} não é uma data válida (AAAA-MM-DD).`);
         else if (p.clube_ativo_desde > hoje) erros.push(`${nome}: a data do clube está no futuro.`);
         else item.clube_ativo_desde = p.clube_ativo_desde;
+      }
+      if (p.pontos_vencem_em !== undefined) {
+        if (!dataValida(p.pontos_vencem_em)) erros.push(`${nome}: a data de vencimento dos pontos ${trecho(p.pontos_vencem_em)} não é uma data válida (AAAA-MM-DD).`);
+        else item.pontos_vencem_em = p.pontos_vencem_em;
       }
       programas.push(item);
     });

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "salas-vip.schema.json",
+  "title": "Salas VIP de aeroporto pelo cartão",
+  "description": "Um registro por cartão e rede de salas: quantos acessos grátis por ano, quem pode usar, acompanhantes e condições, como o emissor publica.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "cartao_id", "rede", "acessos_por_ano", "quem_usa", "acompanhantes", "status", "fonte_url", "verificado_em"],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "cartao_id": { "description": "Cartão que dá o acesso (cartoes.json).", "$ref": "#/$defs/id" },
+      "rede": {
+        "description": "Rede ou sala (ex.: Visa Airport Companion, LoungeKey, Priority Pass, sala própria do banco). A_CONFIRMAR quando o emissor não diz.",
+        "anyOf": [{ "type": "string", "minLength": 1 }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "acessos_por_ano": {
+        "description": "Acessos grátis por ano. \"ilimitado\" quando o emissor diz que não há limite.",
+        "anyOf": [{ "type": "integer", "minimum": 1 }, { "const": "ilimitado" }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "quem_usa": { "description": "Quem pode usar os acessos (titular, adicionais).", "anyOf": [{ "type": "string", "minLength": 1 }, { "$ref": "#/$defs/a_confirmar" }] },
+      "acompanhantes": { "description": "Regra para quem vai junto.", "anyOf": [{ "type": "string", "minLength": 1 }, { "$ref": "#/$defs/a_confirmar" }] },
+      "condicoes": { "description": "Exigências para o acesso grátis (gasto mínimo, voo, terminal).", "type": "string", "minLength": 1 },
+      "regras_url": { "description": "Página com as regras da própria sala, quando diferente da fonte.", "$ref": "#/$defs/url" },
+      "observacoes": { "type": "string" },
+      "status": { "description": "A_CONFIRMAR: sabemos que o cartão tem sala, mas faltam números.", "enum": ["confirmado", "A_CONFIRMAR"] },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" }
+    }
+  },
+  "$defs": {
+    "id": { "description": "Letras minúsculas, números e hífen.", "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" }
+  }
+}

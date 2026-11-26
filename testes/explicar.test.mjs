@@ -584,8 +584,12 @@ test('pedido: 50 pedidos ao mesmo tempo do mesmo IP não furam o limite (S2)', a
   const buscar = async () => { chamadas.push(1); await porta; return respostaApi(BOA); };
   const kv = kvDeMentira();
   const d = deps({ kv, buscar });
-  const pendentes = Array.from({ length: 50 }, () => tratarExplicacao(pedidoHttp(corpo()), d));
-  await new Promise((r) => setTimeout(r, 20));
+  let prontos = 0;
+  const pendentes = Array.from({ length: 50 }, () => tratarExplicacao(pedidoHttp(corpo()), d).finally(() => { prontos += 1; }));
+  // Solta a API só quando os outros 49 já tiveram resposta (a recusa não espera a API).
+  // Uma espera fixa (20 ms) dava corrida em máquina lenta: um pedido atrasado chegava
+  // depois de o primeiro terminar e passava, como é certo que passe.
+  for (let i = 0; i < 500 && prontos < 49; i += 1) await new Promise((r) => setTimeout(r, 10));
   soltar();
   const respostas = await Promise.all(pendentes);
   assert.equal(chamadas.length, 1, 'só um pedido chega ao modelo');

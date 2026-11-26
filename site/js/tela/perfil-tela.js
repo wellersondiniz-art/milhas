@@ -1,4 +1,4 @@
-// Tela "Meu perfil": programas (com clube e data), cartões e, se a pessoa
+// Tela "Meu perfil": programas (com clube, data e vencimento dos pontos), cartões e, se a pessoa
 // quiser, o valor do milheiro de cada programa e a cotação do dólar. Salva sozinho, só neste
 // aparelho. Também exporta, importa e apaga o perfil.
 //
@@ -6,6 +6,7 @@
 // (createElement + nó de texto). Ver CLAUDE.md, seção 6.
 
 import { ID_COTACAO_DOLAR, formatarCentavos, formatarCotacao, formatarData } from '../motor/index.js';
+import { DIAS_ATENCAO, avisosDeVencimento, avisosQuePedemAtencao, prazoDoPrograma } from '../motor/validade.js';
 import {
   MILHEIRO_MAXIMO, TAMANHO_MAXIMO, ehVazio, nomeDoArquivo, perfilVazio, semNadaParaGuardar,
   textoParaExportar, validarImportacao,
@@ -40,7 +41,7 @@ export function resumoDoPerfil(perfil) {
 
 /**
  * @param {object} opcoes
- * @param {object} opcoes.elementos   { formulario, aviso, status, exportar, importar, arquivo, resultadoImportacao, apagar, confirmarApagar, simApagar, naoApagar }
+ * @param {object} opcoes.elementos   { formulario, aviso, vencimentos?, status, exportar, importar, arquivo, resultadoImportacao, apagar, confirmarApagar, simApagar, naoApagar }
  * @param {object} opcoes.dados       { programas, cartoes }
  * @param {() => string} opcoes.hoje  "AAAA-MM-DD" no relógio do aparelho
  * @param {() => object|null} opcoes.obterPerfil
@@ -48,7 +49,7 @@ export function resumoDoPerfil(perfil) {
  */
 export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirPerfil }) {
   const {
-    formulario, aviso, status, exportar, importar, arquivo, resultadoImportacao,
+    formulario, aviso, vencimentos, status, exportar, importar, arquivo, resultadoImportacao,
     apagar, confirmarApagar, simApagar, naoApagar,
   } = elementos;
   const nomePrograma = new Map(dados.programas.map((p) => [p.id, p.nome]));
@@ -62,6 +63,48 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
         el('p', {}, 'Pode ser o modo privado ou o armazenamento cheio. O que você marcar vale só enquanto esta aba estiver aberta. Para não perder, use "Exportar perfil" antes de fechar.'))
       : null);
     aviso.hidden = !emMemoria;
+  }
+
+  /** Caixa "Pontos perto de vencer", no topo da tela. */
+  function mostrarVencimentos(perfil) {
+    if (!vencimentos) return;
+    const todos = avisosDeVencimento(perfil, dados.programas, hoje());
+    const perto = avisosQuePedemAtencao(todos);
+    if (!todos.length) {
+      vencimentos.replaceChildren();
+      vencimentos.hidden = true;
+      return;
+    }
+    vencimentos.hidden = false;
+    if (!perto.length) {
+      vencimentos.replaceChildren(alerta('sucesso', 'Nenhum ponto vence nos próximos 90 dias',
+        el('p', {}, 'Conferimos as datas que você anotou abaixo. Quando faltar pouco, o aviso aparece aqui.')));
+      return;
+    }
+    const grave = perto.some((a) => a.nivel === 'vencido' || a.nivel === 'urgente');
+    vencimentos.replaceChildren(alerta('aviso', grave ? 'Pontos vencendo' : 'Pontos perto de vencer',
+      el('ul', { class: 'resultado__lista' }, perto.map((a) => el('li', {}, `${a.nome}: ${a.texto} (${formatarData(a.data)}).`))),
+      el('p', {}, 'Para não perder: troque por passagem ou produto, transfira para outro programa ou veja abaixo, em cada programa, como prorrogar.')));
+  }
+
+  function blocoValidade(programa, base, atualVence) {
+    const vence = el('input', {
+      type: 'date', id: `${base}-vence`, class: 'campo__entrada', value: atualVence ?? null,
+      'aria-describedby': `${base}-vence-ajuda ${base}-vence-regra`,
+    });
+    const prazo = prazoDoPrograma(programa);
+    const regra = el('div', { class: 'texto-pequeno texto-suave pilha--sm', id: `${base}-vence-regra` },
+      prazo ? el('p', {}, el('strong', {}, `${prazo.curto}. `), prazo.resumo) : el('p', {}, 'Ainda não conferimos a validade dos pontos deste programa.'),
+      prazo?.comoProrrogar ? el('p', {}, el('strong', {}, 'Como não perder: '), prazo.comoProrrogar) : null,
+      prazo ? el('p', {}, el('a', { href: prazo.fonte, rel: 'noopener noreferrer', target: '_blank' }, 'Regra oficial'),
+        ` · conferida em ${formatarData(prazo.verificadoEm)}`) : null);
+    const campo = el('div', { class: 'campo' },
+      el('label', { class: 'campo__rotulo', for: vence.id }, `Quando vencem os próximos pontos ${programa.nome}?`),
+      vence,
+      el('span', { class: 'campo__ajuda', id: `${base}-vence-ajuda` },
+        `Opcional. A data está no extrato do programa. Avisamos no topo desta tela quando faltarem ${DIAS_ATENCAO} dias ou menos. Fica só neste aparelho.`),
+      regra);
+    return { vence, campo };
   }
 
   function blocoPrograma(programa, atual, milheiroCentavos) {
@@ -81,6 +124,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
     milheiro.addEventListener('input', () => { milheiro.value = mascaraMilheiro(milheiro.value).texto; });
 
     const doCadastro = Number.isSafeInteger(programa.valor_milheiro_brl) ? programa.valor_milheiro_brl : null;
+    const validade = blocoValidade(programa, base, atual?.pontos_vencem_em);
     const campoDesde = el('div', { class: 'campo', hidden: !(atual?.clube_ativo) },
       el('label', { class: 'campo__rotulo', for: desde.id }, 'Desde quando o clube está ativo?'),
       desde,
@@ -97,10 +141,11 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
           doCadastro
             ? `Opcional. Se deixar em branco, usamos ${formatarCentavos(doCadastro)}, a média do nosso cadastro.`
             : 'Opcional. Ainda não temos esse valor confirmado. Se você informar, mostramos quanto os pontos valem em reais.')),
+      validade.campo,
     );
     tem.addEventListener('change', () => { detalhes.hidden = !tem.checked; });
     clube.addEventListener('change', () => { campoDesde.hidden = !clube.checked; });
-    campos.push({ programa, tem, clube, desde, erroDesde, milheiro });
+    campos.push({ programa, tem, clube, desde, erroDesde, milheiro, vence: validade.vence });
     return el('div', { class: 'perfil__programa' },
       el('label', { class: 'opcao perfil__nome' }, tem, programa.nome), detalhes);
   }
@@ -158,6 +203,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
           : el('p', { class: 'texto-suave' }, 'Ainda não temos cartões no cadastro.')),
       blocoCotacao(perfil.cotacao_dolar),
     );
+    mostrarVencimentos(perfil);
   }
 
   function lerFormulario() {
@@ -176,6 +222,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
           item.clube_ativo_desde = c.desde.value;
         }
       }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(c.vence.value)) item.pontos_vencem_em = c.vence.value;
       novo.programas.push(item);
       const { centavos } = mascaraMilheiro(c.milheiro.value);
       if (centavos) novo.valor_milheiro_brl[c.programa.id] = centavos;
@@ -195,6 +242,7 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
   formulario.addEventListener('change', () => {
     const novo = lerFormulario();
     const r = definirPerfil(semNadaParaGuardar(novo) ? null : novo);
+    mostrarVencimentos(novo);
     avisarSalvo(r, ehVazio(novo) ? 'Nada marcado. A conta usa todos os cartões e programas.' : 'Salvo neste aparelho.');
   });
 
