@@ -26,6 +26,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+      # Falha conhecida nas dependências (só a ferramenta de teste) reprova o PR.
+      # Lê só o package-lock.json, sem instalar nada.
+      - name: Dependências sem falha conhecida (npm audit)
+        run: npm audit --audit-level=moderate
       # Sem npm install: os testes unitários e o validador não usam dependências.
       - name: Testes unitários (com cobertura mínima)
         run: npm run test:unidade
