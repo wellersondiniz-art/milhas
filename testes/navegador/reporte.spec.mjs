@@ -181,3 +181,44 @@ test.describe('reporte de erro', () => {
     await expect(card.getByRole('textbox', { name: 'O que está errado?' })).toBeHidden();
   });
 });
+
+test.describe('pedir esse cartão', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test.beforeEach(async ({ page }) => {
+    await usarDadosDeTeste(page);
+    await page.clock.install({ time: AGORA_DE_TESTE });
+  });
+
+  test('em Meu perfil: vem com o nome do cartão adicionado, vai sem os números dele e vira issue', async ({ page }) => {
+    const servidor = await ligarReporte(page);
+    await abrirInicio(page, '/#/perfil');
+    await page.locator('#meu-cartao > summary').click();
+    const adicionar = page.locator('#meu-cartao');
+    await adicionar.getByLabel('Nome do cartão').fill('Cartão Zeta Gold');
+    await adicionar.getByLabel('Programa em que os pontos caem').selectOption({ label: 'Programa Alfa' });
+    await adicionar.getByLabel('Pontos por real').fill('3');
+    await page.getByRole('button', { name: 'Adicionar meu cartão' }).click();
+    await expect(page.locator('.perfil__proprio')).toHaveCount(1);
+
+    await page.locator('#pedido-cartao > summary').click();
+    const pedido = page.locator('#pedido-cartao');
+    await expect(pedido.getByLabel('Nome do cartão')).toHaveValue('Cartão Zeta Gold');
+    await pedido.getByRole('button', { name: 'Enviar pedido' }).click();
+    await expect(pedido.getByLabel('Banco')).toBeFocused();
+    await expect(pedido.locator('#pedido-cartao-banco-erro')).toContainText('Escreva o nome do banco');
+    expect(servidor.pedidos).toHaveLength(0);
+
+    await pedido.getByLabel('Banco').fill('Banco Zeta');
+    await pedido.getByLabel('Programa em que os pontos caem').selectOption({ label: 'Programa Alfa' });
+    await page.clock.fastForward(5000);
+    await pedido.getByRole('button', { name: 'Enviar pedido' }).click();
+    await expect(pedido.getByText('Recebemos o seu pedido. Obrigado!')).toBeFocused();
+    expect(servidor.pedidos).toHaveLength(1);
+    expect(Object.keys(servidor.pedidos[0]).sort()).toEqual(['banco', 'link_da_fonte', 'nome_do_cartao', 'programa_id', 'site', 'tempo_no_formulario_ms', 'tipo']);
+    expect(JSON.stringify(servidor.pedidos[0])).not.toMatch(/meu-1|pontos_por_real/);
+    expect(servidor.issues).toHaveLength(1);
+    expect(servidor.issues[0].title).toBe('[Pedido de cartão] Programa Alfa');
+    expect(servidor.issues[0].labels).toEqual(['pedido de cartão']);
+  });
+});

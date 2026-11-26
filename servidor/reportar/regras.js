@@ -28,6 +28,17 @@ export const LIMITES = Object.freeze({
 export const ETIQUETAS = Object.freeze({
   reporte: 'reporte',
   ofertaAtiva: 'prioridade: oferta ativa',
+  pedidoDeCartao: 'pedido de cartão',
+});
+
+/** "Pedir esse cartão": nome do cartão e do banco, curtos e numa linha só. */
+export const LIMITES_DO_PEDIDO = Object.freeze({
+  nomeMin: 2,
+  nomeMax: 80,
+  bancoMin: 2,
+  bancoMax: 60,
+  /** Nome de cartão não tem tanto número; número de cartão ou CPF tem. */
+  digitosMax: 5,
 });
 
 /** Marca o comentário com e-mail, para o robô de limpeza achar. */
@@ -229,4 +240,95 @@ export function comentarioDoEmail(email) {
     '',
     blocoDeCodigo(email),
   ].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// "Pedir esse cartão": quem tem um cartão que não está no cadastro pede para
+// a gente incluir. Vai só o nome do cartão, o banco, o programa (se a pessoa
+// souber) e o link da fonte (opcional). Sem e-mail e sem nada da pessoa.
+
+/** Texto de uma linha: sem invisíveis e sem quebra de linha. */
+function linhaUnica(valor) {
+  return limparTexto(String(valor)).replace(/\s+/g, ' ');
+}
+
+function conferirNome(valor, min, max) {
+  const t = typeof valor === 'string' ? linhaUnica(valor) : '';
+  if (t.length < min || t.length > max) return { ok: false, texto: t };
+  if ((t.match(/\d/g) ?? []).length > LIMITES_DO_PEDIDO.digitosMax) return { ok: false, texto: t, numero: true };
+  return { ok: true, texto: t };
+}
+
+/**
+ * @param {unknown} entrada  { tipo: "pedido_de_cartao", nome_do_cartao, banco, programa_id?, link_da_fonte? }
+ * @param {object} dados     { programas } (lista)
+ * @returns {{ ok: true, pedido: object } | { ok: false, erros: Record<string,string> }}
+ */
+export function validarPedidoDeCartao(entrada, dados) {
+  if (!entrada || typeof entrada !== 'object' || Array.isArray(entrada)) {
+    return { ok: false, erros: { geral: 'O formulário chegou vazio. Tente de novo.' } };
+  }
+  const erros = {};
+  const L = LIMITES_DO_PEDIDO;
+  const nome = conferirNome(entrada.nome_do_cartao, L.nomeMin, L.nomeMax);
+  if (!nome.ok) {
+    erros.nome_do_cartao = nome.numero
+      ? 'Escreva só o nome do cartão. Nunca o número do cartão nem o CPF.'
+      : `Escreva o nome do cartão (de ${L.nomeMin} a ${L.nomeMax} letras).`;
+  }
+  const banco = conferirNome(entrada.banco, L.bancoMin, L.bancoMax);
+  if (!banco.ok) {
+    erros.banco = banco.numero
+      ? 'Escreva só o nome do banco.'
+      : `Escreva o nome do banco (de ${L.bancoMin} a ${L.bancoMax} letras).`;
+  }
+  const programaId = idOpcional(entrada.programa_id);
+  const programa = programaId.id && Array.isArray(dados.programas) ? dados.programas.find((p) => p && p.id === programaId.id) : null;
+  if (!programaId.ok || (programaId.id && !programa)) {
+    erros.programa_id = 'Esse programa não está nos nossos dados. Recarregue a página.';
+  }
+  let link = null;
+  if (typeof entrada.link_da_fonte === 'string' && entrada.link_da_fonte.trim() !== '') {
+    link = validarLink(entrada.link_da_fonte);
+    if (!link) erros.link_da_fonte = 'Cole o link completo da página do banco, começando com https://, ou deixe em branco.';
+  } else if (entrada.link_da_fonte !== undefined && entrada.link_da_fonte !== null && typeof entrada.link_da_fonte !== 'string') {
+    erros.link_da_fonte = 'Cole o link completo da página do banco, começando com https://, ou deixe em branco.';
+  }
+  if (Object.keys(erros).length) return { ok: false, erros };
+  return { ok: true, pedido: { nome: nome.texto, banco: banco.texto, programa: programa ?? null, link } };
+}
+
+/**
+ * Issue do pedido de cartão. O que a pessoa digitou só entra em bloco de
+ * código; o título usa só dados nossos.
+ */
+export function montarIssueDoPedido(pedido, hoje) {
+  const linhas = [
+    '## Pedido de cartão',
+    '',
+    `- **Programa:** ${pedido.programa ? `${nomeSeguro(pedido.programa.nome)} (\`${pedido.programa.id}\`)` : 'a pessoa não sabe ou não está na lista'}`,
+    `- **Recebido em:** ${hoje} (horário de São Paulo)`,
+    '',
+    '### Nome do cartão (texto da pessoa)',
+    '',
+    blocoDeCodigo(pedido.nome),
+    '',
+    '### Banco (texto da pessoa)',
+    '',
+    blocoDeCodigo(pedido.banco),
+    '',
+    '### Link da fonte (copie e confira antes de abrir)',
+    '',
+    pedido.link ? blocoDeCodigo(pedido.link) : 'Não informado.',
+    '',
+    '### Para triar',
+    '',
+    '- [ ] Achar a página oficial do cartão no site do banco',
+    '- [ ] Cadastrar em `dados/cartoes.json` (com `fonte_url` e `verificado_em`; o que não estiver lá fica `A_CONFIRMAR`) ou fechar como "não procede"',
+  ];
+  return {
+    title: `[Pedido de cartão] ${pedido.programa ? nomeSeguro(pedido.programa.nome) : 'programa não informado'}`,
+    body: linhas.join('\n'),
+    labels: [ETIQUETAS.pedidoDeCartao],
+  };
 }

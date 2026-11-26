@@ -9,7 +9,7 @@ import { calcularJeitosDeComprar, dataHoraEmSaoPaulo, formatarCentavos, naLoja }
 import { criarBuscaDeLoja } from './tela/busca-loja.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
 import { abrirArmazem, CHAVE, CHAVE_V1 } from './perfil/armazem.js';
-import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
+import { dadosComCartoesDaPessoa, ehVazio, perfilDeTodos, perfilParaConta, perfilSemCartoesDaPessoa } from './perfil/formato.js';
 import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
 import { anuncioDoResultado } from './tela/textos.js';
@@ -113,9 +113,14 @@ function anunciar(texto) {
   if (texto) esperaAnuncio = setTimeout(() => { anuncio.textContent = texto; }, 150);
 }
 
+/** Os dados do site com os cartões que a pessoa adicionou em "Meu perfil". */
+function dadosDaConta() {
+  return dadosComCartoesDaPessoa(dados, perfilSalvo);
+}
+
 function perfilDaConta() {
   return ehVazio(perfilSalvo)
-    ? { perfil: perfilDeTodos(dados, perfilSalvo?.cotacao_dolar), semPerfil: true }
+    ? { perfil: perfilDeTodos(dadosDaConta(), perfilSalvo?.cotacao_dolar), semPerfil: true }
     : { perfil: perfilParaConta(perfilSalvo), semPerfil: false };
 }
 
@@ -158,24 +163,25 @@ function calcular({ focar = true, contar = true } = {}) {
   mostrandoResultado = true;
   titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} ${naLoja(loja)}`;
   const { perfil, semPerfil } = perfilDaConta();
+  const dadosComMeus = dadosDaConta();
   try {
     // As datas das ofertas são de Brasília: o dia vira à meia-noite de São Paulo.
     const hoje = dataHoraEmSaoPaulo(new Date());
     const jeitos = calcularJeitosDeComprar(
       perfil,
       { loja_id: loja.id, valor_centavos: centavos, tipo_vendedor: 'loja' },
-      dados,
+      dadosComMeus,
       hoje,
     );
     if (!ajuste || ajuste.lojaId !== loja.id) {
       ajuste = {
         lojaId: loja.id,
         ...montarAjusteRapido({
-          dados, perfilSalvo, perfilDaConta: perfil, semPerfil, lojaId: loja.id, hoje: hoje.slice(0, 10), aoAjustar: ajustar,
+          dados: dadosComMeus, perfilSalvo, perfilDaConta: perfil, semPerfil, lojaId: loja.id, hoje: hoje.slice(0, 10), aoAjustar: ajustar,
         }),
       };
     }
-    const premissas = premissasDaConta({ dados, perfil, semPerfil, jeitos });
+    const premissas = premissasDaConta({ dados: dadosComMeus, perfil, semPerfil, jeitos });
     ajuste.atualizarPremissas(premissas);
     const ativo = document.activeElement;
     // Na tela, a mesma oferta repetida para cada cartão vira um card só.
@@ -185,7 +191,7 @@ function calcular({ focar = true, contar = true } = {}) {
       valorTexto,
       semPerfil,
       ajuste: ajuste.elemento,
-      valeAPena: montarValeAPena({ jeitos, valorCentavos: centavos, dados, perfil }),
+      valeAPena: montarValeAPena({ jeitos, valorCentavos: centavos, dados: dadosComMeus, perfil }),
       faltaDolar: premissas.some((p) => p.chave === 'dolar' && p.falta),
       nomePrograma: (id) => dados.programas.find((p) => p.id === id)?.nome ?? id,
       // A ordem já veio do motor. O link de saída só entra depois, sem mexer nela.
@@ -193,8 +199,10 @@ function calcular({ focar = true, contar = true } = {}) {
     }));
     // Quem estava mexendo no painel continua onde estava.
     if (ativo && ajuste.elemento.contains(ativo)) ativo.focus();
-    if (EXPLICAR_LIGADO && jeitos.length) {
-      resultado.append(montarExplicar({ lojaId: loja.id, centavos, perfil: perfilSalvo, melhor: jeitos[0] }));
+    // O "Explica pra mim" refaz a conta no servidor, que não conhece os cartões
+    // adicionados pela pessoa (eles não saem do aparelho).
+    if (EXPLICAR_LIGADO && jeitos.length && jeitos[0].cartao?.informado_pela_pessoa !== true) {
+      resultado.append(montarExplicar({ lojaId: loja.id, centavos, perfil: perfilSemCartoesDaPessoa(perfilSalvo), melhor: jeitos[0] }));
     }
     anunciar(anuncioDoResultado(naTela, { nomeLoja: loja, valorTexto }));
     lojaDaConta = loja.id;
@@ -209,7 +217,7 @@ function calcular({ focar = true, contar = true } = {}) {
 
 /** Ajuste rápido ("O que a conta supôs"): salva no perfil e refaz a conta sem mexer no foco. */
 function ajustar(mudanca) {
-  perfilSalvo = perfilComAjuste(perfilSalvo, dados, mudanca);
+  perfilSalvo = perfilComAjuste(perfilSalvo, dadosDaConta(), mudanca);
   const salvou = armazem.salvar(perfilSalvo);
   mostrarConvite();
   calcular({ focar: false });
@@ -365,6 +373,7 @@ function aoChegaremOsDados(pedidos) {
       formulario: $('perfil-formulario'),
       aviso: $('perfil-aviso'),
       vencimentos: $('perfil-vencimentos'),
+      meuCartao: $('perfil-meu-cartao'),
       status: $('perfil-status'),
       exportar: $('perfil-exportar'),
       importar: $('perfil-importar'),

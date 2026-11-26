@@ -222,6 +222,8 @@ A chave sai em plausible.io → Settings (da conta) → API Keys → "New API Ke
 
 Cada resultado pode ter o botão **"Essa informação está errada?"**. Ele abre um formulário curto (o que está errado, link da prova e e-mail opcional; a loja vem do resultado) e envia para a função `functions/api/reportar.js`, que roda na própria Cloudflare Pages, no mesmo endereço do site. A função confere tudo de novo (`servidor/reportar/`), barra robô (campo escondido e envio rápido demais) e abuso (5 avisos por hora por conexão, 50 por dia no total) e abre uma **issue num repositório privado do GitHub**. Aviso sobre oferta que vale hoje ganha a etiqueta `prioridade: oferta ativa`.
 
+A mesma função recebe o **"Pedir esse cartão"**, em Meu perfil, para quem tem um cartão que não está no cadastro: vai só o nome do cartão, o banco, o programa (se a pessoa souber) e um link opcional da página do banco. Sem e-mail. Vira uma issue com a etiqueta `pedido de cartão`, com as mesmas travas e o mesmo limite. Para cadastrar, confira no site do banco e siga as regras de `dados/` como qualquer cartão. Enquanto o cartão não entra, a pessoa pode usar **"Adicionar meu cartão"**, que guarda os números dela só no aparelho e não passa por servidor nenhum.
+
 O que fica guardado (é o que a página Privacidade diz):
 
 - Na issue: loja, oferta, programa e cartão do resultado (ids dos nossos dados), o texto e o link, os dois dentro de bloco de código (o GitHub não monta link, imagem nem menção). Nada de IP.
@@ -235,7 +237,7 @@ O botão vem **desligado** (`REPORTE_LIGADO = false` em `site/js/reporte/config.
 O repositório do site é público, e issue de repositório público qualquer pessoa lê. Por isso os avisos vão para outro, privado.
 
 1. Abra <https://github.com/new>. Nome: `milhas-reportes`. Marque **Private** e **Add a README file**. Clique em **Create repository**.
-2. Em **Issues** → **Labels** → **New label**, crie duas etiquetas: `reporte` e `prioridade: oferta ativa` (escreva igual, com os dois-pontos e o espaço; a cor é livre, vermelho para a de prioridade ajuda).
+2. Em **Issues** → **Labels** → **New label**, crie três etiquetas: `reporte`, `prioridade: oferta ativa` e `pedido de cartão` (escreva igual, com os dois-pontos e o espaço; a cor é livre, vermelho para a de prioridade ajuda).
 3. Ainda no `milhas-reportes`: **Add file** → **Create new file**. Nome do arquivo: `.github/workflows/limpar-emails.yml`. Cole o conteúdo de [`servidor/reportar/repo-de-reportes/limpar-emails.yml`](servidor/reportar/repo-de-reportes/limpar-emails.yml) e clique em **Commit changes**. Na aba **Actions**, ele aparece como `limpar-emails`; dá para rodar à mão com **Run workflow**.
 
 Para triar: em **Issues**, filtre por `label:"prioridade: oferta ativa"` primeiro. Corrija em `dados/` (com `fonte_url` e `verificado_em`) e feche a issue; fechar apaga o e-mail.

@@ -169,7 +169,7 @@ export function escolhaDeCartao(perfil, dados, semPerfil) {
  * clube": assim as ofertas de todos os programas continuam na conta.
  *
  * @param {object|null} atual   perfil salvo (formato v2) ou null
- * @param {object} dados        { programas, cartoes }
+ * @param {object} dados        { programas, cartoes } (com os cartões da pessoa: dadosComCartoesDaPessoa)
  * @param {object} ajuste       { cartao?: 'todos'|'nenhum'|'meus'|id, clube?: { programa_id, ativo, desde? }, cotacao_dolar?: number|null }
  */
 export function perfilComAjuste(atual, dados, ajuste) {
@@ -183,6 +183,8 @@ export function perfilComAjuste(atual, dados, ajuste) {
     valor_milheiro_brl: { ...(atual?.valor_milheiro_brl ?? {}) },
   };
   if (cotacaoValida(atual?.cotacao_dolar)) novo.cotacao_dolar = atual.cotacao_dolar;
+  // Cartões que a pessoa adicionou continuam guardados, marcados ou não.
+  if (atual?.cartoes_proprios?.length) novo.cartoes_proprios = atual.cartoes_proprios.map((c) => ({ ...c }));
 
   if (ajuste.cartao !== undefined && ajuste.cartao !== 'meus') {
     if (ajuste.cartao === 'todos') novo.cartoes = dados.cartoes.map((c) => c.id);

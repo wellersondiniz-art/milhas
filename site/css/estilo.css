@@ -236,6 +236,12 @@ main {
   color: var(--cor-aviso-texto);
 }
 
+/* Cartão adicionado pela pessoa: sem fonte nossa, cor de informação. */
+.fonte--pessoa {
+  background: var(--cor-info-fundo);
+  color: var(--cor-info-texto);
+}
+
 .fonte__icone { font-weight: var(--peso-forte); }
 /* O "·" só separa quando as duas partes cabem na mesma linha (telas largas). */
 .fonte__ponto { display: none; }
@@ -401,6 +407,37 @@ main {
 .perfil__status:empty { display: none; }
 
 .perfil__termos { padding-bottom: var(--espaco-2); }
+
+/* "Meu cartão não está na lista": cartões adicionados e formulário. */
+.perfil__proprio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-2);
+  padding: var(--espaco-2) var(--espaco-3);
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio-md);
+}
+
+.perfil__proprio .opcao { flex: 1 1 14rem; }
+
+.perfil__adicionar {
+  padding: var(--espaco-3) var(--espaco-4);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie-2);
+}
+
+.perfil__adicionar > summary { font-weight: var(--peso-forte); cursor: pointer; min-height: 24px; }
+
+.perfil__dois {
+  display: grid;
+  gap: var(--espaco-3);
+}
+
+@media (min-width: 30rem) {
+  .perfil__dois { grid-template-columns: 1fr 1fr; }
+}
 
 /* Fica à vista no pé da tela enquanto a pessoa marca, até o fim do formulário.
    Para não cobrir o campo com foco (zoom alto, tela baixa), a página deixa
