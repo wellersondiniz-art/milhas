@@ -1,0 +1,45 @@
+name: vigia
+
+# Vigia diário (9h de Brasília): ofertas paradas, pull request de ofertas sem
+# merge, robôs com falha e erros do servidor. Cada problema vira um alerta
+# (issue) que fecha sozinho quando resolve. Ver docs/operacao.md, partes 2 e 3.
+#
+# Segredos no ambiente "operacao" (Settings → Environments), opcionais:
+#   SUPABASE_URL, SUPABASE_SECRET_KEY  → erros do servidor e limpeza de 30 dias
+# Variável opcional: OFERTAS_PRAZO_DIAS (padrão 8).
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: vigia
+  cancel-in-progress: false
+
+jobs:
+  vigiar:
+    name: Vigiar a operação
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: operacao
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Conferir e avisar
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          OFERTAS_PRAZO_DIAS: ${{ vars.OFERTAS_PRAZO_DIAS }}
+        run: |
+          set -o pipefail
+          node scripts/operacao/vigia.js | tee -a "$GITHUB_STEP_SUMMARY"

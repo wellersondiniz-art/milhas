@@ -1,0 +1,42 @@
+name: custos
+
+# Painel de custos (todo dia, 9h30 de Brasília): gasto e uso do mês de cada
+# serviço contra o limite de operacao/custos.json. O painel fica no resumo
+# desta execução (Actions → custos → última execução). Passou de 80% → alerta
+# (issue). Ver docs/operacao.md, parte 5.
+#
+# Segredos no ambiente "operacao", opcionais (sem eles, "sem medição"):
+#   ANTHROPIC_ADMIN_KEY                 → gasto do mês com IA
+#   SUPABASE_URL, SUPABASE_SECRET_KEY   → tamanho do banco e e-mails enviados
+
+on:
+  schedule:
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: custos
+  cancel-in-progress: false
+
+jobs:
+  painel:
+    name: Painel de custos
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: operacao
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Medir e comparar com os limites
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ANTHROPIC_ADMIN_KEY: ${{ secrets.ANTHROPIC_ADMIN_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node scripts/operacao/custos.js

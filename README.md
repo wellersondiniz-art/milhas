@@ -372,6 +372,9 @@ O botão vem **desligado** (`EXPLICAR_LIGADO = false` em `site/js/explicar/confi
 7. Troque `EXPLICAR_LIGADO` para `true` (num PR) e atualize `TEXTOS_ATUALIZADOS_EM` em `scripts/paginas/config.js`.
 
 Os nomes dos botões dos painéis são de memória: se algum estiver diferente, procure o mais parecido. Para desligar de novo: `EXPLICAR_LIGADO = false`, ou apague o segredo `ANTHROPIC_API_KEY` (a função passa a responder 503 na hora).
+## Operação de produção
+
+Monitor de disponibilidade, logs de erro sem dado pessoal, alerta de ofertas paradas, backup diário do banco com teste de restauração, painel de custos e plano de resposta a incidente: tudo em [docs/operacao.md](docs/operacao.md), em linguagem de quem não é de TI. Os robôs ficam em `.github/workflows/` (`disponibilidade`, `vigia`, `custos`, `backup`) e avisam abrindo uma issue com a etiqueta `operacao`. Cada um fica desligado até receber a configuração descrita no guia.
 
 ## Pastas
 

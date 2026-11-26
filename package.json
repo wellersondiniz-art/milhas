@@ -1,1 +1,11 @@
-{}
+{
+  "scripts": {
+    "custos": "node scripts/operacao/custos.js",
+    "vigia": "node scripts/operacao/vigia.js",
+    "monitor": "node scripts/operacao/disponibilidade.js",
+    "backup": "bash scripts/operacao/backup/fazer-backup.sh",
+    "backup:restaurar": "bash scripts/operacao/backup/restaurar.sh",
+    "backup:teste": "bash scripts/operacao/backup/teste-local.sh"
+  },
+  "devDependencies": {}
+}

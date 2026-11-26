@@ -1,0 +1,119 @@
+name: backup
+
+# Backup diário do banco (3h de Brasília) com cópia fora do Supabase
+# (Cloudflare R2), cifrado. No dia 1 de cada mês também restaura o backup
+# mais recente num Postgres descartável e confere tabela por tabela.
+# Ver docs/operacao.md, parte 4.
+#
+# Segredos no ambiente "backup" (Settings → Environments):
+#   BACKUP_BANCO_URL, BACKUP_SENHA, R2_CONTA_ID, R2_CHAVE_ID, R2_CHAVE_SECRETA, R2_BALDE
+# Variável opcional: BACKUP_PG_VERSAO (padrão 17; a mesma versão do Postgres do Supabase ou maior).
+# Sem BACKUP_BANCO_URL e BACKUP_SENHA, avisa que está desligado e termina sem erro.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+    - cron: '30 7 1 * *'
+  workflow_dispatch:
+    inputs:
+      testar_restauracao:
+        description: 'Em vez de fazer backup, restaurar o mais recente e conferir'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+env:
+  PG_VERSAO: ${{ vars.BACKUP_PG_VERSAO || '17' }}
+
+jobs:
+  backup:
+    name: Fazer backup
+    if: github.event.schedule != '30 7 1 * *' && !inputs.testar_restauracao
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: backup
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Instalar o cliente do Postgres
+        run: bash scripts/operacao/backup/instalar-cliente-pg.sh "$PG_VERSAO"
+      - name: Backup cifrado para o R2
+        env:
+          BACKUP_BANCO_URL: ${{ secrets.BACKUP_BANCO_URL }}
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+          BACKUP_DESTINO: r2
+          R2_CONTA_ID: ${{ secrets.R2_CONTA_ID }}
+          R2_CHAVE_ID: ${{ secrets.R2_CHAVE_ID }}
+          R2_CHAVE_SECRETA: ${{ secrets.R2_CHAVE_SECRETA }}
+          R2_BALDE: ${{ secrets.R2_BALDE }}
+        run: bash scripts/operacao/backup/fazer-backup.sh | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: ${{ !cancelled() }}
+        with:
+          node-version: 22
+      - name: Abrir alerta (backup falhou)
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          printf 'O backup diário do banco falhou.\n\nO que fazer: abra a execução abaixo, veja o passo em vermelho e siga a seção "Backup falhou" de docs/operacao.md.\n\nExecução: %s\n' \
+            "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > "$RUNNER_TEMP/alerta.md"
+          node scripts/operacao/alerta.js abrir --chave backup --titulo "Backup do banco falhou" --corpo-arquivo "$RUNNER_TEMP/alerta.md"
+      - name: Fechar alerta (backup ok)
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/operacao/alerta.js fechar --chave backup
+
+  teste-restauracao:
+    name: Testar restauração
+    if: github.event.schedule == '30 7 1 * *' || inputs.testar_restauracao
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: backup
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: descartavel
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Instalar o cliente do Postgres
+        run: bash scripts/operacao/backup/instalar-cliente-pg.sh "$PG_VERSAO"
+      - name: Restaurar o backup mais recente e conferir
+        env:
+          RESTAURAR_URL: postgres://postgres:descartavel@localhost:5432/postgres
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+          R2_CONTA_ID: ${{ secrets.R2_CONTA_ID }}
+          R2_CHAVE_ID: ${{ secrets.R2_CHAVE_ID }}
+          R2_CHAVE_SECRETA: ${{ secrets.R2_CHAVE_SECRETA }}
+          R2_BALDE: ${{ secrets.R2_BALDE }}
+        run: |
+          if [ -z "$BACKUP_SENHA" ] || [ -z "$R2_BALDE" ]; then echo "Backup desligado: nada para testar."; exit 0; fi
+          bash scripts/operacao/backup/restaurar.sh --ultimo | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        if: ${{ !cancelled() }}
+        with:
+          node-version: 22
+      - name: Abrir alerta (restauração falhou)
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          printf 'O teste mensal de restauração do backup falhou: o backup pode não servir numa emergência.\n\nO que fazer: siga a seção "Teste de restauração falhou" de docs/operacao.md.\n\nExecução: %s\n' \
+            "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > "$RUNNER_TEMP/alerta.md"
+          node scripts/operacao/alerta.js abrir --chave teste-restauracao --titulo "Teste de restauração do backup falhou" --corpo-arquivo "$RUNNER_TEMP/alerta.md"
+      - name: Fechar alerta (restauração ok)
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/operacao/alerta.js fechar --chave teste-restauracao

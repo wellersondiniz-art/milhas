@@ -89,3 +89,4 @@ Vamos preenchendo conforme o projeto cresce.
 | Painel semanal das métricas | `PLAUSIBLE_API_KEY=... npm run painel` (grava `painel/painel-AAAA-MM-DD.md`; `-- --exemplo` mostra sem chave) |
 | Montar a extensão de navegador | `npm run extensao` (gera `extensao/pacote/`; seletores em `extensao/seletores.json`) |
 | Testar a extensão | `npm run test:extensao` (Playwright, páginas de exemplo locais) |
+| Operação (monitor, vigia, custos, backup) | `npm run monitor`, `npm run vigia`, `npm run custos`, `npm run backup:teste` (guia em `docs/operacao.md`) |

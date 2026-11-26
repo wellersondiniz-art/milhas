@@ -1,0 +1,77 @@
+{
+  "alerta_percentual": 80,
+  "servicos": [
+    {
+      "id": "anthropic",
+      "nome": "IA (Anthropic: \"Explica pra mim\" e extração semanal das ofertas)",
+      "plano": "Pago por uso",
+      "custo_fixo_centavos_usd": 0,
+      "cotas": [
+        {
+          "id": "gasto_mes",
+          "nome": "Gasto no mês",
+          "unidade": "centavos_usd",
+          "limite": 1000,
+          "medicao": "anthropic_custo_mes",
+          "observacoes": "US$ 5 do teto do \"Explica pra mim\" + folga para a extração semanal (menos de US$ 0,01 por página). Coloque o mesmo limite no Console da Anthropic (Settings → Limits): lá é a trava que corta o uso."
+        }
+      ],
+      "fonte_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "verificado_em": "2026-11-24"
+    },
+    {
+      "id": "supabase",
+      "nome": "Banco de dados (Supabase)",
+      "plano": "Free",
+      "custo_fixo_centavos_usd": 0,
+      "cotas": [
+        {
+          "id": "banco",
+          "nome": "Tamanho do banco",
+          "unidade": "bytes",
+          "limite": 524288000,
+          "medicao": "supabase_banco_bytes",
+          "observacoes": "Plano Free: 500 MB por projeto. O projeto Free pausa depois de 1 semana sem uso. O plano Pro custa a partir de US$ 25/mês, com limite de gasto ligado por padrão."
+        }
+      ],
+      "fonte_url": "https://supabase.com/pricing",
+      "verificado_em": "2026-11-24"
+    },
+    {
+      "id": "resend",
+      "nome": "E-mail (Resend)",
+      "plano": "Free",
+      "custo_fixo_centavos_usd": 0,
+      "cotas": [
+        {
+          "id": "emails_mes",
+          "nome": "E-mails no mês",
+          "unidade": "emails",
+          "limite": 3000,
+          "medicao": "emails_mes",
+          "observacoes": "Plano Free: 3.000 e-mails por mês. O Pro custa US$ 20/mês com 50.000."
+        },
+        {
+          "id": "emails_dia",
+          "nome": "E-mails nas últimas 24 h",
+          "unidade": "emails",
+          "limite": 100,
+          "medicao": "emails_24h",
+          "observacoes": "Plano Free: 100 e-mails por dia."
+        }
+      ],
+      "fonte_url": "https://resend.com/pricing",
+      "verificado_em": "2026-11-24"
+    },
+    {
+      "id": "cloudflare",
+      "nome": "Site e cópia do backup (Cloudflare Pages e R2)",
+      "plano": "Free",
+      "custo_fixo_centavos_usd": 0,
+      "cotas": [],
+      "observacoes": "R2 grátis até 10 GB por mês; o backup diário do banco ocupa poucos MB.",
+      "fonte_url": "https://developers.cloudflare.com/r2/pricing/",
+      "verificado_em": "2026-11-24"
+    }
+  ]
+}
