@@ -3,8 +3,27 @@
 
 import { el } from './dom.js';
 import {
-  destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, textosAntesDeComprar, textosConferido,
+  aLoja, destaqueDoJeito, fraseDoJeito, haQuantoTempo, palavrasQueAparecem, seloDeConferencia, siteDaFonte, textoValidade,
+  textosAntesDeComprar, textosConferido,
 } from './textos.js';
+import { formatarData, naLoja } from '../motor/index.js';
+
+/** Link para fora do site: só https, sem passar quem somos. */
+function linkDaFonte(url, texto, rotuloOculto) {
+  if (!siteDaFonte(url)) return null;
+  return el('a', { href: url, rel: 'noopener noreferrer', class: 'fonte__link' },
+    texto, rotuloOculto ? el('span', { class: 'visualmente-oculto' }, rotuloOculto) : null);
+}
+
+/** "Conferido hoje (25/11/2026) · Fonte: livelo.com.br": bem à vista, logo abaixo do número. */
+function seloDoCard(jeito) {
+  const selo = seloDeConferencia(jeito);
+  if (!selo) return null;
+  return el('p', { class: `fonte${selo.antigo ? ' fonte--antiga' : ''}` },
+    el('span', { class: 'fonte__icone', 'aria-hidden': 'true' }, selo.antigo ? '!' : '✓'),
+    el('span', {}, selo.texto),
+    selo.site ? el('span', {}, ' · Fonte: ', linkDaFonte(selo.fonte_url, selo.site)) : null);
+}
 
 const TERMOS = {
   milheiro: ['O que é milheiro?', 'É quanto valem 1.000 pontos. Se o milheiro vale R$ 20,00, cada 1.000 pontos que você junta valem uns R$ 20,00 em passagem ou produto. É uma média: o valor real depende de como você usa os pontos.'],
@@ -60,6 +79,15 @@ function blocoAntesDeComprar(jeito) {
   );
 }
 
+function blocoDestaques(jeito) {
+  const lista = jeito.destaques_da_oferta ?? [];
+  if (!lista.length) return null;
+  return el('div', { class: 'resultado__destaques' },
+    el('p', { class: 'resultado__subtitulo' }, 'Rende mais nesta oferta'),
+    el('ul', { class: 'resultado__lista' }, lista.map((t) => el('li', {}, t))),
+    el('p', { class: 'texto-suave texto-pequeno' }, 'A conta acima usa a regra geral da oferta. Se o seu produto for desses, ele rende mais.'));
+}
+
 function card(jeito, posicao, nomeLoja) {
   const id = `jeito-${posicao}`;
   const destaque = destaqueDoJeito(jeito);
@@ -70,11 +98,13 @@ function card(jeito, posicao, nomeLoja) {
     selos(jeito, posicao),
     el('p', { class: `card__valor${destaque.emReais ? '' : ' card__valor--pontos'}`, id: `${id}-valor` }, destaque.principal),
     el('p', { class: 'card__legenda' }, destaque.legenda),
+    seloDoCard(jeito),
     el('div', { class: 'card__bloco' },
       el('p', { id: `${id}-frase` }, fraseDoJeito(jeito, nomeLoja)),
       destaque.emReais
         ? el('p', { class: 'texto-suave texto-pequeno numeros' }, `Total: ${jeito.total_pontos_texto === '1' ? '1 ponto' : `${jeito.total_pontos_texto} pontos`}`)
         : null),
+    blocoDestaques(jeito),
     jeito.avisos.length
       ? el('div', { class: 'resultado__avisos' },
         el('p', { class: 'resultado__subtitulo' }, 'Fique de olho'),
@@ -85,15 +115,35 @@ function card(jeito, posicao, nomeLoja) {
       conferido.length ? el('p', { class: 'resultado__subtitulo' }, 'Quando conferimos os dados') : null,
       conferido.length
         ? el('ul', { class: 'resultado__conferido' },
-          conferido.map((c) => el('li', { class: c.antigo ? 'resultado__antigo' : null }, c.texto)))
+          conferido.map((c) => el('li', { class: c.antigo ? 'resultado__antigo' : null },
+            c.texto, c.site ? '. ' : null, c.site ? linkDaFonte(c.fonte_url, `Fonte: ${c.site}`) : null)))
         : null),
     el('div', { class: 'card__acoes' }, blocoAntesDeComprar(jeito), blocoComoCalcular(jeito)),
   );
 }
 
+/** "Conferimos: a Livelo diz que a parceria na Amazon está inativa (25/11/2026, fonte)". */
+function blocoSemParceria(loja, nomePrograma = (id) => id) {
+  const lista = loja.sem_parceria ?? [];
+  if (!lista.length) return null;
+  return el('div', { class: 'pilha--sm' },
+    el('p', { class: 'resultado__subtitulo' }, 'O que conferimos'),
+    el('ul', { class: 'resultado__lista' }, lista.map((s) => el('li', {},
+      `${s.motivo} Conferido ${haQuantoTempo(diasDesde(s.verificado_em))} (${formatarData(s.verificado_em)}). `,
+      linkDaFonte(s.fonte_url, `Fonte: ${siteDaFonte(s.fonte_url)}`, ` (${nomePrograma(s.programa_id)})`)))));
+}
+
+/** Dias entre a data (AAAA-MM-DD) e hoje no aparelho. Só para o texto "há N dias". */
+function diasDesde(data) {
+  const [a, m, d] = data.split('-').map(Number);
+  const hoje = new Date();
+  const ms = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) - Date.UTC(a, m - 1, d);
+  return Math.max(0, Math.round(ms / 86_400_000));
+}
+
 /**
  * @param {object[]} jeitos   saída do motor, do melhor ao pior
- * @param {object} contexto   { loja, valorTexto, semPerfil }
+ * @param {object} contexto   { loja, valorTexto, semPerfil, nomePrograma? }
  */
 export function montarResultado(jeitos, contexto) {
   const { loja, valorTexto, semPerfil } = contexto;
@@ -107,10 +157,11 @@ export function montarResultado(jeitos, contexto) {
       el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Cadastrar os meus')));
   }
   if (!temOferta) {
-    partes.push(alerta('info', `A ${loja.nome} não tem oferta de pontos valendo hoje`,
-      semPerfil
+    partes.push(alerta('info', `${aLoja(loja)} não tem oferta de pontos valendo hoje`,
+      el('p', {}, semPerfil
         ? 'Abaixo está o que cada cartão rende numa compra normal, começando pelo melhor.'
-        : 'Pelo menos não para os programas que você marcou. Abaixo está o que o seu melhor cartão rende numa compra normal.'));
+        : 'Pelo menos não para os programas que você marcou. Abaixo está o que o seu melhor cartão rende numa compra normal.'),
+      blocoSemParceria(loja, contexto.nomePrograma)));
   }
   if (jeitos.some((j) => j.tem_dado_antigo)) {
     partes.push(alerta('aviso', 'Alguns dados podem estar desatualizados',
@@ -118,7 +169,7 @@ export function montarResultado(jeitos, contexto) {
   }
 
   partes.push(el('h3', { class: 'resultado__secao' }, 'O melhor jeito de comprar'));
-  partes.push(card(melhor, 0, loja.nome));
+  partes.push(card(melhor, 0, loja));
 
   const palavras = palavrasQueAparecem(jeitos);
   if (palavras.milheiro || palavras.clube) {
@@ -129,10 +180,10 @@ export function montarResultado(jeitos, contexto) {
 
   if (demais.length) {
     partes.push(el('h3', { class: 'resultado__secao' }, demais.length === 1 ? 'Outro jeito' : `Outros ${demais.length} jeitos`));
-    partes.push(el('div', { class: 'pilha resultado__demais' }, demais.map((j, i) => card(j, i + 1, loja.nome))));
+    partes.push(el('div', { class: 'pilha resultado__demais' }, demais.map((j, i) => card(j, i + 1, loja))));
   }
 
-  return el('div', { class: 'pilha', 'data-resumo': `${valorTexto} na ${loja.nome}` }, partes);
+  return el('div', { class: 'pilha', 'data-resumo': `${valorTexto} ${naLoja(loja)}` }, partes);
 }
 
 /** Esqueleto enquanto os dados carregam. */

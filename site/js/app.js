@@ -5,7 +5,7 @@
 // Ficar numa página só deixa o perfil vivo na memória quando o navegador
 // não deixa salvar (modo privado): trocar de tela não perde nada.
 
-import { calcularJeitosDeComprar, formatarCentavos } from './motor/index.js';
+import { calcularJeitosDeComprar, formatarCentavos, naLoja } from './motor/index.js';
 import { criarBuscaDeLoja } from './tela/busca-loja.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
 import { abrirArmazem } from './perfil/armazem.js';
@@ -123,7 +123,7 @@ function calcular({ focar } = { focar: true }) {
   const valorTexto = formatarCentavos(centavos);
   passoResultado.hidden = false;
   mostrandoResultado = true;
-  titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} na ${loja.nome}`;
+  titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} ${naLoja(loja)}`;
   const { perfil, semPerfil } = perfilDaConta();
   try {
     const jeitos = calcularJeitosDeComprar(
@@ -132,8 +132,8 @@ function calcular({ focar } = { focar: true }) {
       dados,
       agoraLocal(new Date()),
     );
-    resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil }));
-    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
+    resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil, nomePrograma: (id) => dados.programas.find((p) => p.id === id)?.nome ?? id }));
+    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja, valorTexto }));
   } catch (erro) {
     anunciar('');
     console.error(erro);

@@ -20,7 +20,7 @@ import { aprovar } from '../../scripts/aprovar-mudancas.js';
 
 const AQUI = new URL('./', import.meta.url);
 const RAIZ_REAL = new URL('../../', import.meta.url);
-export const DATA = '2026-11-22';
+export const DATA = '2026-11-25';
 
 export const FONTES = [
   {
@@ -55,6 +55,9 @@ export async function rodarDemo() {
   const raiz = pathToFileURL(`${tmp}/`);
   await cp(fileURLToPath(new URL('dados/', RAIZ_REAL)), join(tmp, 'dados'), { recursive: true });
   await writeFile(join(tmp, 'dados', 'fontes.json'), `${JSON.stringify(FONTES, null, 2)}\n`);
+  // Base fixa da demonstração (a oferta de exemplo antiga), para o resultado não mudar
+  // toda vez que dados/ofertas.json do repositório for atualizado.
+  await cp(fileURLToPath(new URL('ofertas-base.json', AQUI)), join(tmp, 'dados', 'ofertas.json'));
   const ofertasAntes = await readFile(join(tmp, 'dados', 'ofertas.json'), 'utf8');
 
   const pasta = new URL(`coleta/${DATA}/`, raiz);

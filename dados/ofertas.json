@@ -1,25 +1,328 @@
 [
   {
-    "id": "azul-fidelidade-magalu-2026-11",
+    "id": "livelo-magalu-2026-11-24",
     "loja_id": "magalu",
-    "programa_id": "azul-fidelidade",
+    "programa_id": "livelo",
     "regras": [
-      { "condicao": { "clube_ativo": true, "cartao_id": "azul-itau-infinite" }, "pontos_por_real": 15 },
-      { "condicao": { "clube_ativo": true }, "pontos_por_real": 13 },
-      { "condicao": { "cartao_id": "azul-itau-infinite" }, "pontos_por_real": 9 },
-      { "condicao": {}, "pontos_por_real": 7 }
+      {
+        "condicao": {},
+        "pontos_por_real": 2
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "2026-11-24",
+    "fim": "2026-11-26",
+    "credito_prazo_dias": 30,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/magalu/MZL",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/magalu/MZL",
+    "verificado_em": "2026-11-25",
+    "destaques": [
+      "Eletrodomésticos vendidos e entregues pela Magalu: 3 pontos por real até 26/11/2026."
+    ],
+    "vigencia": "campanha",
+    "observacoes": "Campanha de 24 a 26/11/2026. Entrar na Magalu pelo link da Livelo. Não contam frete, embalagem de presente, valor pago com cupom de desconto, gift card ou vale-compra, nem pedido de pessoa jurídica. Pontos em até 30 dias da entrega.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-magalu-padrao",
+    "loja_id": "magalu",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 2
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "2026-11-27",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 30,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/magalu/MZL",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/magalu/MZL",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Livelo: 2 pontos por real gasto, podendo mudar em campanhas. Vale depois da campanha de 24 a 26/11/2026.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-mercado-livre-2026-11-23",
+    "loja_id": "mercado-livre",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 0.5
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "categorias_excluidas": [
+      "Alimentos e Bebidas"
+    ],
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "2026-11-23",
+    "fim": "2026-11-29",
+    "credito_prazo_dias": 40,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/mercado-livre/MCL",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/mercado-livre/MCL",
+    "verificado_em": "2026-11-25",
+    "destaques": [
+      "Casa & Decoração: 2 pontos por real até 29/11/2026."
+    ],
+    "vigencia": "campanha",
+    "observacoes": "Campanha de 23 a 29/11/2026: 2 pontos por real em Casa & Decoração; 1 ponto a cada 2 reais nas demais categorias, exceto Alimentos e Bebidas. Precisa entrar pelo link da Livelo e finalizar a compra em até 24 horas. Não contam produtos internacionais, usados, veículos, imóveis, frete, juros, seguros e garantias. Pontos em até 40 dias do recebimento.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-mercado-livre-padrao",
+    "loja_id": "mercado-livre",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 0.5
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "2026-11-30",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 40,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/mercado-livre/MCL",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/mercado-livre/MCL",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Livelo: 0,5 ponto por real gasto, podendo mudar em campanhas. Vale depois da campanha de 23 a 29/11/2026.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-casas-bahia-padrao",
+    "loja_id": "casas-bahia",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 1
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "categorias_excluidas": [
+      "Bebidas e alimentos",
+      "Serviços (garantia estendida etc.)"
+    ],
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 30,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/casas-bahia/CSB",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/casas-bahia/CSB",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Livelo. Não contam frete, embalagem de presente, lista de casamento, bebidas e alimentos, serviços (como garantia estendida), valor pago com cupom, gift card ou vale-compra, nem pedido de pessoa jurídica. Pontos em até 30 dias da entrega.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-shopee-padrao",
+    "loja_id": "shopee",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 0.5
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "categorias_excluidas": [
+      "Produtos digitais, doações e serviços"
+    ],
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 30,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/shopee/PEE",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/shopee/PEE",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "destaques": [
+      "Primeira compra na Shopee: 2 pontos por real."
+    ],
+    "observacoes": "Regra padrão publicada pela Livelo: 2 pontos por real na primeira compra na Shopee e 1 ponto a cada 2 reais nas demais. Informar o CPF antes de ir para a Shopee e começar com o carrinho vazio. Não contam produtos digitais, doações e serviços. Pontos em até 30 dias do recebimento.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-ponto-padrao",
+    "loja_id": "ponto",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 1
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 30,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/pontofrio/PTF",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/pontofrio/PTF",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Livelo. Não contam frete, embalagem de presente, valor pago com cupom, gift card ou vale-compra, nem pedido de pessoa jurídica. Pontos em até 30 dias da entrega.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-fast-shop-2026-11-24",
+    "loja_id": "fast-shop",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 3
+      }
     ],
     "escopo": "vendido_e_entregue_pela_loja",
     "pontos_fora_do_escopo_por_real": 1,
     "acumula_com_cartao": "A_CONFIRMAR",
-    "clube_ativo_ha_horas": 24,
-    "exige_cupom": "A_CONFIRMAR",
-    "inicio": "A_CONFIRMAR",
-    "fim": "2026-11-12",
+    "exige_cupom": true,
+    "cupom": "LIVELO",
+    "inicio": "2026-11-24",
+    "fim": "2026-11-26",
     "credito_prazo_dias": 30,
-    "link_oferta": "A_CONFIRMAR",
-    "fonte_url": "https://passageirodeprimeira.com/?p=581107",
-    "verificado_em": "2026-11-22",
-    "observacoes": "dado de exemplo para teste. Crédito em até 30 dias após a entrega."
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/fast-shop/FST",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/fast-shop/FST",
+    "verificado_em": "2026-11-25",
+    "vigencia": "campanha",
+    "observacoes": "Campanha de 24 a 26/11/2026: 3 pontos por real em produtos vendidos e entregues pela Fast Shop e 1 ponto por real no marketplace. Usar o cupom LIVELO. Pontos em até 30 dias do recebimento.",
+    "status": "confirmado"
+  },
+  {
+    "id": "livelo-kabum-padrao",
+    "loja_id": "kabum",
+    "programa_id": "livelo",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 1
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": true,
+    "cupom": "LIVELO",
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 30,
+    "link_oferta": "https://www.livelo.com.br/juntar-pontos/parceiros/kabum/KBM",
+    "fonte_url": "https://www.livelo.com.br/juntar-pontos/parceiros/kabum/KBM",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Livelo. Usar o cupom LIVELO no carrinho. Pontos em até 30 dias do recebimento.",
+    "status": "confirmado"
+  },
+  {
+    "id": "esfera-magalu-padrao",
+    "loja_id": "magalu",
+    "programa_id": "esfera",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 1
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 45,
+    "link_oferta": "https://www.esfera.com.vc/p/magalu/e000100100",
+    "fonte_url": "https://www.esfera.com.vc/p/magalu/e000100100",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Esfera: 1 ponto por real, podendo mudar em promoções (campanhas valem só para vendido e entregue pela Magalu). Não soma com outras promoções nem com pagamento em cupom, gift card ou vale-compra. Pontos em 45 dias do recebimento.",
+    "status": "confirmado"
+  },
+  {
+    "id": "esfera-shopee-padrao",
+    "loja_id": "shopee",
+    "programa_id": "esfera",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 0.5
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 90,
+    "link_oferta": "https://www.esfera.com.vc/p/shopee/e000100697",
+    "fonte_url": "https://www.esfera.com.vc/p/shopee/e000100697",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "destaques": [
+      "Primeira compra na Shopee: 2 pontos por real."
+    ],
+    "observacoes": "Regra padrão publicada pela Esfera: 2 pontos por real na primeira compra na Shopee e 1 ponto a cada 2 reais nas demais. Começar com o carrinho vazio e terminar a compra sem sair do link. Pontos em até 90 dias.",
+    "status": "confirmado"
+  },
+  {
+    "id": "esfera-fast-shop-padrao",
+    "loja_id": "fast-shop",
+    "programa_id": "esfera",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 2
+      }
+    ],
+    "escopo": "vendido_e_entregue_pela_loja",
+    "pontos_fora_do_escopo_por_real": 1,
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": true,
+    "cupom": "ESFERA",
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 45,
+    "link_oferta": "https://www.esfera.com.vc/p/fastshop/e000100585",
+    "fonte_url": "https://www.esfera.com.vc/p/fastshop/e000100585",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Esfera: 2 pontos por real em produtos vendidos e entregues pela Fast Shop e 1 ponto por real no marketplace. Usar o cupom ESFERA. Vale para cartão de crédito, boleto ou Pix. Pontos em 45 dias do recebimento.",
+    "status": "confirmado"
+  },
+  {
+    "id": "esfera-kabum-padrao",
+    "loja_id": "kabum",
+    "programa_id": "esfera",
+    "regras": [
+      {
+        "condicao": {},
+        "pontos_por_real": 1
+      }
+    ],
+    "escopo": "todos_os_produtos",
+    "acumula_com_cartao": "A_CONFIRMAR",
+    "exige_cupom": false,
+    "inicio": "A_CONFIRMAR",
+    "fim": "A_CONFIRMAR",
+    "credito_prazo_dias": 90,
+    "link_oferta": "https://www.esfera.com.vc/p/kabum/e000100716",
+    "fonte_url": "https://www.esfera.com.vc/p/kabum/e000100716",
+    "verificado_em": "2026-11-25",
+    "vigencia": "regra_padrao",
+    "observacoes": "Regra padrão publicada pela Esfera. Começar com o carrinho vazio, sem cupom de desconto. Compras pelo app da KaBuM! não contam. Pontos em até 90 dias.",
+    "status": "confirmado"
   }
 ]

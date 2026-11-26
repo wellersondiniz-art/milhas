@@ -194,6 +194,45 @@ main {
 
 .resultado__card .card__bloco p { overflow-wrap: anywhere; }
 
+/* Selo "Conferido hoje · Fonte: livelo.com.br", logo abaixo do número. */
+.fonte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-1);
+  margin: var(--espaco-2) 0 0;
+  padding: var(--espaco-1) var(--espaco-3);
+  border-radius: var(--raio-md);
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso-texto);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  overflow-wrap: anywhere;
+}
+
+.fonte--antiga {
+  background: var(--cor-aviso-fundo);
+  color: var(--cor-aviso-texto);
+}
+
+.fonte__icone { font-weight: var(--peso-forte); }
+
+.fonte__link,
+.resultado__conferido a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  display: inline-block;
+  min-height: 24px;
+}
+
+.resultado__destaques {
+  margin-top: var(--espaco-4);
+  padding: var(--espaco-3) var(--espaco-4);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie-2);
+}
+
 .resultado__avisos {
   margin-top: var(--espaco-4);
   padding: var(--espaco-3) var(--espaco-4);

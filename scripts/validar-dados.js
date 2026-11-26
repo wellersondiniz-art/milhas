@@ -212,6 +212,15 @@ function regrasExtras(dados, hoje) {
 
   (dados.cartoes ?? []).forEach((c, i) => existe('cartoes', i, ['programa_id'], 'programas', c.programa_id));
 
+  (dados.lojas ?? []).forEach((l, i) => {
+    (l.sem_parceria ?? []).forEach((s, j) => {
+      existe('lojas', i, ['sem_parceria', j, 'programa_id'], 'programas', s?.programa_id);
+      if (dataValida(s?.verificado_em) && s.verificado_em > hoje) {
+        erros.push({ arquivo: 'lojas', indice: i, caminho: ['sem_parceria', j, 'verificado_em'], mensagem: `data no futuro: ${s.verificado_em} (hoje é ${hoje})` });
+      }
+    });
+  });
+
   (dados.ofertas ?? []).forEach((o, i) => {
     const e = (caminho, mensagem) => erros.push({ arquivo: 'ofertas', indice: i, caminho, mensagem });
     existe('ofertas', i, ['loja_id'], 'lojas', o.loja_id);
@@ -227,10 +236,18 @@ function regrasExtras(dados, hoje) {
     if (o.exige_cupom === true && !o.cupom) {
       e(['cupom'], 'obrigatório quando exige_cupom é true');
     }
+    const padrao = o.vigencia === 'regra_padrao';
+    if (padrao && o.fim !== A_CONFIRMAR) {
+      e(['fim'], 'regra padrão não tem data de fim: use "A_CONFIRMAR"');
+    }
+    if (padrao && (dados.lojas ?? []).some((l) => l.id === o.loja_id && (l.sem_parceria ?? []).some((s) => s?.programa_id === o.programa_id))) {
+      e(['vigencia'], 'a loja diz que este programa não tem parceria (sem_parceria), mas há regra padrão');
+    }
 
     const nome = `oferta ${JSON.stringify(o.id)}`;
     if (dataValida(o.fim) && o.fim < hoje) avisos.push(`${nome}: já terminou (fim ${o.fim}, hoje ${hoje})`);
     for (const campo of Object.keys(o)) {
+      if (padrao && (campo === 'inicio' || campo === 'fim')) continue;
       if (o[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR" e fica fora do cálculo`);
     }
   });
