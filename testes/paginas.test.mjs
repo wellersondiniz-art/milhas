@@ -20,6 +20,12 @@ const MALICIOSO = '<script>alert("x")</script> & \'Loja\'';
 /** Dados reais do repositório + ofertas de teste em várias situações. */
 async function dadosDeTeste() {
   const dados = await lerDados(new URL('dados/', RAIZ));
+  // A oferta de exemplo (Azul na Magalu, terminou em 12/11) saiu da base de
+  // produção e ficou só em testes/exemplos/.
+  dados.ofertas = [
+    ...JSON.parse(await readFile(new URL('testes/exemplos/ofertas-exemplo.json', RAIZ), 'utf8')),
+    ...dados.ofertas,
+  ];
   const oferta = (extra) => ({
     regras: [{ condicao: {}, pontos_por_real: 5 }, { condicao: { clube_ativo: true }, pontos_por_real: 8 }],
     escopo: 'todos_os_produtos',

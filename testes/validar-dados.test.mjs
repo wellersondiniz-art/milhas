@@ -14,6 +14,10 @@ async function lerReais() {
   for (const nome of ARQUIVOS) {
     dados[nome] = JSON.parse(await readFile(new URL(`${nome}.json`, DADOS), 'utf8'));
   }
+  // A oferta de exemplo saiu da base de produção; os testes que mexem numa
+  // oferta usam a cópia de testes/exemplos/ como registro 0.
+  const exemplo = JSON.parse(await readFile(new URL('../testes/exemplos/ofertas-exemplo.json', import.meta.url), 'utf8'));
+  dados.ofertas = [...exemplo, ...dados.ofertas];
   return dados;
 }
 
@@ -35,8 +39,16 @@ test('os dados do repositório são válidos', async () => {
 });
 
 test('avisa que a oferta de exemplo já terminou', async () => {
-  const { avisos } = await validarDados(DADOS, { hoje: HOJE });
+  const { avisos } = await validarCom(() => {});
   assert.ok(avisos.some((a) => a.includes('já terminou')));
+  // A frase diz o que o motor faz de verdade com cada campo A_CONFIRMAR.
+  assert.ok(avisos.some((a) => a.endsWith('inicio está "A_CONFIRMAR"; a oferta entra na conta, com um aviso na tela')));
+  assert.ok(avisos.some((a) => a.endsWith('acumula_com_cartao está "A_CONFIRMAR"; a conta não soma oferta e cartão (vale o maior)')));
+});
+
+test('a base de produção não tem oferta marcada como exemplo de teste', async () => {
+  const ofertas = JSON.parse(await readFile(new URL('ofertas.json', DADOS), 'utf8'));
+  assert.ok(!ofertas.some((o) => /exemplo|teste/i.test(o.observacoes ?? '')));
 });
 
 test('dataValida aceita só datas que existem', () => {

@@ -136,7 +136,7 @@ test('com perfil: mostra o melhor jeito com o cartão da pessoa, num Shadow DOM 
 test('sem perfil: conta com todos os cartões e avisa', async ({ pagina }) => {
   await pagina.goto('https://www.outra-loja.invalid/p/geladeira');
   await expect.poll(() => lerSelo(pagina)).toEqual(expect.objectContaining({
-    titulo: 'Melhor jeito: 3.897 pontos com Cartão Beta Gold',
+    titulo: 'Melhor jeito: 2.598 pontos com Cartão Alfa Platinum',
     detalhe: 'no Programa Beta · contando todos os cartões; escolha os seus nas opções da extensão',
   }));
 });

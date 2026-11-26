@@ -3,12 +3,11 @@
 // devolveu. Nenhuma conta aqui. O preço do litro digitado não é guardado:
 // ele só existe no campo e na conta desta tela.
 
-import { COMBUSTIVEIS, calcularAbastecimento, formatarCentavos } from './motor/index.js';
+import { COMBUSTIVEIS, calcularAbastecimento, dataHoraEmSaoPaulo, formatarCentavos } from './motor/index.js';
 import { abrirArmazem } from './perfil/armazem.js';
 import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
 import { alerta, montarCarregando } from './tela/resultado.js';
-import { agoraLocal } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { anuncioDoAbastecimento, lerLitros, mascaraPreco, tituloDoAbastecimento } from './tela/abastecer-textos.js';
 import { montarResultadoAbastecer } from './tela/abastecer-resultado.js';
@@ -109,7 +108,7 @@ function calcular() {
   const perfil = semPerfil ? perfilDeTodos(dados, perfilSalvo()?.cotacao_dolar) : perfilParaConta(perfilSalvo());
   passoResultado.hidden = false;
   try {
-    const r = calcularAbastecimento(perfil, abastecimento, dados, agoraLocal(new Date()));
+    const r = calcularAbastecimento(perfil, abastecimento, dados, dataHoraEmSaoPaulo(new Date()));
     const nomeRede = dados.redes_postos.find((x) => x.id === abastecimento.rede_id)?.nome;
     const texto = tituloDoAbastecimento(r.abastecimento, nomeRede);
     titulo.textContent = texto[0].toUpperCase() + texto.slice(1);

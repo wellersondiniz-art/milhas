@@ -4,9 +4,11 @@
 // Sem perfil, a conta usa todos os cartões e programas (Programa Alfa e Beta,
 // sem clube). Compra de R$ 100,00 na Loja Teste:
 //   1º oferta + Cartão Alfa: 100 × 9 + 100 × 2 = 1.100 pontos Alfa → 1.100 × R$ 20,00 ÷ 1.000 = R$ 22,00
-//   2º oferta + Cartão Beta: 100 × 7 (Alfa) + 100 × 3 (Beta) = 1.000 pontos (Beta sem milheiro)
-//   3º sem oferta, Cartão Beta: 300 pontos
-//   4º sem oferta, Cartão Alfa: 200 pontos → R$ 4,00
+//   2º oferta + Cartão Beta: 100 × 7 (Alfa) + 100 × 3 (Beta) = 1.000 pontos (Beta sem milheiro;
+//      só a parte Alfa já vale 700 × R$ 20,00 ÷ 1.000 = R$ 14,00, e isso conta na ordem)
+//   3º sem oferta, Cartão Alfa: 200 pontos → R$ 4,00
+//   4º sem oferta, Cartão Beta: 300 pontos (sem valor em reais conhecido)
+// A ordem é pelo valor em reais, não pela soma de pontos de programas diferentes.
 import { readFile } from 'node:fs/promises';
 import {
   abrirInicio, calcular, cartoesDoResultado, escolherLojaPeloTeclado, expect, fixarRelogio, test, usarDadosDeTeste,
@@ -36,7 +38,8 @@ test.describe('com dados de teste', () => {
     await expect(cartoes.nth(0)).toContainText('Cartão Alfa Platinum');
     await expect(cartoes.nth(0)).toContainText('1.100 pontos');
     await expect(cartoes.nth(1)).toContainText('Cartão Beta Gold');
-    await expect(cartoes.nth(3)).toContainText('R$ 4,00');
+    await expect(cartoes.nth(2)).toContainText('R$ 4,00');
+    await expect(cartoes.nth(3)).toContainText('Cartão Beta Gold');
   });
 
   test('link de afiliado para a loja: depois do resultado, com rel sponsored e aviso de comissão visível', async ({ page }) => {
@@ -47,7 +50,7 @@ test.describe('com dados de teste', () => {
     await expect(link).toHaveAttribute('rel', 'sponsored noopener noreferrer');
     await expect(link).toHaveAccessibleDescription('Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você.');
     await expect(page.getByText('Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você.')).toBeVisible();
-    // O link vem depois de todos os jeitos: a ordem é só pelos pontos.
+    // O link vem depois de todos os jeitos: a ordem é só pelo resultado da conta.
     const depoisDoUltimo = await cartoesDoResultado(page).last().evaluate((ultimo, a) => Boolean(ultimo.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING), await link.elementHandle());
     expect(depoisDoUltimo).toBe(true);
   });
@@ -129,6 +132,23 @@ test.describe('quando os dados não carregam', () => {
 test.describe('com os dados reais do repositório', () => {
   test.use({ serviceWorkers: 'block' });
 
+  test('sem cotação do dólar e sem oferta: uma mensagem só, sem "Melhor jeito" em cima de "Nenhum ponto"', async ({ page }) => {
+    // Força a cotação "A_CONFIRMAR", para o teste não depender de quando ela for preenchida.
+    await page.route('**/dados/cambio.json', async (rota) => {
+      const resposta = await rota.fetch();
+      const cambio = (await resposta.json()).map((c) => ({ ...c, reais_por_dolar: 'A_CONFIRMAR', data_referencia: 'A_CONFIRMAR' }));
+      await rota.fulfill({ response: resposta, json: cambio });
+    });
+    await page.route('**/dados/ofertas.json', (rota) => rota.fulfill({ json: [] }));
+    await abrirInicio(page, '/?loja=magalu');
+    await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('50000');
+    await page.getByRole('button', { name: 'Ver o resultado' }).click();
+    await expect(page.getByText('Ainda não dá para calcular os pontos dos cartões')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Informar a cotação' })).toHaveAttribute('href', '#/perfil');
+    await expect(cartoesDoResultado(page)).toHaveCount(0);
+    await expect(page.locator('#resultado')).not.toContainText('Melhor jeito');
+  });
+
   test('toda loja calcula sem erro', async ({ page }) => {
     const lojas = JSON.parse(await readFile(new URL('../../dados/lojas.json', import.meta.url), 'utf8'));
     for (const loja of lojas) {
@@ -136,7 +156,9 @@ test.describe('com os dados reais do repositório', () => {
       await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('129900');
       await page.getByRole('button', { name: 'Ver o resultado' }).click();
       await expect(page.getByRole('heading', { level: 2, name: `R$ 1.299,00 na ${loja.nome}` })).toBeVisible();
-      await expect(cartoesDoResultado(page).first()).toContainText('Melhor jeito');
+      // Com os dados reais: ou aparece o melhor jeito, ou (sem a cotação do dólar
+      // e sem oferta) uma mensagem só, sem lista de "Nenhum ponto".
+      await expect(page.locator('#resultado')).toContainText(/Melhor jeito|Ainda não dá para calcular os pontos dos cartões/);
       await expect(page.getByText('Não deu para calcular')).toHaveCount(0);
     }
   });

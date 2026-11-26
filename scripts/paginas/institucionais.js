@@ -24,7 +24,9 @@ import { formatarData } from '../../site/js/motor/index.js';
 import { AVISO_COMISSAO } from '../../site/js/saida/links.js';
 import { EVENTOS, metricasLigadas } from '../../site/js/metricas/metricas.js';
 import { REPORTE_LIGADO } from '../../site/js/reporte/config.js';
-import { ALERTAS_LIGADO, EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
+import {
+  ALERTAS_LIGADO, EMAIL_DE_CONTATO, NOME_DO_SITE, RESPONSAVEL_PELOS_DADOS, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM,
+} from './config.js';
 import { h, juntar, linkExterno } from './html.js';
 import { configDoPlano } from './plano.js';
 import { BENEFICIOS } from '../../servidor/plano/regras.js';
@@ -65,7 +67,7 @@ function comoFunciona(plano, explicarLigado) {
     pasta: 'como-funciona',
     titulo: 'Como funciona',
     descricao: `Como o ${NOME_DO_SITE} calcula quantos pontos e milhas uma compra rende, e o que fica de fora da conta.`,
-    abertura: 'Você diz a loja e o valor da compra. A gente faz a conta e mostra qual jeito de pagar rende mais pontos, e quanto esses pontos valem em reais, mais ou menos.',
+    abertura: 'Você diz a loja e o valor da compra. A gente faz a conta e mostra qual jeito de pagar vale mais, em reais, mais ou menos, e quantos pontos ele rende. A gente compara em reais porque 1 ponto de um programa pode valer bem mais que 1 ponto de outro.',
     corpo: [
       secao('passo-a-passo', 'Passo a passo', passos([
         'Você escolhe a loja e digita quanto vai gastar.',
@@ -94,7 +96,7 @@ function comoFunciona(plano, explicarLigado) {
         explicarLigado
           ? p('A conta segue regras fixas, escritas no código do site, sem inteligência artificial e sem palpite. A mesma compra, no mesmo dia, dá sempre o mesmo resultado. O botão "Explica pra mim" usa inteligência artificial só para explicar em palavras um resultado que a conta já fez; ele não muda a conta.')
           : p('A conta segue regras fixas, escritas no código do site, sem inteligência artificial e sem palpite. A mesma compra, no mesmo dia, dá sempre o mesmo resultado.'),
-        p('A ordem do resultado é só pelos pontos. Comissão de loja não entra na conta: a parte do site que faz a conta nem sabe quais lojas pagam comissão. Veja os ', termos(), '.'),
+        p('A ordem do resultado é pelo valor dos pontos em reais. Comissão de loja não entra na conta: a parte do site que faz a conta nem sabe quais lojas pagam comissão. Veja os ', termos(), '.'),
         explicarLigado
           ? p('E a conta é feita no seu próprio aparelho: o valor que você digita e os cartões que você marca ficam nele. A exceção é quando você toca em "Explica pra mim": aí a loja, o valor, o seu perfil e a sua pergunta vão para o nosso servidor e para a empresa de inteligência artificial que escreve a explicação. Veja ', privacidade(), '.')
           : p('E a conta é feita no seu próprio aparelho: o valor que você digita e os cartões que você marca não vão para nenhum servidor. Veja ', privacidade(), '.')),
@@ -118,7 +120,7 @@ function sobreDados() {
     pasta: 'sobre-os-dados',
     titulo: 'Sobre os dados',
     descricao: `De onde vêm as ofertas, os cartões e os programas do ${NOME_DO_SITE}, com que frequência conferimos e o que é estimativa.`,
-    abertura: 'Tudo o que entra na conta vem de páginas oficiais das lojas, dos bancos e dos programas de pontos. Cada dado tem o link da fonte e a data em que foi conferido.',
+    abertura: 'As regras que entram na conta (ofertas, pontos dos cartões e programas) vêm de páginas oficiais das lojas, dos bancos e dos programas de pontos. O valor do milheiro e a cotação do dólar são estimativas, explicadas abaixo. Cada dado tem o link da fonte e a data em que foi conferido.',
     corpo: [
       secao('origem', 'De onde vêm',
         p('A gente confere à mão, uma por uma, as páginas oficiais: o regulamento da oferta na loja ou no programa, a página do cartão no site do banco e a página do programa de pontos.'),
@@ -187,7 +189,13 @@ function secaoExplicar() {
     p('A gente não guarda a pergunta nem a explicação. Para limitar o uso por dia, o servidor guarda por 2 dias um código embaralhado feito a partir do endereço de internet (IP), com um contador. O IP em si não fica guardado.'));
 }
 
-function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado }) {
+/** O responsável pelos dados está preenchido em config.js? */
+function responsavelDefinido(r) {
+  return Boolean(r && typeof r.nome === 'string' && typeof r.documento === 'string' &&
+    r.nome.trim() && r.documento.trim() && r.nome !== A_CONFIRMAR && r.documento !== A_CONFIRMAR);
+}
+
+function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado, responsavel, temEmail }) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -259,6 +267,25 @@ function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alert
       explicarLigado ? secaoExplicar() : null,
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
+      secao('responsavel', 'Quem responde pelos seus dados',
+        responsavelDefinido(responsavel)
+          ? p(`Quem responde pelos dados tratados no ${NOME_DO_SITE} (o "controlador", como diz a Lei Geral de Proteção de Dados, a LGPD) é ${responsavel.nome}, ${responsavel.documento}.`)
+          : alerta('aviso', '!', 'Falta informar quem responde pelos dados',
+            p('Aqui vai aparecer o nome e o documento (CNPJ ou CPF) de quem responde pelos dados do site, o "controlador", como diz a Lei Geral de Proteção de Dados (LGPD). Essa informação entra antes do lançamento.')),
+        p('Por que a gente pode tratar o pouco que recebe: os dados técnicos de acesso são usados para entregar e proteger o site (legítimo interesse, na LGPD), e o que você manda pelo Contato é usado para atender o seu pedido.')),
+      secao('direitos', 'Os seus direitos',
+        p('Pela LGPD, você pode pedir para:'),
+        lista([
+          'saber se a gente trata algum dado seu e ver quais são;',
+          'corrigir um dado errado ou desatualizado;',
+          'apagar dados seus;',
+          'levar os seus dados para outro serviço;',
+          'saber com quais empresas a gente compartilha dados;',
+          'retirar uma permissão que você deu.',
+        ]),
+        p('Como o perfil fica só no seu aparelho, apagar e levar os dados você mesmo faz em ', meuPerfil(), ', sem pedir para ninguém. Para o resto, ',
+          temEmail ? juntar('escreva pela página de ', contato(), '.') : juntar('o canal ainda está sendo preparado; quando estiver pronto, aparece na página de ', contato(), '.')),
+        p('Você também pode reclamar na ', h('a', { href: 'https://www.gov.br/anpd/', rel: 'noopener noreferrer' }, 'Autoridade Nacional de Proteção de Dados (ANPD)'), '.')),
     ],
   };
 }
@@ -362,7 +389,7 @@ function paginaTermos(temAfiliado, plano, explicarLigado) {
           : juntar(
             p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
             p('Se um dia isso mudar, cada link de afiliado vai ter, logo abaixo, o aviso "', AVISO_COMISSAO, '" Os outros links continuam comuns.')),
-        p('A comissão nunca muda a ordem do resultado: ela é sempre pelos pontos, e a parte do site que faz a conta nem sabe quais lojas pagam comissão.')),
+        p('A comissão nunca muda a ordem do resultado: ela é sempre pelo valor dos pontos, e a parte do site que faz a conta nem sabe quais lojas pagam comissão.')),
       secao('mudancas', 'Mudanças neste texto',
         p('Se este texto mudar, a data no começo da página muda junto. Dúvidas? Fale com a gente em ', contato(), '.')),
     ],
@@ -467,6 +494,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   urlBase          URL base já normalizada, ou null
  *   revisaoPendente  padrão: REVISAO_JURIDICA_PENDENTE (config.js)
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
+ *   responsavel      padrão: RESPONSAVEL_PELOS_DADOS (config.js), { nome, documento }
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
  *   temAfiliado      algum link de dados/links.json é de afiliado (siteTemLinkDeAfiliado)
  *   usaAwin          algum link passa pela Awin (siteUsaAwin)
@@ -490,10 +518,11 @@ export function paginasInstitucionais({
   alertas = ALERTAS_LIGADO,
   plano = configDoPlano(),
   explicarLigado = EXPLICAR_LIGADO,
+  responsavel = RESPONSAVEL_PELOS_DADOS,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email, reporteLigado);
-  const todas = [comoFunciona(plano, explicarLigado), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado }), paginaTermos(temAfiliado, plano, explicarLigado), contatoPagina];
+  const todas = [comoFunciona(plano, explicarLigado), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado, responsavel, temEmail: contatoPagina.temEmail }), paginaTermos(temAfiliado, plano, explicarLigado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {
@@ -504,6 +533,9 @@ export function paginasInstitucionais({
     avisos.push('Há link de afiliado em dados/links.json: Privacidade e Termos passaram a dizer isso. Se for a primeira vez, troque TEXTOS_ATUALIZADOS_EM em scripts/paginas/config.js.');
   }
   if (medindo) avisos.push('Métricas ligadas (site/js/metricas/config.js): a página Privacidade diz o que é medido. Se for a primeira vez, troque TEXTOS_ATUALIZADOS_EM em scripts/paginas/config.js.');
+  if (!responsavelDefinido(responsavel)) {
+    avisos.push('RESPONSAVEL_PELOS_DADOS A_CONFIRMAR: a Privacidade diz que falta informar quem responde pelos dados. Defina em scripts/paginas/config.js (com o advogado).');
+  }
   if (!contatoPagina.temEmail) avisos.push('EMAIL_DE_CONTATO A_CONFIRMAR: a página Contato diz que o canal está em preparação. Defina em scripts/paginas/config.js.');
   return {
     paginas: todas.map((pagina) => montar(pagina, opcoes)),

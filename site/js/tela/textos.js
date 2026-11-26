@@ -54,7 +54,7 @@ export function destaqueDoJeito(jeito) {
 /** Linha da validade. Sem oferta, os pontos do cartão não vencem com a loja. */
 export function textoValidade(jeito) {
   if (jeito.validade_da_oferta) return `Validade da oferta: ${jeito.validade_da_oferta.texto.replace(/^De /, 'de ')}`;
-  return 'Sem oferta da loja: são só os pontos de sempre do cartão, sem data para acabar.';
+  return 'Sem oferta da loja: só os pontos normais do cartão.';
 }
 
 /** "Conferimos: oferta X em 22/11/2026; cartão Y em 20/11/2026 (há 16 dias)". */
@@ -78,6 +78,27 @@ export function textosAntesDeComprar(jeito) {
   };
 }
 
+/** Nenhum jeito rende ponto nenhum? (Aí a tela mostra uma mensagem só, sem lista.) */
+export function nenhumJeitoRende(jeitos) {
+  return jeitos.length > 0 && jeitos.every((j) => j.total_pontos === 0);
+}
+
+/** Título e texto da mensagem única quando nada rende pontos. */
+export function textoNadaRende(jeitos) {
+  if (jeitos.some((j) => j.falta_cotacao_do_dolar)) {
+    return {
+      titulo: 'Ainda não dá para calcular os pontos dos cartões',
+      texto: 'Os cartões contam pontos por dólar gasto, mesmo em compra no Brasil, e ainda falta a cotação do dólar para fazer a conta. Se você souber a cotação, informe em Meu perfil e a conta aparece.',
+      pedeCotacao: true,
+    };
+  }
+  return {
+    titulo: 'Esta compra não rende pontos, pelo que sabemos',
+    texto: 'Nenhuma oferta valendo hoje nem cartão que conhecemos dá pontos nesta compra. As regras mudam: confira de novo em outro dia.',
+    pedeCotacao: false,
+  };
+}
+
 /** O motor fala em clube ou milheiro neste card? (Para explicar a palavra na tela.) */
 export function palavrasQueAparecem(jeitos) {
   const tudo = JSON.stringify(jeitos.map((j) => [j.condicoes_a_cumprir, j.explicacao, j.avisos, j.o_que_voce_ganharia_se.map((h) => h.texto)]));
@@ -91,6 +112,10 @@ export function palavrasQueAparecem(jeitos) {
 export function anuncioDoResultado(jeitos, { nomeLoja, valorTexto }) {
   const [melhor] = jeitos;
   if (!melhor) return `Resultado para ${valorTexto} na ${nomeLoja}: nenhum jeito de comprar encontrado.`;
+  if (nenhumJeitoRende(jeitos)) {
+    const { titulo, texto } = textoNadaRende(jeitos);
+    return `Resultado para ${valorTexto} na ${nomeLoja}. ${titulo}. ${texto}`;
+  }
   const destaque = destaqueDoJeito(melhor);
   const numero = destaque.emReais
     ? `${destaque.principal} em pontos (${pontos(melhor.total_pontos_texto)})`

@@ -269,7 +269,8 @@ test('núcleo: config e selo só para o host exato de uma loja ativa', async () 
       seletores: [{ css: '#preco', atributo: null }, { css: '[data-testid="price-installment"] > span[aria-hidden="true"]', atributo: null }],
     });
     // Preço recortado da linha de parcelas (regra "extrair" do arquivo de seletores).
-    assert.equal(calcularSelo({ texto: 'ou R$ 3.699,00 em 10x de R$ 369,90 sem juros', indice: 1 }, 'www.outra-loja.invalid', null, DADOS, SELETORES, HOJE).titulo, 'Melhor jeito: 11.097 pontos com Cartão Beta Gold');
+    // Desde o PR 33 a ordem é pelo valor em reais: o Beta não tem milheiro, então fica depois.
+    assert.equal(calcularSelo({ texto: 'ou R$ 3.699,00 em 10x de R$ 369,90 sem juros', indice: 1 }, 'www.outra-loja.invalid', null, DADOS, SELETORES, HOJE).titulo, 'Melhor jeito: 7.398 pontos com Cartão Alfa Platinum');
     assert.equal(calcularSelo({ texto: 'R$ 3.329,10', indice: 1 }, 'www.outra-loja.invalid', null, DADOS, SELETORES, HOJE), null);
     assert.deepEqual(configuracaoPara('WWW.OUTRA-LOJA.INVALID', SELETORES)?.caminho_produto, '^/p/');
     for (const host of ['outra-loja.invalid', 'www.outra-loja.invalid.golpe.com', 'golpe.com', '', null]) {
@@ -284,7 +285,7 @@ test('núcleo: config e selo só para o host exato de uma loja ativa', async () 
     });
     // Sem perfil (ou perfil quebrado): todos os cartões, com aviso.
     for (const semPerfil of [undefined, null, 'lixo', { versao: 99 }]) {
-      assert.equal(calcularSelo({ texto: 'R$ 1.299,00', indice: 0 }, 'www.outra-loja.invalid', semPerfil, DADOS, SELETORES, HOJE).titulo, 'Melhor jeito: 3.897 pontos com Cartão Beta Gold');
+      assert.equal(calcularSelo({ texto: 'R$ 1.299,00', indice: 0 }, 'www.outra-loja.invalid', semPerfil, DADOS, SELETORES, HOJE).titulo, 'Melhor jeito: 2.598 pontos com Cartão Alfa Platinum');
     }
     // Oferta de teste na loja-teste (Programa Alfa, válida em 10/11/2026), preço em atributo decimal.
     const comOferta = calcularSelo({ texto: '250.00', indice: 1 }, 'www.loja-teste.invalid', perfil, DADOS, SELETORES, HOJE);

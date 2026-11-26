@@ -9,7 +9,8 @@ import { pathToFileURL } from 'node:url';
 import { aplicarMascara, erroDoValor, MAX_DIGITOS, VALOR_MAXIMO_CENTAVOS } from '../site/js/tela/moeda.js';
 import { filtrarLojas, lojaPeloNome, normalizar } from '../site/js/tela/lojas.js';
 import {
-  anuncioDoResultado, destaqueDoJeito, fraseDoJeito, palavrasQueAparecem, textoValidade, seloDeVencimento, textosAntesDeComprar, textosConferido,
+  anuncioDoResultado, destaqueDoJeito, fraseDoJeito, nenhumJeitoRende, palavrasQueAparecem, seloDeVencimento, textoNadaRende, textoValidade,
+  textosAntesDeComprar, textosConferido,
 } from '../site/js/tela/textos.js';
 import { calcularJeitosDeComprar } from '../site/js/motor/index.js';
 import { copiarDados, ARQUIVOS } from '../scripts/copiar-dados.js';
@@ -111,6 +112,10 @@ const DADOS_MOTOR = {
 const HOJE = '2026-11-10T12:00';
 const calc = (perfil, valor = 10000) =>
   calcularJeitosDeComprar(perfil, { loja_id: 'loja-a', valor_centavos: valor, tipo_vendedor: 'loja' }, DADOS_MOTOR, HOJE);
+const porTipo = (jeitos) => ({
+  comOferta: jeitos.find((j) => j.tipo === 'oferta'),
+  semOferta: jeitos.find((j) => j.tipo !== 'oferta'),
+});
 const PERFIL = { programas: [{ programa_id: 'prog-a', clube_ativo: false }, { programa_id: 'prog-b', clube_ativo: false }], cartoes: ['cartao-a'] };
 
 test('selo de vencimento: só quando a oferta vence em até 3 dias', () => {
@@ -123,7 +128,7 @@ test('selo de vencimento: só quando a oferta vence em até 3 dias', () => {
 });
 
 test('frase do jeito: com oferta, sem oferta e sem nada', () => {
-  const [comOferta, semOferta] = calc(PERFIL);
+  const { comOferta, semOferta } = porTipo(calc(PERFIL));
   assert.equal(fraseDoJeito(comOferta, 'Loja A'), 'Compre na Loja A pela oferta do Programa B e pague com o cartão Cartão A.');
   assert.equal(fraseDoJeito(semOferta, 'Loja A'), 'Compre direto na Loja A e pague com o cartão Cartão A. Os pontos vão para o Programa A.');
   const [vazio] = calc({ programas: [], cartoes: [] });
@@ -131,7 +136,7 @@ test('frase do jeito: com oferta, sem oferta e sem nada', () => {
 });
 
 test('destaque: reais quando o motor dá o valor; pontos quando falta o milheiro; nenhum ponto', () => {
-  const [, semOferta] = calc(PERFIL);
+  const { semOferta } = porTipo(calc(PERFIL));
   assert.deepEqual(destaqueDoJeito(semOferta), {
     principal: 'R$ 4,00', legenda: 'é quanto valem, em média, os 200 pontos desta compra', emReais: true,
   });
@@ -146,7 +151,8 @@ test('anúncio para leitor de tela: valor, pontos, como comprar e quantos jeitos
   const jeitos = calc(PERFIL);
   const texto = anuncioDoResultado(jeitos, { nomeLoja: 'Loja A', valorTexto: 'R$ 100,00' });
   assert.match(texto, /^Resultado para R\$ 100,00 na Loja A\. O melhor jeito rende /);
-  assert.match(texto, /Compre na Loja A pela oferta do Programa B e pague com o cartão Cartão A\./);
+  // O cartão (R$ 4,00) vem antes da oferta de 700 pontos sem valor em reais conhecido.
+  assert.match(texto, /O melhor jeito rende R\$ 4,00 em pontos \(200 pontos\)\. Compre direto na Loja A e pague com o cartão Cartão A\./);
   assert.match(texto, /Há mais 1 jeito logo abaixo\.$/);
   const [semOferta] = calc({ programas: [{ programa_id: 'prog-a', clube_ativo: false }], cartoes: ['cartao-a'] }, 10000)
     .filter((j) => j.tipo !== 'oferta');
@@ -158,20 +164,36 @@ test('anúncio para leitor de tela: valor, pontos, como comprar e quantos jeitos
 });
 
 test('validade: da oferta, ou explica que é ponto de sempre do cartão', () => {
-  const [comOferta, semOferta] = calc(PERFIL);
+  const { comOferta, semOferta } = porTipo(calc(PERFIL));
   assert.equal(textoValidade(comOferta), 'Validade da oferta: de 01/11/2026 até 30/11/2026.');
-  assert.match(textoValidade(semOferta), /sem data para acabar/);
+  assert.equal(textoValidade(semOferta), 'Sem oferta da loja: só os pontos normais do cartão.');
+});
+
+test('nada rende: uma mensagem só, que diz quando falta a cotação do dólar', () => {
+  const [vazio] = calc({ programas: [], cartoes: [] });
+  assert.equal(nenhumJeitoRende([vazio]), true);
+  assert.equal(nenhumJeitoRende([]), false);
+  assert.equal(nenhumJeitoRende(calc(PERFIL)), false);
+  assert.equal(textoNadaRende([vazio]).pedeCotacao, false);
+  const semCotacao = { ...vazio, falta_cotacao_do_dolar: true };
+  const t = textoNadaRende([vazio, semCotacao]);
+  assert.equal(t.pedeCotacao, true);
+  assert.equal(t.titulo, 'Ainda não dá para calcular os pontos dos cartões');
+  assert.equal(
+    anuncioDoResultado([semCotacao], { nomeLoja: 'Loja A', valorTexto: 'R$ 100,00' }),
+    `Resultado para R$ 100,00 na Loja A. ${t.titulo}. ${t.texto}`,
+  );
 });
 
 test('conferido: uma linha por dado usado, marcando o antigo', () => {
-  const [comOferta] = calc(PERFIL);
+  const { comOferta } = porTipo(calc(PERFIL));
   const linhas = textosConferido(comOferta);
   assert.ok(linhas.some((l) => l.texto === 'Oferta Programa B na Loja A: conferido em 09/11/2026 (ontem)' && !l.antigo));
   assert.ok(linhas.some((l) => l.texto === 'Cartão Cartão A: conferido em 01/10/2026 (há 40 dias)' && l.antigo));
 });
 
 test('antes de comprar: condições, prazo e o que renderia mais (clube 24 horas antes)', () => {
-  const [comOferta] = calc(PERFIL);
+  const { comOferta } = porTipo(calc(PERFIL));
   const { fazer, daPraGanharMais } = textosAntesDeComprar(comOferta);
   assert.ok(fazer.includes('Pagar com o cartão Cartão A.'));
   assert.ok(fazer.some((t) => /30 dias/.test(t)));
