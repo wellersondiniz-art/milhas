@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "viagens.schema.json",
+  "title": "Pontos ao comprar passagem ou reservar hotel",
+  "description": "Regras gerais publicadas pelos programas: quantos pontos cada real (ou dólar, ou euro) gasto em passagem ou hotel rende, conforme a categoria da pessoa no programa. Sem preço de passagem nem de diária.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "tipo", "programa_id", "vendedor", "trechos", "moeda", "a_cada", "base_de_calculo", "niveis", "fonte_url", "verificado_em"],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "tipo": { "enum": ["passagem", "hotel"] },
+      "programa_id": { "description": "Programa que dá os pontos (programas.json).", "$ref": "#/$defs/id" },
+      "vendedor": { "description": "Onde se compra para a regra valer (ex.: LATAM, GOL, Hotéis Accor).", "type": "string", "minLength": 1 },
+      "trechos": {
+        "description": "Para passagem: nacional_e_america_do_sul, fora_da_america_do_sul ou todos. Hotel usa todos.",
+        "enum": ["nacional_e_america_do_sul", "fora_da_america_do_sul", "todos"]
+      },
+      "escolha": {
+        "description": "Pergunta que separa regras do mesmo vendedor (tarifa, marca do hotel). Só vale a regra cuja resposta a pessoa escolheu.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["pergunta_id", "pergunta", "resposta_id", "resposta"],
+        "properties": {
+          "pergunta_id": { "$ref": "#/$defs/id" },
+          "pergunta": { "type": "string", "minLength": 1 },
+          "resposta_id": { "$ref": "#/$defs/id" },
+          "resposta": { "type": "string", "minLength": 1 }
+        }
+      },
+      "moeda": { "description": "Em qual moeda o programa conta o gasto.", "enum": ["BRL", "USD", "EUR"] },
+      "a_cada": { "description": "A cada quantas unidades da moeda os pontos do nível são dados (1 = por real/dólar; 10 = a cada 10 euros).", "type": "integer", "minimum": 1 },
+      "base_de_calculo": { "description": "Sobre o que o programa conta (ex.: tarifa sem taxas).", "type": "string", "minLength": 1 },
+      "niveis": {
+        "description": "Pontos por categoria, da inicial à mais alta. Número com até 4 casas; A_CONFIRMAR fica fora da conta.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "nome", "pontos"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "nome": { "type": "string", "minLength": 1 },
+            "pontos": { "anyOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/$defs/a_confirmar" }] }
+          }
+        }
+      },
+      "teto_por_trecho": { "description": "Máximo de pontos por trecho, quando o programa limita.", "type": "integer", "minimum": 1 },
+      "valor_do_ponto": {
+        "description": "Quanto valem 1.000 pontos quando o próprio programa diz, em outra moeda (ex.: ALL: 1.000 pontos = 20 euros).",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["moeda", "centimos_por_mil", "fonte_url"],
+        "properties": {
+          "moeda": { "enum": ["EUR"] },
+          "centimos_por_mil": { "description": "Em centavos da moeda (2000 = 20,00).", "type": "integer", "minimum": 1 },
+          "fonte_url": { "$ref": "#/$defs/url" }
+        }
+      },
+      "inicio": { "anyOf": [{ "$ref": "#/$defs/data" }, { "$ref": "#/$defs/a_confirmar" }] },
+      "fim": { "anyOf": [{ "$ref": "#/$defs/data" }, { "$ref": "#/$defs/a_confirmar" }] },
+      "status": { "description": "A_CONFIRMAR tira a regra da conta.", "enum": ["confirmado", "A_CONFIRMAR"] },
+      "observacoes": { "type": "string" },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" }
+    }
+  },
+  "$defs": {
+    "id": { "description": "Letras minúsculas, números e hífen.", "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "produtos.schema.json",
+  "title": "Produtos por API oficial",
+  "description": "Quais produtos o site mostra, de qual loja e por qual API oficial (de afiliado ou de parceiro). Nada de raspar site: cada loja só entra com a API que a própria loja ou a rede de afiliados oferece. Preço e nome vêm da API na hora do build (scripts/produtos/atualizar.js); aqui ficam só os códigos dos produtos escolhidos.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ligado", "lojas"],
+  "properties": {
+    "ligado": {
+      "description": "Chave geral. false: nenhuma API é chamada e nenhum produto aparece no site, mesmo com credenciais.",
+      "type": "boolean"
+    },
+    "lojas": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/loja" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Letras minúsculas, números e hífen.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "a_confirmar": { "const": "A_CONFIRMAR" },
+    "loja": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["loja_id", "api", "validade_horas", "itens", "fonte_url", "verificado_em"],
+      "properties": {
+        "loja_id": { "description": "id de um registro de lojas.json.", "$ref": "#/$defs/id" },
+        "api": {
+          "description": "Qual adaptador busca os produtos (scripts/produtos/adaptadores/).",
+          "enum": ["amazon", "mercado-livre", "shopee", "awin"]
+        },
+        "validade_horas": {
+          "description": "Por quantas horas o preço vale depois de consultado. Depois disso ele some do site. Máximo 24 (regra da Amazon, usada para todas).",
+          "type": "integer",
+          "minimum": 1
+        },
+        "awin_anunciante_id": {
+          "description": "Só para api \"awin\": número do anunciante (a loja) na Awin.",
+          "anyOf": [{ "type": "string", "pattern": "^[0-9]+$" }, { "$ref": "#/$defs/a_confirmar" }]
+        },
+        "awin_feed_id": {
+          "description": "Só para api \"awin\": número do feed de produtos da loja na Awin (Toolbox > Create-a-Feed).",
+          "anyOf": [{ "type": "string", "pattern": "^[0-9]+$" }, { "$ref": "#/$defs/a_confirmar" }]
+        },
+        "itens": {
+          "description": "Produtos escolhidos, pelo código da loja (até 10 por loja).",
+          "type": "array",
+          "items": { "$ref": "#/$defs/item" }
+        },
+        "fonte_url": { "description": "Documentação oficial da API.", "type": "string", "format": "uri", "pattern": "^https://" },
+        "verificado_em": { "type": "string", "format": "date" },
+        "observacoes": { "type": "string" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id_na_loja", "categoria", "vendido_pela_loja"],
+      "properties": {
+        "id_na_loja": {
+          "description": "Código do produto na loja: ASIN na Amazon (B0...), MLB... no Mercado Livre, itemId na Shopee, aw_product_id na Awin.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,40}$"
+        },
+        "categoria": {
+          "description": "Categoria do produto com o MESMO nome usado nas ofertas (categorias_incluidas/excluidas). A_CONFIRMAR: ofertas que dependem de categoria não contam.",
+          "anyOf": [{ "type": "string", "minLength": 1, "maxLength": 80 }, { "$ref": "#/$defs/a_confirmar" }]
+        },
+        "vendido_pela_loja": {
+          "description": "true: vendido e entregue pela própria loja. false: vendedor parceiro. A_CONFIRMAR: a API decide; sem resposta da API, conta como parceiro (o mais conservador).",
+          "anyOf": [{ "type": "boolean" }, { "$ref": "#/$defs/a_confirmar" }]
+        }
+      }
+    }
+  }
+}

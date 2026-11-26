@@ -1,6 +1,8 @@
 # Cabeçalhos de segurança (Cloudflare Pages).
+# connect-src libera só o envio das métricas sem cookie (site/js/metricas/config.js).
+# Nenhum script de terceiro: script-src continua só 'self'.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' https://plausible.io; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
@@ -16,3 +18,10 @@
 /manifest.webmanifest
   Content-Type: application/manifest+json
   Cache-Control: no-cache
+
+# Os dados públicos (lojas, cartões, programas, ofertas) podem ser lidos pelo
+# app das lojas (Android/iOS), que roda em outra origem (capacitor://localhost
+# e https://localhost). São arquivos públicos, sem cookie: liberar para
+# qualquer origem não expõe nada que já não esteja no site.
+/dados/*
+  Access-Control-Allow-Origin: *

@@ -26,7 +26,13 @@ listar() { cut -d: -f"$1" | sort -u | sed 's/^/           - /'; }
 EXCLUIR=(':!seguranca/auditar.sh' ':!seguranca/CHECKLIST.md')
 
 # Padrões de segredos comuns.
-SEGREDOS='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|(api[_-]?key|secret|token|senha|password|passwd)["'\'']?[[:space:]]*[:=][[:space:]]*["'\''][^"'\'' ]{8,}["'\'']'
+SEGREDOS='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|(sk|rk)_test_[A-Za-z0-9]{20,}|whsec_[A-Za-z0-9]{24,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|sb_secret_[A-Za-z0-9_-]{10,}|\bre_[A-Za-z0-9]{6,}_[A-Za-z0-9_]{10,}|(api[_-]?key|secret|token|senha|password|passwd)["'\'']?[[:space:]]*[:=][[:space:]]*["'\''][^"'\'' ]{8,}["'\'']'
+
+# Valores falsos que os testes usam de propósito (não são segredo): linhas
+# com eles saem da lista. Se um valor real aparecer na mesma linha de um
+# falso, ele passa despercebido; por isso a lista é curta e bem específica.
+FALSOS='chave-de-teste|segredo-amazon|tok-secreto|APP_USR-1[^0-9]|senha-errada-senha-errada|URL_TOKEN = .https://'
+tirar_falsos() { grep -vE "$FALSOS" || true; }
 
 # Dados pessoais: CPF formatado e número de cartão (16 dígitos).
 PESSOAIS='[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|\b[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}\b'
@@ -41,7 +47,7 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "1. Segredos nos arquivos atuais"
-achados="$(git grep -nIiE "$SEGREDOS" -- . "${EXCLUIR[@]}" 2>/dev/null || true)"
+achados="$(git grep -nIiE "$SEGREDOS" -- . "${EXCLUIR[@]}" 2>/dev/null | tirar_falsos)"
 if [ -n "$achados" ]; then
   falha "possível segredo em arquivo rastreado (revogue a chave antes de apagar):"
   printf '%s\n' "$achados" | listar 1,2
@@ -53,7 +59,7 @@ fi
 secao "2. Segredos no histórico do Git"
 historico=""
 for commit in $(git rev-list --all); do
-  r="$(git grep -nIiE "$SEGREDOS" "$commit" -- . "${EXCLUIR[@]}" 2>/dev/null || true)"
+  r="$(git grep -nIiE "$SEGREDOS" "$commit" -- . "${EXCLUIR[@]}" 2>/dev/null | tirar_falsos)"
   [ -n "$r" ] && historico+="$r"$'\n'
 done
 if [ -n "$historico" ]; then
@@ -66,6 +72,8 @@ fi
 # ---------------------------------------------------------------------------
 secao "3. Arquivos sensíveis rastreados"
 sensiveis="$(git ls-files | grep -iE '(^|/)\.env($|\.)|\.(pem|key|p12|pfx|jks|keystore|gpg|sql|dump|bak|xls|xlsx|xlsm|ods|csv|pdf|docx?)$|(^|/)id_(rsa|ed25519)|credentials.*\.json$|service-account.*\.json$|(^|/)\.npmrc$|(^|/)\.dev\.vars$' || true)"
+# Migrações e testes SQL do Supabase são código (esquema), não dump de dados.
+sensiveis="$(printf '%s\n' "$sensiveis" | grep -vE '^(supabase/(migrations|testes)|scripts/operacao/backup)/[A-Za-z0-9_.-]+\.sql$' | grep -v '^$' || true)"
 if [ -n "$sensiveis" ]; then
   falha "arquivo que não deveria estar no Git:"
   printf '%s\n' "$sensiveis" | sed 's/^/           - /'
@@ -118,8 +126,8 @@ if [ -d dist ]; then
 fi
 
 # ---------------------------------------------------------------------------
-secao "5. XSS e execução de código (site/)"
-xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa 2>/dev/null || true)"
+secao "5. XSS e execução de código (site/, extensao/, functions/ e servidor/)"
+xss="$(git grep -nIE '\.innerHTML|\.outerHTML|insertAdjacentHTML|document\.write|\beval\(|new Function\(|setTimeout\([[:space:]]*["'\'']|setInterval\([[:space:]]*["'\'']' -- site scripts/pwa extensao/fonte functions servidor 2>/dev/null || true)"
 if [ -n "$xss" ]; then
   falha "uso de innerHTML/eval ou similar (use textContent / createElement):"
   printf '%s\n' "$xss" | listar 1,2
@@ -133,6 +141,40 @@ if [ -n "$inline" ]; then
   printf '%s\n' "$inline" | listar 1,2
 else
   ok "sem script, evento ou estilo inline no HTML"
+fi
+
+if [ -d functions ]; then
+  # Com functions/, a Cloudflare roda a função em todo pedido, a não ser que
+  # _routes.json diga quais caminhos são dela. Sem isso, o site estático
+  # passaria a gastar a cota de Workers e a responder mais devagar.
+  if [ -f dist/_routes.json ] && node -e 'const r=require("./dist/_routes.json");process.exit(r.version===1&&r.include.length>0&&r.include.every((c)=>c.startsWith("/api/"))?0:1)' 2>/dev/null; then
+    ok "dist/_routes.json limita as funções a /api/*"
+  else
+    falha "functions/ existe, mas dist/_routes.json não limita as funções a /api/*"
+  fi
+  segredo_fixo="$(git grep -nIiE '(GITHUB_TOKEN|REPORTES_REPO)[[:space:]]*[:=][[:space:]]*["'\'']' -- functions servidor 2>/dev/null || true)"
+  if [ -n "$segredo_fixo" ]; then
+    falha "token ou repositório de reportes escrito no código (use segredo e variável na Cloudflare):"
+    printf '%s\n' "$segredo_fixo" | listar 1,2
+  else
+    ok "token e repositório de reportes só vêm do ambiente da Cloudflare"
+  fi
+  # Chaves dos alertas só vêm do ambiente (Cloudflare e GitHub Actions).
+  chave_fixa="$(git grep -nIE '(SUPABASE_SECRET_KEY|RESEND_API_KEY|ALERTAS_SEGREDO|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|service_role_key)[[:space:]]*[:=][[:space:]]*["'\''`]' -- functions servidor scripts .github 2>/dev/null || true)"
+  if [ -n "$chave_fixa" ]; then
+    falha "chave dos alertas ou do Stripe escrita no código (use segredo no ambiente):"
+    printf '%s\n' "$chave_fixa" | listar 1,2
+  else
+    ok "chaves do Supabase, do Resend e do Stripe só vêm do ambiente"
+  fi
+  # A chave da IA só pode existir no servidor, vinda do ambiente da Cloudflare.
+  chave_ia="$(git grep -nIE 'ANTHROPIC_API_KEY|api\.anthropic\.com' -- site 2>/dev/null || true)"
+  if [ -n "$chave_ia" ]; then
+    falha "o código do navegador fala com a API de IA ou cita a chave (use /api/explicar):"
+    printf '%s\n' "$chave_ia" | listar 1,2
+  else
+    ok "o navegador não fala com a API de IA nem conhece a chave"
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -150,6 +192,8 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "7. Cabeçalhos de segurança (site/_headers e dist/_headers)"
+# Únicos endereços de fora que a CSP pode liberar (regex, um por alternativa).
+CSP_ORIGENS_PERMITIDAS='https://plausible\.io'
 conferir_headers() {
   local arq="$1" cab csp
   if [ ! -f "$arq" ]; then falha "$arq não existe"; return; fi
@@ -161,6 +205,21 @@ conferir_headers() {
     falha "$arq: CSP com unsafe-inline, unsafe-eval, curinga * ou esquema inteiro liberado"
   else
     ok "$arq: CSP sem unsafe-inline, unsafe-eval nem curinga"
+  fi
+  # Endereços de fora liberados na CSP: só os da lista (métricas sem cookie).
+  # Para liberar outro, ele entra aqui e em seguranca/CHECKLIST.md, com o motivo.
+  local fora
+  fora="$(printf '%s' "$csp" | grep -oE 'https://[^[:space:];]+' | grep -vxE "$CSP_ORIGENS_PERMITIDAS" | sort -u || true)"
+  if [ -n "$fora" ]; then
+    falha "$arq: CSP libera endereço fora da lista ($CSP_ORIGENS_PERMITIDAS):"
+    printf '%s\n' "$fora" | sed 's/^/           - /'
+  else
+    ok "$arq: CSP só libera endereços da lista"
+  fi
+  if printf '%s' "$csp" | grep -oE "script-src[^;]*" | grep -qE 'https?://'; then
+    falha "$arq: script-src libera script de outro site"
+  else
+    ok "$arq: nenhum script de outro site (script-src só 'self')"
   fi
   if printf '%s' "$csp" | grep -qi "frame-ancestors 'none'"; then ok "$arq: CSP bloqueia o site dentro de iframe"; else alerta "$arq: CSP sem frame-ancestors 'none'"; fi
 }
@@ -195,6 +254,14 @@ fi
 # ---------------------------------------------------------------------------
 secao "8. CORS"
 cors="$(git grep -nIiE 'Access-Control-Allow-Origin:?[[:space:]]*["'\'']?\*' -- . "${EXCLUIR[@]}" 2>/dev/null || true)"
+# Única exceção: os dados públicos (/dados/*) em site/_headers, lidos pelo app
+# Android/iOS. Arquivos públicos, sem cookie. Qualquer outro * continua falha.
+cors="$(printf '%s\n' "$cors" | while IFS= read -r achado; do
+  [ -z "$achado" ] && continue
+  arquivo="${achado%%:*}"; resto="${achado#*:}"; linha="${resto%%:*}"
+  if [ "$arquivo" = "site/_headers" ] && [ "$(sed -n "$((linha - 1))p" site/_headers)" = "/dados/*" ]; then continue; fi
+  printf '%s\n' "$achado"
+done)"
 if [ -n "$cors" ]; then
   falha "CORS liberado para qualquer origem (*):"
   printf '%s\n' "$cors" | listar 1,2
@@ -204,7 +271,7 @@ fi
 
 # ---------------------------------------------------------------------------
 secao "9. Debug, cookies, hash fraco e SQL"
-debug="$(git grep -nIE '\bdebugger\b|console\.(log|debug)\(' -- site 2>/dev/null || true)"
+debug="$(git grep -nIE '\bdebugger\b|console\.(log|debug)\(' -- site extensao/fonte 2>/dev/null || true)"
 if [ -n "$debug" ]; then
   alerta "debugger ou console.log no código publicado:"
   printf '%s\n' "$debug" | listar 1,2
@@ -240,7 +307,9 @@ fi
 secao "10. Dependências"
 # Fase 1: nenhuma dependência de runtime. Ferramenta de teste (devDependencies)
 # só da lista aprovada e com versão exata.
-DEV_PERMITIDAS='["@playwright/test"]'
+# Capacitor e o plugin do cofre: aprovados em 23/11/2026 (app Android/iOS);
+# só entram no app nativo, nunca no site.
+DEV_PERMITIDAS='["@playwright/test","@capacitor/cli","@capacitor/core","@capacitor/android","@capacitor/ios","@aparajita/capacitor-secure-storage"]'
 if [ -f package.json ]; then
   if node -e 'const p=require("./package.json");process.exit(Object.keys({...p.dependencies,...p.optionalDependencies,...p.peerDependencies}).length?1:0)' 2>/dev/null; then
     ok "package.json sem dependências de runtime"
@@ -254,6 +323,26 @@ if [ -f package.json ]; then
   fi
 fi
 [ -n "$(git ls-files node_modules | head -1)" ] && falha "pasta node_modules está no Git"
+
+# Falhas conhecidas nas dependências (consulta o registro do npm; precisa de rede).
+if [ -f package-lock.json ]; then
+  resumo_audit="$(npm audit --json 2>/dev/null | node -e '
+    let t = ""; process.stdin.on("data", (d) => (t += d)).on("end", () => {
+      try {
+        const j = JSON.parse(t);
+        if (j.error || !j.metadata) { console.log("erro"); return; }
+        const v = j.metadata.vulnerabilities;
+        console.log([v.moderate + v.high + v.critical, v.low + v.info, v.critical, v.high, v.moderate].join(" "));
+      } catch { console.log("erro"); }
+    });' 2>/dev/null)"
+  case "$resumo_audit" in
+    ""|erro) alerta "npm audit não respondeu (sem rede?); rode de novo com internet" ;;
+    "0 0"*) ok "npm audit: nenhuma falha conhecida nas dependências" ;;
+    "0 "*) alerta "npm audit: só falhas de gravidade baixa (rode npm audit para ver)" ;;
+    *) set -- $resumo_audit
+       falha "npm audit: $3 crítica(s), $4 alta(s), $5 moderada(s) (rode npm audit para ver e atualize)" ;;
+  esac
+fi
 
 if [ -d .github/workflows ]; then
   soltas="$(git grep -nE 'uses:[[:space:]]*[^[:space:]]+@' -- .github/workflows | grep -vE '@[0-9a-f]{40}' || true)"

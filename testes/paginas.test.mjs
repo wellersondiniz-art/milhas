@@ -20,6 +20,8 @@ const MALICIOSO = '<script>alert("x")</script> & \'Loja\'';
 /** Dados reais do repositório + ofertas de teste em várias situações. */
 async function dadosDeTeste() {
   const dados = await lerDados(new URL('dados/', RAIZ));
+  // Só as ofertas de teste abaixo: as reais mudam toda semana.
+  dados.ofertas = [];
   const oferta = (extra) => ({
     regras: [{ condicao: {}, pontos_por_real: 5 }, { condicao: { clube_ativo: true }, pontos_por_real: 8 }],
     escopo: 'todos_os_produtos',
@@ -41,6 +43,10 @@ async function dadosDeTeste() {
     oferta({ id: 'livelo-amazon-ativa', loja_id: 'amazon', programa_id: 'livelo' }),
     oferta({ id: 'smiles-kabum-conferindo', loja_id: 'kabum', programa_id: 'smiles', status: 'A_CONFIRMAR' }),
     oferta({ id: 'esfera-nike-futura', loja_id: 'nike', programa_id: 'esfera', inicio: '2026-12-01', fim: '2026-12-31' }),
+    oferta({
+      id: 'azul-magalu-acabou', loja_id: 'magalu', programa_id: 'azul-fidelidade', fim: '2026-11-12',
+      regras: [{ condicao: { clube_ativo: true }, pontos_por_real: 15 }, { condicao: {}, pontos_por_real: 13 }],
+    }),
   );
   dados.lojas.push({
     id: 'loja-maliciosa',
@@ -107,6 +113,16 @@ test('conferir: acha tag sem fechar, "<" solto, id repetido, JSON-LD quebrado e 
   assert.match(problemas, /script que executa/);
 });
 
+test('conferir: módulo do próprio site passa; script de fora, inline ou sem tipo não', () => {
+  const com = (tag) => conferirHtml(PAGINA_OK.replace('<h1>Oi</h1>', `<h1>Oi</h1>${tag}`)).join('\n');
+  assert.equal(com('<script type="module" src="../js/metricas/paginas.js"></script>'), '');
+  assert.match(com('<script type="module" src="https://plausible.io/js/script.js"></script>'), /script que executa/);
+  assert.match(com('<script type="module" src="//cdn.exemplo/x.js"></script>'), /script que executa/);
+  assert.match(com('<script type="module" src="../js/x.js">alert(1)</script>'), /script que executa|não pode ter código dentro/);
+  assert.match(com('<script type="module">alert(1)</script>'), /script que executa/);
+  assert.match(com('<script src="../js/x.js"></script>'), /script que executa/);
+});
+
 test('conferir: falta de h1, título ou descrição', () => {
   const problemas = conferirHtml(PAGINA_OK.replace('<h1>Oi</h1>', '').replace('<title>T</title>', '')).join('\n');
   assert.match(problemas, /<h1>/);
@@ -122,6 +138,7 @@ test('gera uma página por loja, a de ofertas e o robots.txt', async () => {
   const caminhos = arquivos.map((a) => a.caminho);
   for (const loja of dados.lojas) assert.ok(caminhos.includes(`loja/${loja.id}/index.html`), loja.id);
   assert.ok(caminhos.includes('ofertas/index.html'));
+  assert.ok(caminhos.includes('onde-rende-mais/index.html'));
   assert.ok(caminhos.includes('sitemap.xml'));
   assert.ok(caminhos.includes('robots.txt'));
 });
@@ -201,10 +218,191 @@ test('ofertas de hoje: só as ativas, da que mais rende para a que menos rende',
   assert.match(texto, /Magalu · sem oferta ativa hoje/);
 });
 
+// ---------------------------------------------------------------------------
+// Ciclo de vida nas páginas (as regras estão em site/js/motor/ciclo.js)
+
+async function dadosDoCiclo() {
+  const dados = await dadosDeTeste();
+  const base = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  dados.ofertas.push(
+    { ...base, id: 'livelo-shopee-vence', loja_id: 'shopee', fim: '2026-11-25' },
+    { ...base, id: 'livelo-centauro-antiga', loja_id: 'centauro', verificado_em: '2026-11-01' },
+    { ...base, id: 'livelo-netshoes-reconferir', loja_id: 'netshoes', verificado_em: '2026-10-20' },
+  );
+  return dados;
+}
+
+test('ciclo: oferta que vence em até 3 dias ganha selo na loja e na lista de ofertas', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  assert.match(p['loja/shopee/index.html'], /<span class="selo selo--aviso">Vence em 3 dias<\/span>/);
+  assert.doesNotMatch(p['loja/amazon/index.html'], /Vence em/);
+  const linhas = p['ofertas/index.html'].match(/<tbody>[\s\S]*<\/tbody>/)[0];
+  assert.match(linhas, /até 25\/11\/2026 <span class="selo selo--aviso">Vence em 3 dias<\/span>/);
+});
+
+test('ciclo: conferida há mais de 14 dias fica na lista, com aviso', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  assert.match(p['loja/centauro/index.html'], /Conferida há 21 dias/);
+  assert.match(textoVisivel(p['loja/centauro/index.html']), /Dado verificado há mais de 14 dias \(21 dias\)/);
+  const linhas = p['ofertas/index.html'].match(/<tbody>[\s\S]*<\/tbody>/)[0];
+  assert.match(linhas, /Centauro/);
+  assert.match(linhas, /01\/11\/2026 <span class="selo selo--aviso">dado antigo<\/span>/);
+});
+
+test('ciclo: conferida há mais de 30 dias sai do ranking até reconferir', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  const ofertas = p['ofertas/index.html'];
+  assert.doesNotMatch(ofertas.match(/<tbody>[\s\S]*<\/tbody>/)[0], /Netshoes/);
+  assert.match(textoVisivel(ofertas), /Fora da lista até a gente conferir de novo Netshoes · Livelo: conferida pela última vez em 20\/10\/2026, há 33 dias; fica fora da conta até ser conferida de novo\./);
+  const loja = textoVisivel(p['loja/netshoes/index.html']);
+  assert.match(loja, /hoje não há oferta de pontos ativa/);
+  assert.match(loja, /Ofertas fora da conta hoje Oferta Livelo: conferida pela última vez em 20\/10\/2026, há 33 dias/);
+});
+
+test('ciclo: vencida some do ranking e vai para o histórico', async () => {
+  const p = porCaminho(gerarPaginas(await dadosDoCiclo(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  assert.match(textoVisivel(p['loja/magalu/index.html']), /Histórico: ofertas que já acabaram Oferta Azul Fidelidade: terminou em 12\/11\/2026/);
+  assert.doesNotMatch(textoVisivel(p['loja/magalu/index.html']), /Ofertas fora da conta hoje/);
+  assert.match(textoVisivel(p['ofertas/index.html']), /Histórico: ofertas que já acabaram Magalu · Azul Fidelidade: terminou em 12\/11\/2026\./);
+});
+
+test('ciclo: no dia seguinte ao último, a oferta sai da lista e entra no histórico', async () => {
+  const dados = await dadosDoCiclo();
+  const ultimoDia = porCaminho(gerarPaginas(dados, { hoje: '2026-11-25', urlBase: BASE }).arquivos);
+  assert.match(ultimoDia['loja/shopee/index.html'], /Vence hoje/);
+  const depois = porCaminho(gerarPaginas(dados, { hoje: '2026-11-26', urlBase: BASE }).arquivos);
+  assert.doesNotMatch(depois['ofertas/index.html'].match(/<tbody>[\s\S]*<\/tbody>/)[0], /Shopee/);
+  assert.match(textoVisivel(depois['loja/shopee/index.html']), /Histórico: ofertas que já acabaram Oferta Livelo: terminou em 25\/11\/2026/);
+});
+
 test('ofertas de hoje sem nenhuma ativa: diz isso com clareza', async () => {
   const dados = await lerDados(new URL('dados/', RAIZ));
+  dados.ofertas = [];
   const texto = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['ofertas/index.html']);
   assert.match(texto, /não há nenhuma oferta de pontos ativa que a gente conheça/);
+});
+
+// ---------------------------------------------------------------------------
+// Onde rende mais hoje
+
+/** Dados de teste + duas ofertas por categoria na Casas Bahia, uma com produtos citados. */
+async function dadosComCategorias() {
+  const dados = await dadosDeTeste();
+  const base = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  dados.ofertas.push(
+    {
+      ...base,
+      id: 'esfera-casas-bahia-eletro',
+      loja_id: 'casas-bahia',
+      programa_id: 'esfera',
+      regras: [{ condicao: {}, pontos_por_real: 10 }, { condicao: { clube_ativo: true }, pontos_por_real: 12 }],
+      escopo: 'categorias_selecionadas',
+      categorias_incluidas: ['Eletrônicos', 'Celulares'],
+      pontos_fora_do_escopo_por_real: 2,
+      produtos_em_campanha: [
+        { nome: 'Smartphone Exemplo 128 GB', link: 'https://www.casasbahia.com.br/smartphone-exemplo' },
+        { nome: MALICIOSO, link: 'https://www.casasbahia.com.br/outro' },
+      ],
+      fim: '2026-11-23',
+    },
+    {
+      ...base,
+      id: 'esfera-casas-bahia-resto',
+      loja_id: 'casas-bahia',
+      programa_id: 'esfera',
+      regras: [{ condicao: {}, pontos_por_real: 3 }],
+      escopo: 'todos_os_produtos',
+      categorias_excluidas: ['Eletrônicos', 'Celulares'],
+    },
+  );
+  return dados;
+}
+
+test('onde rende mais: categoria em campanha no topo, com números do motor, produtos e fonte', async () => {
+  const p = porCaminho(gerarPaginas(await dadosComCategorias(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  const pagina = p['onde-rende-mais/index.html'];
+  const texto = textoVisivel(pagina);
+  assert.match(texto, /Hoje, 22\/11\/2026, o que mais rende para qualquer pessoa é comprar nas Casas Bahia pelo Esfera: 10 pontos por real, em Eletrônicos e Celulares\./);
+  // Ordem: Casas Bahia eletro (10), Amazon (5, até 8), Casas Bahia resto (3).
+  const titulos = [...pagina.matchAll(/<h2 id="oportunidade-\d+"[^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]);
+  assert.deepEqual(titulos, ['1. Casas Bahia · Esfera', '2. Amazon · Livelo', '3. Casas Bahia · Esfera']);
+  // 1.000 pontos a cada R$ 100 × milheiro R$ 17,00 = R$ 17,00.
+  assert.match(texto, /A cada R\$ 100 1\.000 pontos, que valem cerca de R\$\s17,00/);
+  assert.match(texto, /Até 12 pontos por real, com o clube Esfera ativo\./);
+  assert.match(texto, /Até 8 pontos por real, com o clube Livelo ativo\./);
+  assert.match(texto, /O que entra Só estas categorias: Eletrônicos, Celulares\./);
+  assert.match(texto, /Vale para qualquer produto, menos Eletrônicos e Celulares\./);
+  assert.match(texto, /Fora da oferta 2 pontos por real\./);
+  assert.match(texto, /Todos os produtos\. Fora: Eletrônicos, Celulares\. Fora da oferta Não confirmado\./);
+  assert.match(texto, /Até 23\/11\/2026 \(vence amanhã\)/);
+  assert.match(texto, /Até 30\/11\/2026 \(faltam 8 dias\)/);
+  assert.match(pagina, /href="https:\/\/www\.casasbahia\.com\.br\/smartphone-exemplo" rel="noopener noreferrer nofollow"[^>]*>Smartphone Exemplo 128 GB</);
+  assert.match(pagina, new RegExp(`href="${FONTE}"`));
+  assert.match(pagina, /href="\.\.\/loja\/casas-bahia\/"[^>]*>Ver todas as regras nas Casas Bahia</);
+  assert.match(pagina, /href="\.\.\/"[^>]*>Calcular com os meus cartões e clubes</);
+  // Sem preço, e explica as palavras.
+  assert.doesNotMatch(texto, /preço do produto|R\$\s\d+\.\d{3},\d{2}/);
+  assert.match(texto, /O que é milheiro\?/);
+  assert.match(texto, /O que é clube\?/);
+  // Dado malicioso escapado; página passa na conferência.
+  assert.doesNotMatch(pagina, /<script>alert/);
+  assert.equal(conferirHtml(pagina).length, 0);
+  // Sitemap e link a partir de /ofertas/.
+  assert.match(p['sitemap.xml'], /https:\/\/exemplo\.com\.br\/onde-rende-mais\//);
+  assert.match(p['ofertas/index.html'], /href="\.\.\/onde-rende-mais\/"/);
+});
+
+test('onde rende mais: valor sem milheiro, oferta só com clube, fim não confirmado e vence hoje', async () => {
+  const dados = await dadosComCategorias();
+  dados.programas = dados.programas.map((pr) => (pr.id === 'esfera' ? { ...pr, valor_milheiro_brl: 'A_CONFIRMAR' } : pr));
+  const amazon = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  amazon.regras = [{ condicao: { clube_ativo: true, cartao_id: 'ourocard-visa-infinite' }, pontos_por_real: 20 }];
+  amazon.fim = 'A_CONFIRMAR';
+  dados.ofertas.find((o) => o.id === 'esfera-casas-bahia-resto').fim = HOJE;
+  const texto = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
+  assert.match(texto, /falta o valor do milheiro do Esfera/);
+  assert.match(texto, /Para qualquer pessoa Nenhum ponto extra sem clube ou cartão específico\./);
+  assert.match(texto, /Até 20 pontos por real, com o clube Livelo ativo e o cartão Ourocard Visa Infinite\./);
+  assert.match(texto, /Fim não confirmado: confira antes de comprar\./);
+  assert.match(texto, /\(vence hoje\)/);
+});
+
+test('onde rende mais: só ofertas com clube, e nenhuma oferta ativa', async () => {
+  const dados = await dadosDeTeste();
+  dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa').regras = [{ condicao: { clube_ativo: true }, pontos_por_real: 8 }];
+  const soClube = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
+  assert.match(soClube, /as ofertas ativas só rendem pontos extras com clube ou cartão específico/);
+  assert.doesNotMatch(soClube, /A cada R\$ 100/);
+
+  // Dados reais sem nenhuma oferta (as reais mudam toda semana).
+  const semOfertas = { ...(await lerDados(new URL('dados/', RAIZ))), ofertas: [] };
+  const vazio = textoVisivel(porCaminho(gerarPaginas(semOfertas, { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
+  assert.match(vazio, /não há nenhuma oferta de pontos ativa que a gente conheça/);
+});
+
+test('página da loja: bloco "O que mais rende aqui" e produtos citados na oferta', async () => {
+  const p = porCaminho(gerarPaginas(await dadosComCategorias(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  const loja = p['loja/casas-bahia/index.html'];
+  const texto = textoVisivel(loja);
+  assert.match(texto, /O que mais rende aqui/);
+  assert.match(texto, /Eletrônicos e Celulares, pelo Esfera: 10 pontos por real \(até 12 pontos por real\)\. Produtos citados na campanha: Smartphone Exemplo 128 GB/);
+  assert.match(texto, /Qualquer produto, menos Eletrônicos e Celulares, pelo Esfera: 3 pontos por real\./);
+  assert.match(loja, /href="\.\.\/\.\.\/onde-rende-mais\/"/);
+  assert.match(texto, /Produtos citados na campanha Smartphone Exemplo 128 GB/);
+  assert.doesNotMatch(loja, /<script>alert/);
+  assert.equal(conferirHtml(loja).length, 0);
+  // Uma oferta só, sem produtos: sem o bloco (as regras já dizem tudo).
+  assert.doesNotMatch(textoVisivel(p['loja/amazon/index.html']), /O que mais rende aqui/);
+});
+
+test('página da loja: uma oferta só, mas com produtos, mostra o bloco; só clube diz isso', async () => {
+  const dados = await dadosDeTeste();
+  const amazon = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  amazon.regras = [{ condicao: { clube_ativo: true }, pontos_por_real: 8 }];
+  amazon.escopo = 'vendido_e_entregue_pela_loja';
+  amazon.produtos_em_campanha = [{ nome: 'Fone Exemplo', link: 'https://www.amazon.com.br/fone' }];
+  const texto = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['loja/amazon/index.html']);
+  assert.match(texto, /Produtos vendidos e entregues pela própria loja, pelo Livelo: nada extra sem clube ou cartão \(até 8 pontos por real\)\./);
 });
 
 test('dado malicioso sai escapado no HTML e no JSON-LD', async () => {
@@ -262,6 +460,23 @@ test('id de loja que não serve de pasta é recusado', async () => {
   assert.throws(() => gerarPaginas(dados, { hoje: HOJE }), /id de loja inválido/);
 });
 
+test('dados reais de 25/11/2026: ofertas da Livelo e da Esfera, com data e fonte à vista', async () => {
+  const dados = await lerDados(new URL('dados/', RAIZ));
+  const p = porCaminho(gerarPaginas(dados, { hoje: '2026-11-25', urlBase: null }).arquivos);
+  const ofertas = textoVisivel(p['ofertas/index.html']);
+  assert.match(ofertas, /Hoje, 25\/11\/2026, há \d+ ofertas de pontos ativas em \d+ lojas\./);
+  assert.match(ofertas, /fonte: livelo\.com\.br/);
+  assert.match(ofertas, /regra de sempre, sem data de fim/);
+  const magalu = textoVisivel(p['loja/magalu/index.html']);
+  assert.match(magalu, /Oferta Livelo (Vence amanhã )?✓ Regras conferidas em 25\/11\/2026 · Fonte: livelo\.com\.br/);
+  assert.match(magalu, /Rende mais Eletrodomésticos vendidos e entregues pela Magalu: 3 pontos por real até 26\/11\/2026\./);
+  const ml = textoVisivel(p['loja/mercado-livre/index.html']);
+  assert.match(ml, /No Mercado Livre, o melhor jeito hoje rende/);
+  const amazon = textoVisivel(p['loja/amazon/index.html']);
+  assert.match(amazon, /Programas que conferimos e não dão pontos aqui/);
+  assert.match(amazon, /Livelo: A Livelo diz que a parceria para juntar pontos na Amazon está inativa\. Conferido em 25\/11\/2026\. Fonte \(livelo\.com\.br\)/);
+});
+
 test('preposição da loja: na, no, nas', () => {
   assert.equal(naLoja({ nome: 'Magalu' }), 'na Magalu');
   assert.equal(naLoja({ nome: 'Mercado Livre', artigo: 'o' }), 'no Mercado Livre');
@@ -272,11 +487,12 @@ test('gerar no disco: grava os arquivos e todo link interno leva a um arquivo', 
   const pasta = await mkdtemp(join(tmpdir(), 'paginas-'));
   const saida = pathToFileURL(`${pasta}/site/`);
   await cp(new URL('site/', RAIZ), saida, { recursive: true });
-  const { arquivos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje: HOJE, urlBase: BASE });
+  // Os dados reais têm registros conferidos em 25/11/2026: "hoje" não pode ser antes disso.
+  const { arquivos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje: '2026-11-25', urlBase: BASE });
   const lojas = await readdir(new URL('loja/', saida));
   const dados = await lerDados(new URL('dados/', RAIZ));
   assert.deepEqual(lojas.sort(), dados.lojas.map((l) => l.id).sort());
-  assert.equal(arquivos.length, dados.lojas.length + 3 + 5);
+  assert.equal(arquivos.length, dados.lojas.length + 4 + 5);
   assert.match(await readFile(new URL('robots.txt', saida), 'utf8'), /Sitemap:/);
 });
 

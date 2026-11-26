@@ -59,6 +59,7 @@ site/dados/
 # Páginas geradas a partir dos dados (npm run paginas)
 site/loja/
 site/ofertas/
+site/onde-rende-mais/
 site/sitemap.xml
 site/robots.txt
 # Páginas institucionais (scripts/paginas/institucionais.js)
@@ -67,6 +68,8 @@ site/sobre-os-dados/
 site/privacidade/
 site/termos/
 site/contato/
+# Página do plano pago (scripts/paginas/plano.js), só com PLANO_LIGADO
+site/plano/
 
 # Service worker gerado a partir de scripts/pwa/sw-modelo.js (npm run sw)
 site/sw.js
@@ -76,3 +79,24 @@ testes/navegador/relatorio/
 # Coleta semanal de ofertas (scripts/coletar.js): texto bruto das páginas,
 # respostas do modelo e relatórios. Fica só no seu computador.
 coleta/
+
+# Painel semanal das métricas (npm run painel): fica só no seu computador.
+/painel/
+# Extensão montada por npm run extensao (scripts/extensao/montar.js)
+extensao/pacote/
+testes/extensao/pacote/
+testes/extensao/resultados/
+testes/extensao/relatorio/
+# App Android/iOS (Capacitor): app/www/ é gerada por npm run app:montar.
+app/www/
+# Assinatura dos apps: NUNCA no repositório (ver app/PUBLICAR.md).
+*.p8
+*.mobileprovision
+*.provisionprofile
+keystore.properties
+assinatura.properties
+*.aab
+*.apk
+*.ipa
+# Demonstração da vitrine de produtos (npm run produtos:demo)
+demo-produtos/

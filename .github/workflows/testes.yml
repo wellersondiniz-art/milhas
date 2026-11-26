@@ -26,6 +26,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+      # Falha conhecida nas dependências (só a ferramenta de teste) reprova o PR.
+      # Lê só o package-lock.json, sem instalar nada.
+      - name: Dependências sem falha conhecida (npm audit)
+        run: npm audit --audit-level=moderate
       # Sem npm install: os testes unitários e o validador não usam dependências.
       - name: Testes unitários (com cobertura mínima)
         run: npm run test:unidade
@@ -56,6 +60,9 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Ponta a ponta e fotos (celular e computador)
         run: npx playwright test
+      - name: Extensão de navegador (páginas de exemplo locais)
+        if: ${{ !cancelled() }}
+        run: npx playwright test -c playwright.extensao.config.mjs
       - name: Guardar o relatório
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -64,4 +71,6 @@ jobs:
           path: |
             testes/navegador/relatorio/
             testes/navegador/resultados/
+            testes/extensao/relatorio/
+            testes/extensao/resultados/
           retention-days: 14

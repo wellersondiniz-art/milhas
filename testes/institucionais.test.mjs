@@ -10,6 +10,8 @@ import { PAGINAS_DO_RODAPE } from '../scripts/paginas/moldura.js';
 import { conferirHtml } from '../scripts/paginas/conferir-html.js';
 import { gerarPaginas } from '../scripts/paginas/montar.js';
 import { lerDados } from '../scripts/gerar-paginas.js';
+import { EVENTOS } from '../site/js/metricas/metricas.js';
+import { DOMINIO_NO_PLAUSIBLE } from '../site/js/metricas/config.js';
 
 const RAIZ = new URL('../', import.meta.url);
 const BASE = 'https://exemplo.com.br';
@@ -80,6 +82,31 @@ test('contato: sem e-mail definido, diz que o canal está em preparação', () =
   assert.ok(avisos.some((a) => /EMAIL_DE_CONTATO/.test(a)));
 });
 
+test('privacidade: sem responsável definido, mostra o aviso; com ele, diz nome e documento; sempre lista os direitos', () => {
+  const sem = paginasInstitucionais({ email: 'A_CONFIRMAR' });
+  const textoSem = textoVisivel(porCaminho(sem.paginas)['privacidade/index.html']);
+  assert.match(textoSem, /Falta informar quem responde pelos dados/);
+  assert.match(textoSem, /o canal ainda está sendo preparado/);
+  assert.ok(sem.avisos.some((a) => /RESPONSAVEL_PELOS_DADOS/.test(a)));
+  for (const direito of ['corrigir um dado errado', 'apagar dados seus', 'levar os seus dados', 'retirar uma permissão', 'ANPD']) {
+    assert.ok(textoSem.includes(direito), direito);
+  }
+  const com = paginasInstitucionais({ email: 'oi@exemplo.com.br', responsavel: { nome: 'Pessoa de Teste', documento: 'CPF de teste' } });
+  const textoCom = textoVisivel(porCaminho(com.paginas)['privacidade/index.html']);
+  assert.match(textoCom, /é Pessoa de Teste, CPF de teste\./);
+  assert.doesNotMatch(textoCom, /Falta informar/);
+  assert.match(textoCom, /escreva pela página de Contato/);
+  assert.ok(!com.avisos.some((a) => /RESPONSAVEL_PELOS_DADOS/.test(a)));
+  // Campo vazio conta como não definido.
+  assert.ok(paginasInstitucionais({ responsavel: { nome: ' ', documento: 'x' } }).avisos.some((a) => /RESPONSAVEL_PELOS_DADOS/.test(a)));
+});
+
+test('sobre os dados: não diz que tudo vem de páginas oficiais (milheiro e dólar são estimativa)', () => {
+  const texto = textoVisivel(porCaminho(paginasInstitucionais({}).paginas)['sobre-os-dados/index.html']);
+  assert.doesNotMatch(texto, /Tudo o que entra na conta vem de páginas oficiais/);
+  assert.match(texto, /O valor do milheiro e a cotação do dólar são estimativas/);
+});
+
 test('contato: com e-mail, vira link mailto; e-mail inválido para o build', () => {
   const contato = porCaminho(paginasInstitucionais({ email: 'oi@exemplo.com.br' }).paginas)['contato/index.html'];
   assert.match(contato, /<a href="mailto:oi@exemplo.com.br">oi@exemplo.com.br<\/a>/);
@@ -101,23 +128,96 @@ test('textos: data de atualização no topo, termos explicados, sem linguagem de
   assert.throws(() => paginasInstitucionais({ atualizadoEm: 'ontem' }), /TEXTOS_ATUALIZADOS_EM/);
 });
 
-test('privacidade e termos dizem o que o código faz: sem cookie, sem métrica, sem afiliado', async () => {
-  const p = porCaminho(paginasInstitucionais({}).paginas);
+async function codigoPorArquivo() {
+  const pasta = new URL('site/js/', RAIZ);
+  const arquivos = (await readdir(pasta, { recursive: true })).filter((a) => a.endsWith('.js'));
+  return Promise.all(arquivos.map(async (a) => [a, await readFile(new URL(a, pasta), 'utf8')]));
+}
+
+test('privacidade e termos dizem o que o código faz: sem cookie; métrica só pelo módulo de métricas', async () => {
+  const p = porCaminho(paginasInstitucionais({ medindo: false }).paginas);
   const privacidade = textoVisivel(p['privacidade/index.html']);
-  const termos = textoVisivel(p['termos/index.html']);
   assert.match(privacidade, /O site não cria cookies\. Hoje não usamos nenhuma ferramenta de métrica/);
   assert.match(privacidade, /Número do cartão/);
   assert.match(privacidade, /CPF/);
-  assert.match(termos, /não usamos link de afiliado/);
-  assert.match(termos, /comissão sem custo extra para você/);
 
   // Se algum destes falhar, mude os textos de Privacidade e Termos junto com o código.
   const codigo = await codigoDoSite();
   assert.doesNotMatch(codigo, /document\.cookie/, 'o site passou a usar cookie');
-  assert.doesNotMatch(codigo, /sendBeacon|analytics|gtag|plausible|umami/i, 'o site passou a usar métrica');
+  assert.doesNotMatch(codigo, /sendBeacon|gtag|google|umami|cloudflareinsights/i, 'o site passou a usar outra métrica');
+  // Só a pasta metricas/ fala com o Plausible (e a Privacidade lista o que ela manda).
+  // Links comuns para lojas (saida/links.js) são navegação, não conexão: a CSP abaixo garante o resto.
+  const falamComFora = (await codigoPorArquivo()).filter(([, texto]) => /plausible/i.test(texto)).map(([a]) => a);
+  assert.ok(falamComFora.includes('metricas/config.js'));
+  assert.deepEqual(falamComFora.filter((a) => !a.startsWith('metricas/')), [], 'só site/js/metricas/ pode falar com o Plausible');
   const headers = await readFile(new URL('site/_headers', RAIZ), 'utf8');
-  assert.match(headers, /connect-src 'self';/, 'o site passou a falar com outro servidor');
+  assert.match(headers, /connect-src 'self' https:\/\/plausible\.io;/, 'o site passou a falar com outro servidor');
   assert.match(headers, /script-src 'self';/, 'o site passou a carregar script de fora');
-  const esquemas = await Promise.all(['ofertas', 'lojas', 'cartoes', 'programas'].map((n) => readFile(new URL(`dados/schemas/${n}.schema.json`, RAIZ), 'utf8')));
-  assert.doesNotMatch(esquemas.join('\n'), /afiliad|affiliate/i, 'os dados passaram a ter link de afiliado');
+  // Link de afiliado só existe em dados/links.json (os textos seguem esse arquivo; veja abaixo).
+  const esquemas = await Promise.all(['ofertas', 'lojas', 'cartoes', 'programas', 'cambio'].map((n) => readFile(new URL(`dados/schemas/${n}.schema.json`, RAIZ), 'utf8')));
+  assert.doesNotMatch(esquemas.join('\n'), /afiliad|affiliate/i, 'link de afiliado fora de dados/links.json');
+});
+
+test('afiliado: sem link de afiliado, Termos e Privacidade dizem que não recebemos nada', () => {
+  const p = porCaminho(paginasInstitucionais({ temAfiliado: false }).paginas);
+  const termos = textoVisivel(p['termos/index.html']);
+  const privacidade = textoVisivel(p['privacidade/index.html']);
+  assert.match(termos, /não usamos link de afiliado e não recebemos de lojas, bancos ou programas/);
+  assert.match(termos, /Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você\./);
+  assert.match(termos, /A comissão nunca muda a ordem do resultado/);
+  assert.match(privacidade, /Hoje os links para as lojas são links comuns: não levam nenhum código nosso\./);
+  assert.doesNotMatch(privacidade, /links de afiliado/);
+});
+
+test('afiliado: com link de afiliado, os textos mudam, mostram o aviso e o build avisa da data', () => {
+  const { paginas, avisos } = paginasInstitucionais({ temAfiliado: true });
+  const p = porCaminho(paginas);
+  const termos = textoVisivel(p['termos/index.html']);
+  const privacidade = textoVisivel(p['privacidade/index.html']);
+  assert.doesNotMatch(termos, /não usamos link de afiliado|não recebemos de lojas/);
+  assert.match(termos, /Alguns links para lojas ou produtos são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você\./);
+  assert.match(termos, /"Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você\."/);
+  assert.match(termos, /Não recebemos de bancos nem de programas de pontos\./);
+  assert.match(termos, /A comissão nunca muda a ordem do resultado/);
+  assert.match(privacidade, /Alguns links para lojas ou produtos são links de afiliado/);
+  assert.match(privacidade, /O código é o mesmo para todo mundo e não identifica você\./);
+  assert.doesNotMatch(privacidade, /Awin/);
+  const comAwin = textoVisivel(porCaminho(paginasInstitucionais({ temAfiliado: true, usaAwin: true }).paginas)['privacidade/index.html']);
+  assert.match(comAwin, /passam antes, por um instante, pela Awin/);
+  assert.doesNotMatch(textoVisivel(porCaminho(paginasInstitucionais({ temAfiliado: false, usaAwin: true }).paginas)['privacidade/index.html']), /Awin/);
+  assert.ok(avisos.some((a) => /TEXTOS_ATUALIZADOS_EM/.test(a) && /afiliado/.test(a)));
+  // Como funciona diz o mesmo nos dois casos.
+  assert.equal(p['como-funciona/index.html'], porCaminho(paginasInstitucionais({ temAfiliado: false }).paginas)['como-funciona/index.html']);
+  assert.match(textoVisivel(p['como-funciona/index.html']), /A ordem do resultado é pelo valor dos pontos em reais\. Comissão de loja não entra na conta/);
+});
+
+test('afiliado: o build escolhe o texto pelos dados de dados/links.json', async () => {
+  const dados = await lerDados(new URL('dados/', RAIZ));
+  const termos = (d) => textoVisivel(gerarPaginas(d, { hoje: '2026-11-22', urlBase: BASE }).arquivos.find((a) => a.caminho === 'termos/index.html').conteudo);
+  assert.match(termos(dados), /não usamos link de afiliado/);
+  const pago = { ...dados, links: dados.links.map((l, i) => (i === 0 ? { ...l, parametro_afiliado: { nome: 'tag', valor: 'x' } } : l)) };
+  assert.match(termos(pago), /Alguns links para lojas ou produtos são links de afiliado/);
+  const soAConfirmar = { ...dados, links: dados.links.map((l) => ({ ...l, parametro_afiliado: 'A_CONFIRMAR' })) };
+  assert.match(termos(soAConfirmar), /não usamos link de afiliado/);
+});
+
+test('com as métricas ligadas, a Privacidade lista tudo o que é medido e o que nunca vai', () => {
+  const { paginas, avisos } = paginasInstitucionais({ medindo: true });
+  const privacidade = textoVisivel(porCaminho(paginas)['privacidade/index.html']);
+  assert.match(privacidade, /O site não cria cookies e não mostra anúncios/);
+  assert.match(privacidade, /Plausible, uma ferramenta de métricas que não usa cookie/);
+  for (const { descricao } of Object.values(EVENTOS)) {
+    assert.ok(privacidade.toLowerCase().includes(descricao.toLowerCase()), descricao);
+  }
+  assert.match(privacidade, /Nunca mandamos o valor da compra, os seus cartões, os seus programas/);
+  assert.match(privacidade, /Do Not Track/);
+  assert.doesNotMatch(privacidade, /Hoje não usamos nenhuma ferramenta de métrica/);
+  assert.ok(avisos.some((a) => /Métricas ligadas/.test(a)));
+  assert.equal(conferirHtml(porCaminho(paginas)['privacidade/index.html']).length, 0);
+});
+
+test('a Privacidade segue o config: desligada enquanto o Plausible for A_CONFIRMAR', () => {
+  const privacidade = textoVisivel(porCaminho(paginasInstitucionais({}).paginas)['privacidade/index.html']);
+  if (DOMINIO_NO_PLAUSIBLE === 'A_CONFIRMAR') assert.match(privacidade, /Hoje não usamos nenhuma ferramenta de métrica/);
+  else assert.match(privacidade, /Contamos só isto/);
 });

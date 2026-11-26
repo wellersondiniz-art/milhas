@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Preço que chega depois (página de exemplo)</title>
+</head>
+<body>
+  <!-- Imita loja que carrega o preço depois e troca de produto sem recarregar. -->
+  <h1 id="titulo">Liquidificador (exemplo)</h1>
+  <div id="area"></div>
+  <button type="button" id="outro">Ver outro produto</button>
+  <script>
+    document.body.dataset.paginaOk = 'sim';
+    setTimeout(() => {
+      const preco = document.createElement('span');
+      preco.id = 'preco';
+      preco.textContent = 'R$ 250,00';
+      document.getElementById('area').append(preco);
+    }, 1000);
+    document.getElementById('outro').addEventListener('click', () => {
+      history.pushState({}, '', '/p/batedeira');
+      document.getElementById('titulo').textContent = 'Batedeira (exemplo)';
+      document.getElementById('preco').textContent = 'R$ 50,00';
+    });
+  </script>
+</body>
+</html>

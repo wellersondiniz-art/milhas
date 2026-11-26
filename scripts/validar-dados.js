@@ -9,15 +9,21 @@
 // Saída: 0 se os dados forem válidos, 1 se houver erro.
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { conferirDestino } from '../site/js/saida/links.js';
 
-export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
+export const ARQUIVOS = [
+  'programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'links', 'redes-postos', 'regras-postos',
+  'cotacoes', 'transferencias', 'bonus-transferencia', 'viagens',
+];
+/** Campo que identifica o registro. Em links.json, é a loja (um link por loja). */
+const CHAVE = { links: 'loja_id' };
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const PASTA_DADOS = new URL('../dados/', import.meta.url);
 
 const PALAVRAS_CONHECIDAS = new Set([
   '$schema', '$id', '$defs', '$ref', 'title', 'description',
   'type', 'properties', 'required', 'additionalProperties', 'items',
-  'enum', 'const', 'anyOf', 'minimum', 'minLength', 'minItems', 'pattern', 'format',
+  'enum', 'const', 'anyOf', 'minimum', 'minLength', 'maxLength', 'minItems', 'pattern', 'format',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -128,6 +134,9 @@ export function validarSchema(valor, schema, raiz = schema, caminho = []) {
     if (schema.minLength !== undefined && valor.length < schema.minLength) {
       erro(schema.minLength === 1 ? 'não pode ficar vazio' : `deve ter ao menos ${schema.minLength} caracteres`);
     }
+    if (schema.maxLength !== undefined && valor.length > schema.maxLength) {
+      erro(`deve ter no máximo ${schema.maxLength} caracteres (recebido: ${valor.length})`);
+    }
     if (schema.pattern && !new RegExp(schema.pattern, 'u').test(valor)) {
       erro(`formato inválido: ${JSON.stringify(valor)} (esperado: ${schema.description ?? schema.pattern})`);
     }
@@ -168,6 +177,27 @@ export function validarSchema(valor, schema, raiz = schema, caminho = []) {
 // ---------------------------------------------------------------------------
 // Regras entre arquivos e regras de negócio
 
+/** Domínios onde um link de produto em campanha pode apontar: o da loja e o do programa. */
+function dominiosDaOferta(dados, oferta) {
+  const loja = (dados.lojas ?? []).find((l) => l.id === oferta.loja_id);
+  const programa = (dados.programas ?? []).find((p) => p.id === oferta.programa_id);
+  const lista = [];
+  if (typeof loja?.dominio === 'string' && loja.dominio !== A_CONFIRMAR) lista.push(loja.dominio.toLowerCase());
+  try {
+    if (programa?.url) lista.push(new URL(programa.url).hostname.toLowerCase().replace(/^www\./, ''));
+  } catch { /* url inválida já é erro do schema */ }
+  return lista;
+}
+
+/** https, sem usuário nem porta, no domínio (ou subdomínio) de um dos permitidos. */
+export function linkNoDominio(link, dominios) {
+  let url;
+  try { url = new URL(link); } catch { return false; }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) return false;
+  const host = url.hostname.toLowerCase();
+  return dominios.some((d) => host === d || host.endsWith(`.${d}`));
+}
+
 function regrasExtras(dados, hoje) {
   const erros = [];
   const avisos = [];
@@ -176,10 +206,11 @@ function regrasExtras(dados, hoje) {
   for (const nome of ARQUIVOS) {
     ids[nome] = new Set();
     (dados[nome] ?? []).forEach((registro, i) => {
-      if (ids[nome].has(registro.id)) {
-        erros.push({ arquivo: nome, indice: i, caminho: ['id'], mensagem: `id repetido: ${JSON.stringify(registro.id)}` });
+      const campo = CHAVE[nome] ?? 'id';
+      if (ids[nome].has(registro[campo])) {
+        erros.push({ arquivo: nome, indice: i, caminho: [campo], mensagem: `${campo} repetido: ${JSON.stringify(registro[campo])}` });
       }
-      ids[nome].add(registro.id);
+      ids[nome].add(registro[campo]);
       if (dataValida(registro.verificado_em) && registro.verificado_em > hoje) {
         erros.push({ arquivo: nome, indice: i, caminho: ['verificado_em'], mensagem: `data no futuro: ${registro.verificado_em} (hoje é ${hoje})` });
       }
@@ -212,6 +243,33 @@ function regrasExtras(dados, hoje) {
 
   (dados.cartoes ?? []).forEach((c, i) => existe('cartoes', i, ['programa_id'], 'programas', c.programa_id));
 
+  // Links de saída: lista de permissão. Só https:// no domínio da própria loja.
+  (dados.links ?? []).forEach((link, i) => {
+    existe('links', i, ['loja_id'], 'lojas', link.loja_id);
+    const loja = (dados.lojas ?? []).find((l) => l.id === link.loja_id);
+    if (!loja) return;
+    const { motivo } = conferirDestino(link.url_base, loja.dominio);
+    if (motivo) erros.push({ arquivo: 'links', indice: i, caminho: ['url_base'], mensagem: motivo });
+    // Awin: só para programa da Awin, e nunca junto com parâmetro na própria loja.
+    if (link.rede_afiliado && typeof link.rede_afiliado === 'object') {
+      if (!/\bawin\b/i.test(typeof link.programa_afiliado === 'string' ? link.programa_afiliado : '')) {
+        erros.push({ arquivo: 'links', indice: i, caminho: ['rede_afiliado'], mensagem: 'rede_afiliado "awin" só vale quando programa_afiliado é da Awin (ex.: "Awin: Casas Bahia BR")' });
+      }
+      if (link.parametro_afiliado && typeof link.parametro_afiliado === 'object') {
+        erros.push({ arquivo: 'links', indice: i, caminho: ['parametro_afiliado'], mensagem: 'use parametro_afiliado ou rede_afiliado, não os dois' });
+      }
+    }
+  });
+
+  (dados.lojas ?? []).forEach((l, i) => {
+    (l.sem_parceria ?? []).forEach((s, j) => {
+      existe('lojas', i, ['sem_parceria', j, 'programa_id'], 'programas', s?.programa_id);
+      if (dataValida(s?.verificado_em) && s.verificado_em > hoje) {
+        erros.push({ arquivo: 'lojas', indice: i, caminho: ['sem_parceria', j, 'verificado_em'], mensagem: `data no futuro: ${s.verificado_em} (hoje é ${hoje})` });
+      }
+    });
+  });
+
   (dados.ofertas ?? []).forEach((o, i) => {
     const e = (caminho, mensagem) => erros.push({ arquivo: 'ofertas', indice: i, caminho, mensagem });
     existe('ofertas', i, ['loja_id'], 'lojas', o.loja_id);
@@ -227,15 +285,116 @@ function regrasExtras(dados, hoje) {
     if (o.exige_cupom === true && !o.cupom) {
       e(['cupom'], 'obrigatório quando exige_cupom é true');
     }
+    (o.produtos_em_campanha ?? []).forEach((produto, j) => {
+      const permitidos = dominiosDaOferta(dados, o);
+      if (!linkNoDominio(produto?.link, permitidos)) {
+        e(['produtos_em_campanha', j, 'link'], `link precisa ser https no site da loja ou do programa (${permitidos.join(' ou ') || 'domínio não cadastrado'})`);
+      }
+    });
+    const padrao = o.vigencia === 'regra_padrao';
+    if (padrao && o.fim !== A_CONFIRMAR) {
+      e(['fim'], 'regra padrão não tem data de fim: use "A_CONFIRMAR"');
+    }
+    if (padrao && (dados.lojas ?? []).some((l) => l.id === o.loja_id && (l.sem_parceria ?? []).some((s) => s?.programa_id === o.programa_id))) {
+      e(['vigencia'], 'a loja diz que este programa não tem parceria (sem_parceria), mas há regra padrão');
+    }
 
     const nome = `oferta ${JSON.stringify(o.id)}`;
     if (dataValida(o.fim) && o.fim < hoje) avisos.push(`${nome}: já terminou (fim ${o.fim}, hoje ${hoje})`);
     for (const campo of Object.keys(o)) {
-      if (o[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR" e fica fora do cálculo`);
+      if (padrao && (campo === 'inicio' || campo === 'fim')) continue;
+      if (o[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR"; ${EFEITO_A_CONFIRMAR[campo] ?? 'esse dado não entra no cálculo'}`);
     }
   });
 
+  (dados['regras-postos'] ?? []).forEach((r, i) => {
+    const e = (caminho, mensagem) => erros.push({ arquivo: 'regras-postos', indice: i, caminho, mensagem });
+    existe('regras-postos', i, ['rede_id'], 'redes-postos', r.rede_id);
+    existe('regras-postos', i, ['programa_id'], 'programas', r.programa_id);
+    if (dataValida(r.inicio) && dataValida(r.fim) && r.fim < r.inicio) {
+      e(['fim'], `fim (${r.fim}) é anterior ao início (${r.inicio})`);
+    }
+    if (r.pontua_a_cada !== undefined && r.unidade === A_CONFIRMAR) {
+      e(['pontua_a_cada'], 'sem unidade confirmada não dá para saber se o bloco é em centavos ou em mililitros');
+    }
+    for (const campo of ['combustiveis', 'formas_de_pagamento']) {
+      if (Array.isArray(r[campo]) && new Set(r[campo]).size !== r[campo].length) e([campo], 'item repetido');
+    }
+    const nome = `regra de posto ${JSON.stringify(r.id)}`;
+    if (dataValida(r.fim) && r.fim < hoje) avisos.push(`${nome}: já terminou (fim ${r.fim}, hoje ${hoje})`);
+    for (const campo of Object.keys(r)) {
+      if (r[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR"`);
+    }
+  });
+
+  regrasDeViagem(dados, hoje, erros, avisos, existe);
+
   return { erros, avisos };
+}
+
+// O que o motor faz quando um campo da oferta está "A_CONFIRMAR" (regras
+// aceitas em 22/11/2026). O aviso precisa dizer a mesma coisa que o motor faz.
+const EFEITO_A_CONFIRMAR = {
+  inicio: 'a oferta entra na conta, com um aviso na tela',
+  fim: 'a oferta entra na conta, com um aviso na tela',
+  acumula_com_cartao: 'a conta não soma oferta e cartão (vale o maior)',
+  exige_cupom: 'a oferta entra na conta, com um aviso na tela',
+  clube_ativo_ha_horas: 'o clube conta, com um aviso na tela',
+  pontos_fora_do_escopo_por_real: 'produto fora da oferta conta 0 ponto',
+  credito_prazo_dias: 'a tela diz que o prazo não está confirmado',
+  status: 'a oferta inteira fica fora do cálculo',
+  link_oferta: 'a tela não mostra o link da oferta',
+};
+/** Transferências, campanhas de bônus e regras de passagem/hotel (PR das viagens). */
+function regrasDeViagem(dados, hoje, erros, avisos, existe) {
+  const rotas = new Map((dados.transferencias ?? []).map((t) => [t.id, t]));
+
+  (dados.transferencias ?? []).forEach((t, i) => {
+    existe('transferencias', i, ['origem_id'], 'programas', t.origem_id);
+    existe('transferencias', i, ['destino_id'], 'programas', t.destino_id);
+    if (t.origem_id === t.destino_id) {
+      erros.push({ arquivo: 'transferencias', indice: i, caminho: ['destino_id'], mensagem: 'origem e destino são o mesmo programa' });
+    }
+    if (t.paridade === A_CONFIRMAR) avisos.push(`transferência ${JSON.stringify(t.id)}: proporção "A_CONFIRMAR"; a rota aparece, mas fica fora da conta`);
+  });
+
+  (dados['bonus-transferencia'] ?? []).forEach((c, i) => {
+    const e = (caminho, mensagem) => erros.push({ arquivo: 'bonus-transferencia', indice: i, caminho, mensagem });
+    existe('bonus-transferencia', i, ['transferencia_id'], 'transferencias', c.transferencia_id);
+    if (dataValida(c.inicio) && dataValida(c.fim) && c.fim < c.inicio) e(['fim'], `fim (${c.fim}) é anterior ao início (${c.inicio})`);
+    const ids = (c.faixas ?? []).map((f) => f.id);
+    if (new Set(ids).size !== ids.length) e(['faixas'], 'faixa com id repetido');
+    if (rotas.get(c.transferencia_id)?.paridade === A_CONFIRMAR) {
+      avisos.push(`campanha ${JSON.stringify(c.id)}: a rota está com proporção "A_CONFIRMAR", então o bônus não entra na conta`);
+    }
+    if (dataValida(c.fim) && c.fim < hoje) avisos.push(`campanha ${JSON.stringify(c.id)}: já terminou (fim ${c.fim}, hoje ${hoje})`);
+  });
+
+  const perguntas = new Map();
+  (dados.viagens ?? []).forEach((r, i) => {
+    const e = (caminho, mensagem) => erros.push({ arquivo: 'viagens', indice: i, caminho, mensagem });
+    existe('viagens', i, ['programa_id'], 'programas', r.programa_id);
+    if (dataValida(r.inicio) && dataValida(r.fim) && r.fim < r.inicio) e(['fim'], `fim (${r.fim}) é anterior ao início (${r.inicio})`);
+    if (r.tipo === 'hotel' && r.trechos !== undefined && r.trechos !== 'todos') e(['trechos'], 'hotel usa trechos "todos"');
+    const ids = (r.niveis ?? []).map((n) => n.id);
+    if (new Set(ids).size !== ids.length) e(['niveis'], 'nível com id repetido');
+    (r.niveis ?? []).forEach((n, j) => {
+      if (typeof n.pontos === 'number' && Math.abs(Math.round(n.pontos * 10_000) - n.pontos * 10_000) > 1e-6) {
+        e(['niveis', j, 'pontos'], `até 4 casas decimais (recebido: ${n.pontos})`);
+      }
+    });
+    if (r.escolha) {
+      const ja = perguntas.get(r.escolha.pergunta_id);
+      if (ja && ja !== r.escolha.pergunta) e(['escolha', 'pergunta'], `a pergunta "${r.escolha.pergunta_id}" já tem outro texto: ${JSON.stringify(ja)}`);
+      perguntas.set(r.escolha.pergunta_id, r.escolha.pergunta);
+    }
+    if (dataValida(r.fim) && r.fim < hoje) avisos.push(`regra de viagem ${JSON.stringify(r.id)}: já terminou (fim ${r.fim}, hoje ${hoje})`);
+    if (r.status === A_CONFIRMAR) avisos.push(`regra de viagem ${JSON.stringify(r.id)}: status "A_CONFIRMAR", fica fora da conta`);
+  });
+
+  (dados.cotacoes ?? []).forEach((c) => {
+    if (c.reais_por_unidade === A_CONFIRMAR) avisos.push(`cotação ${JSON.stringify(c.id)}: "A_CONFIRMAR"; a pessoa precisa informar na tela`);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -277,13 +436,13 @@ export async function validarDados(pasta = PASTA_DADOS, { hoje = hojeEmBrasilia(
     }
     for (const { caminho, mensagem } of validarSchema(registros, schema)) {
       const [indice, ...resto] = caminho;
-      brutos.push({ arquivo: nome, indice, id: registros[indice]?.id, caminho: resto, mensagem });
+      brutos.push({ arquivo: nome, indice, id: registros[indice]?.id ?? registros[indice]?.loja_id, caminho: resto, mensagem });
     }
     if (Array.isArray(registros)) dados[nome] = registros;
   }
 
   const extras = regrasExtras(dados, hoje);
-  for (const e of extras.erros) brutos.push({ ...e, id: dados[e.arquivo]?.[e.indice]?.id });
+  for (const e of extras.erros) brutos.push({ ...e, id: dados[e.arquivo]?.[e.indice]?.id ?? dados[e.arquivo]?.[e.indice]?.loja_id });
 
   return { erros: brutos.map(formatarErro), avisos: extras.avisos };
 }

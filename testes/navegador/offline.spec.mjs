@@ -5,8 +5,17 @@ import { readdir } from 'node:fs/promises';
 import { abrirInicio, cartoesDoResultado, expect, test } from './apoio.mjs';
 
 /** Abre o site e espera o service worker assumir a página e guardar os dados. */
-/** Quantos arquivos de dados o site publica (dist/dados/*.json). */
-const arquivosDeDados = async () => (await readdir(new URL('../../dist/dados/', import.meta.url))).filter((n) => n.endsWith('.json')).length;
+/**
+ * Arquivos que a tela inicial não pede: os de postos (só "Quanto rende
+ * abastecer") e os de viagens (só a página de viagens).
+ */
+const SO_DE_OUTRAS_TELAS = new Set([
+  'redes-postos.json', 'regras-postos.json',
+  'cotacoes.json', 'transferencias.json', 'bonus-transferencia.json', 'viagens.json',
+]);
+/** Quantos arquivos de dados a tela inicial pede (dist/dados/*.json). */
+const arquivosDeDados = async () => (await readdir(new URL('../../dist/dados/', import.meta.url)))
+  .filter((n) => n.endsWith('.json') && !SO_DE_OUTRAS_TELAS.has(n)).length;
 
 async function abrirComServiceWorker(page) {
   await abrirInicio(page);
@@ -58,7 +67,9 @@ test('sem internet, a calculadora abre e calcula com os dados guardados', async 
   await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('10000');
   await page.getByRole('button', { name: 'Ver o resultado' }).click();
   await expect(page.getByRole('heading', { level: 2, name: 'R$ 100,00 na Magalu' })).toBeVisible();
-  await expect(cartoesDoResultado(page).first()).toContainText('Melhor jeito');
+  // Com os dados reais: ou aparece o melhor jeito, ou (sem a cotação do dólar
+  // e sem oferta) uma mensagem só, sem lista de "Nenhum ponto".
+  await expect(page.locator('#resultado')).toContainText(/Melhor jeito|Ainda não dá para calcular os pontos dos cartões/);
 
   // A internet volta: o aviso some.
   await context.setOffline(false);

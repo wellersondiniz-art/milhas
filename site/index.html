@@ -24,6 +24,8 @@
       <a class="topo__marca" href="#/">Milhas da Vez</a>
       <nav class="topo__menu" aria-label="Principal">
         <a class="topo__link" href="#/" data-rota="inicio">Comparar</a>
+        <a class="topo__link" href="abastecer/">Abastecer</a>
+        <a class="topo__link" href="viagens/">Viagens</a>
         <a class="topo__link" href="ofertas/">Ofertas</a>
         <a class="topo__link" href="#/perfil" data-rota="perfil">Meu perfil</a>
       </nav>
@@ -44,14 +46,7 @@
     <!-- Já vem no HTML para o formulário não pular quando o JavaScript roda.
          Se houver perfil guardado, o app troca por uma linha com o resumo. -->
     <div id="convite-perfil">
-      <div class="alerta alerta--info" role="note">
-        <span class="alerta__icone" aria-hidden="true">i</span>
-        <div class="alerta__corpo">
-          <strong class="alerta__titulo">Ainda não sabemos quais cartões você tem</strong>
-          <p>Tudo bem: a conta funciona assim mesmo, com as melhores opções entre todos os cartões e programas que conhecemos. Para ver só o que é seu, cadastre os seus cartões. Leva um minuto.</p>
-          <a class="botao botao--secundario" href="#/perfil">Cadastrar meus cartões</a>
-        </div>
-      </div>
+      <p class="texto-suave convite">Não precisa cadastrar nada: a conta usa padrões que aparecem junto com o resultado, e você muda ali mesmo. <a href="#/perfil">Cadastrar meus cartões</a></p>
     </div>
 
     <form id="formulario" class="card pilha passos" novalidate autocomplete="off">
@@ -86,6 +81,11 @@
       <button class="botao botao--bloco" id="ver-resultado" type="submit">Ver o resultado</button>
     </form>
 
+    <div class="exemplos">
+      <p class="exemplos__titulo texto-suave" id="exemplos-titulo">Sem compra em mente? Toque num exemplo:</p>
+      <div class="exemplos__lista" id="exemplos" role="group" aria-labelledby="exemplos-titulo"></div>
+    </div>
+
     <section id="passo-resultado" class="pilha" aria-labelledby="resultado-titulo" hidden>
       <div class="passo passo--titulo">
         <span class="passo__numero" aria-hidden="true">3</span>
@@ -97,6 +97,17 @@
     <!-- Leitor de tela: avisa o resumo do resultado quando ele fica pronto
          ou muda (o foco também vai para o título "3"). -->
     <p id="resultado-anuncio" class="visualmente-oculto" role="status"></p>
+
+    <!-- Atalhos para as outras telas: quem chega pela primeira vez descobre
+         que o site também cobre "onde rende mais", viagens e postos. -->
+    <nav class="mais-jeitos pilha--sm" aria-labelledby="mais-jeitos-titulo">
+      <h2 id="mais-jeitos-titulo" class="mais-jeitos__titulo">Mais jeitos de ganhar pontos</h2>
+      <ul class="mais-jeitos__lista">
+        <li><a class="mais-jeitos__link" href="onde-rende-mais/"><span class="mais-jeitos__nome">Onde rende mais hoje</span><span class="mais-jeitos__texto">As lojas e categorias que dão mais pontos por real, sem digitar nada.</span></a></li>
+        <li><a class="mais-jeitos__link" href="viagens/"><span class="mais-jeitos__nome">Milhas em viagens</span><span class="mais-jeitos__texto">Transferir pontos na hora do bônus, passagem e hotel.</span></a></li>
+        <li><a class="mais-jeitos__link" href="abastecer/"><span class="mais-jeitos__nome">Quanto rende abastecer</span><span class="mais-jeitos__texto">Pontos nos postos, somando o programa do posto e o cartão.</span></a></li>
+      </ul>
+    </nav>
 
    </div>
 
@@ -116,7 +127,7 @@
 
     <section class="card pilha" aria-labelledby="copia-titulo">
       <h2 id="copia-titulo" class="perfil__subtitulo">Levar para outro aparelho</h2>
-      <p class="texto-suave">Exporte o perfil para um arquivo e importe no outro celular ou computador. Importar substitui o que está marcado aqui.</p>
+      <p id="perfil-transferir" class="texto-suave">Exporte o perfil para um arquivo e importe no outro celular ou computador. Importar substitui o que está marcado aqui.</p>
       <div class="linha">
         <button id="perfil-exportar" class="botao botao--secundario" type="button">Exportar perfil</button>
         <button id="perfil-importar" class="botao botao--secundario" type="button">Importar perfil</button>

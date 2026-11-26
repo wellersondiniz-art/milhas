@@ -20,7 +20,8 @@ import { aprovar } from '../../scripts/aprovar-mudancas.js';
 
 const AQUI = new URL('./', import.meta.url);
 const RAIZ_REAL = new URL('../../', import.meta.url);
-export const DATA = '2026-11-22';
+export const DATA = '2026-11-25'; // dia da última conferência de dados/ (o validador recusa data no futuro)
+export const OFERTAS_EXEMPLO = new URL('../exemplos/ofertas-exemplo.json', import.meta.url);
 
 export const FONTES = [
   {
@@ -55,6 +56,9 @@ export async function rodarDemo() {
   const raiz = pathToFileURL(`${tmp}/`);
   await cp(fileURLToPath(new URL('dados/', RAIZ_REAL)), join(tmp, 'dados'), { recursive: true });
   await writeFile(join(tmp, 'dados', 'fontes.json'), `${JSON.stringify(FONTES, null, 2)}\n`);
+  // A base de produção não tem mais a oferta de exemplo: a demonstração usa a
+  // cópia que ficou em testes/exemplos/ (ela vira a oferta "encerrada").
+  await cp(fileURLToPath(OFERTAS_EXEMPLO), join(tmp, 'dados', 'ofertas.json'));
   const ofertasAntes = await readFile(join(tmp, 'dados', 'ofertas.json'), 'utf8');
 
   const pasta = new URL(`coleta/${DATA}/`, raiz);

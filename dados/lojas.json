@@ -2,6 +2,7 @@
   {
     "id": "magalu",
     "nome": "Magalu",
+    "prioridade": 1,
     "dominio": "magazineluiza.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
@@ -12,38 +13,72 @@
   {
     "id": "amazon",
     "nome": "Amazon",
+    "prioridade": 2,
     "dominio": "amazon.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
     "observacoes": "Rodapé tem \"Venda na Amazon\"; página inicial tem seção de cupons.",
     "fonte_url": "https://www.amazon.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "livelo",
+        "motivo": "A Livelo diz que a parceria para juntar pontos na Amazon está inativa.",
+        "fonte_url": "https://www.livelo.com.br/intermediaria-amazon",
+        "verificado_em": "2026-11-25"
+      },
+      {
+        "programa_id": "esfera",
+        "motivo": "A Amazon não aparece na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "mercado-livre",
     "nome": "Mercado Livre",
     "artigo": "o",
+    "prioridade": 3,
     "dominio": "mercadolivre.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
     "observacoes": "Site tem área \"Vender\" para terceiros; página inicial mostra preços com cupom.",
     "fonte_url": "https://www.mercadolivre.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "esfera",
+        "motivo": "O Mercado Livre não aparece na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "casas-bahia",
     "nome": "Casas Bahia",
     "artigo": "as",
+    "prioridade": 4,
     "dominio": "casasbahia.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
     "observacoes": "Página inicial mostra produtos de lojistas parceiros e cupons de desconto.",
     "fonte_url": "https://www.casasbahia.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "esfera",
+        "motivo": "As Casas Bahia não aparecem na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "shopee",
     "nome": "Shopee",
+    "prioridade": 5,
     "dominio": "shopee.com.br",
     "categoria": "marketplace",
     "aceita_cupom": "A_CONFIRMAR",
@@ -54,16 +89,32 @@
   {
     "id": "americanas",
     "nome": "Americanas",
+    "prioridade": 6,
     "dominio": "americanas.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
     "observacoes": "Página inicial mostra loja de parceiro e página de cupons de desconto.",
     "fonte_url": "https://www.americanas.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "sem_parceria": [
+      {
+        "programa_id": "livelo",
+        "motivo": "A Americanas não aparece na lista de parceiros da Livelo.",
+        "fonte_url": "https://www.livelo.com.br/juntar-pontos/todos-os-parceiros",
+        "verificado_em": "2026-11-25"
+      },
+      {
+        "programa_id": "esfera",
+        "motivo": "A Americanas não aparece na lista de parceiros para juntar pontos da Esfera.",
+        "fonte_url": "https://www.esfera.com.vc/junte-pontos/junte-pontos/esf02163",
+        "verificado_em": "2026-11-25"
+      }
+    ]
   },
   {
     "id": "kabum",
     "nome": "KaBuM!",
+    "prioridade": 7,
     "dominio": "kabum.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
@@ -74,6 +125,7 @@
   {
     "id": "fast-shop",
     "nome": "Fast Shop",
+    "prioridade": 8,
     "dominio": "fastshop.com.br",
     "categoria": "A_CONFIRMAR",
     "aceita_cupom": "A_CONFIRMAR",
@@ -84,6 +136,7 @@
   {
     "id": "nike",
     "nome": "Nike",
+    "prioridade": 9,
     "dominio": "nike.com.br",
     "categoria": "varejo",
     "aceita_cupom": "A_CONFIRMAR",
@@ -95,6 +148,7 @@
     "id": "ponto",
     "nome": "Ponto",
     "artigo": "o",
+    "prioridade": 10,
     "dominio": "pontofrio.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
@@ -106,6 +160,7 @@
     "id": "carrefour",
     "nome": "Carrefour",
     "artigo": "o",
+    "prioridade": 11,
     "dominio": "carrefour.com.br",
     "categoria": "marketplace",
     "aceita_cupom": true,
@@ -116,6 +171,7 @@
   {
     "id": "netshoes",
     "nome": "Netshoes",
+    "prioridade": 12,
     "dominio": "netshoes.com.br",
     "categoria": "A_CONFIRMAR",
     "aceita_cupom": true,
@@ -126,6 +182,7 @@
   {
     "id": "centauro",
     "nome": "Centauro",
+    "prioridade": 13,
     "dominio": "centauro.com.br",
     "categoria": "A_CONFIRMAR",
     "aceita_cupom": true,
@@ -137,6 +194,7 @@
     "id": "booking",
     "nome": "Booking.com",
     "artigo": "o",
+    "prioridade": 14,
     "dominio": "booking.com",
     "categoria": "viagem",
     "aceita_cupom": "A_CONFIRMAR",
@@ -147,6 +205,7 @@
   {
     "id": "samsung",
     "nome": "Samsung",
+    "prioridade": 15,
     "dominio": "samsung.com",
     "categoria": "varejo",
     "aceita_cupom": "A_CONFIRMAR",

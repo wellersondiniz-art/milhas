@@ -1,0 +1,22 @@
+{
+  "appId": "br.com.milhasdavez.app",
+  "appName": "Milhas da Vez",
+  "webDir": "app/www",
+  "loggingBehavior": "debug",
+  "android": {
+    "path": "app/android",
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "ios": {
+    "path": "app/ios",
+    "contentInset": "automatic",
+    "limitsNavigationsToAppBoundDomains": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "CapacitorHttp": { "enabled": false },
+    "CapacitorCookies": { "enabled": false }
+  }
+}

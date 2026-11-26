@@ -29,9 +29,59 @@ export const REVISAO_JURIDICA_PENDENTE = true;
 
 // Data da última mudança nos textos das páginas institucionais (AAAA-MM-DD).
 // Troque sempre que mudar o que essas páginas dizem.
-export const TEXTOS_ATUALIZADOS_EM = '2026-11-22';
+export const TEXTOS_ATUALIZADOS_EM = '2026-11-24';
 
 // Canal de contato. Ainda não foi escolhido: com "A_CONFIRMAR", a página
 // Contato diz que o canal está sendo preparado e o build avisa.
 // Exemplo: export const EMAIL_DE_CONTATO = 'contato@milhasdavez.com.br';
 export const EMAIL_DE_CONTATO = 'A_CONFIRMAR';
+
+// ---------------------------------------------------------------------------
+// Alertas por e-mail (servidor/alertas/, functions/api/alertas/, site/alertas/)
+
+// Enquanto for false, nenhuma página leva para /alertas/ e a Privacidade não
+// fala de alertas (porque o site não guarda e-mail). Só troque para true
+// depois de configurar o Supabase, o Resend, a Cloudflare e o GitHub
+// (README, seção "Alertas por e-mail") e de testar com um e-mail seu.
+// Ao trocar, mude também TEXTOS_ATUALIZADOS_EM: a Privacidade muda.
+export const ALERTAS_LIGADO = false;
+
+// ---------------------------------------------------------------------------
+// Plano pago (servidor/plano/, functions/api/plano/, scripts/paginas/plano.js)
+
+// Enquanto for false, a página /plano/ não é gerada e a Privacidade e os
+// Termos não falam de plano. Só troque para true depois de configurar o
+// Stripe, a Cloudflare e o Supabase (README, seção "Plano pago"), de testar
+// os quatro estados no modo de teste e de o advogado revisar os textos.
+// Ao trocar, mude também TEXTOS_ATUALIZADOS_EM: a Privacidade e os Termos mudam.
+export const PLANO_LIGADO = false;
+
+// Preço por mês em centavos inteiros (990 = R$ 9,90), já com tributos.
+export const PLANO_PRECO_CENTAVOS = 'A_CONFIRMAR';
+
+// Link de pagamento do Stripe (Payment Link de assinatura mensal). No modo
+// de teste começa com https://buy.stripe.com/test_
+export const PLANO_LINK_PAGAMENTO = 'A_CONFIRMAR';
+
+// Link de entrada do portal do cliente do Stripe (cancelar, trocar cartão,
+// ver recibos). No modo de teste começa com https://billing.stripe.com/p/login/test_
+export const PLANO_LINK_PORTAL = 'A_CONFIRMAR';
+
+// false = modo de teste: o build recusa links que não sejam de teste. Só o
+// dono do site troca para true, junto com PLANO_MODO_REAL=ligado na Cloudflare.
+export const PLANO_MODO_REAL = false;
+
+// Quem vende o plano (Decreto 7.962/2013, comércio pela internet): nome ou
+// razão social, CPF ou CNPJ e endereço, que aparecem na página /plano/.
+// Só o dono do site tem esses dados: preencha com o advogado e o contador
+// (veja também a nota fiscal de serviço). Com algum "A_CONFIRMAR", o build
+// RECUSA o modo real; no modo de teste, a página mostra que falta.
+export const PLANO_VENDEDOR = { nome: 'A_CONFIRMAR', documento: 'A_CONFIRMAR', endereco: 'A_CONFIRMAR' };
+
+// Quem responde pelos dados (o "controlador", na LGPD). A Privacidade precisa
+// dizer o nome (ou razão social) e o CNPJ ou CPF de quem cuida do site.
+// Só o dono do site sabe e decide isso: preencha depois de falar com o
+// advogado. Com "A_CONFIRMAR", a Privacidade mostra um aviso de que falta essa
+// informação e o build avisa.
+// Exemplo: export const RESPONSAVEL_PELOS_DADOS = { nome: 'Fulano de Tal ME', documento: 'CNPJ 00.000.000/0001-00' };
+export const RESPONSAVEL_PELOS_DADOS = { nome: 'A_CONFIRMAR', documento: 'A_CONFIRMAR' };

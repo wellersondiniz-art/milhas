@@ -76,10 +76,18 @@ Vamos preenchendo conforme o projeto cresce.
 
 | Para quê | Comando |
 | --- | --- |
-| Rodar testes | `npm test` (unitários, dados e navegador) |
+| Rodar testes | `npm test` (unitários, dados, navegador e extensão) |
 | Validar dados | `npm run validar` |
 | Montar o que vai para o ar | `npm run build` (gera `dist/`, a pasta publicada na Cloudflare Pages) |
 | Servir localmente | `npm run servir` (serve `dist/`) |
 | Auditar segurança | `npm run auditar` |
 | Atualizar fotos de referência | `npm run test:fotos:atualizar` (Docker) |
+| Alertas por e-mail | `npm run alertas -- --simular` (só conta) e `npm run test:banco` (migração num Postgres local, Docker) |
+| Plano pago | testes em `npm run test:unidade` (`testes/plano*.test.mjs`) e `npm run test:banco`; ligar só seguindo o README, seção "Plano pago" |
+| Produtos com preço (APIs oficiais) | `npm run produtos` (o build já roda); ver sem credencial: `npm run produtos:demo` |
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |
+| O que reconferir esta semana | `npm run reconferir` (ou `-- --hoje AAAA-MM-DD`; ordem pela `prioridade` de `dados/lojas.json`) |
+| Painel semanal das métricas | `PLAUSIBLE_API_KEY=... npm run painel` (grava `painel/painel-AAAA-MM-DD.md`; `-- --exemplo` mostra sem chave) |
+| Montar a extensão de navegador | `npm run extensao` (gera `extensao/pacote/`; seletores em `extensao/seletores.json`) |
+| Testar a extensão | `npm run test:extensao` (Playwright, páginas de exemplo locais) |
+| Operação (monitor, vigia, custos, backup) | `npm run monitor`, `npm run vigia`, `npm run custos`, `npm run backup:teste` (guia em `docs/operacao.md`) |

@@ -726,6 +726,15 @@ select.campo__entrada {
 
 .tabela td:last-child { border-bottom: 0; }
 
+/* No celular a tabela vira lista de cartões: o corpo também é bloco, senão a
+   tabela cresce até a frase mais longa e passa da tela em 320px. */
+@media (max-width: 39.99rem) {
+  .tabela,
+  .tabela tbody { display: block; }
+  .tabela td { overflow-wrap: anywhere; }
+  .tabela td > * { min-width: 0; }
+}
+
 .tabela td::before {
   content: attr(data-rotulo);
   color: var(--cor-texto-suave);

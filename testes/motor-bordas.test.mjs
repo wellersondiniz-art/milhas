@@ -177,15 +177,18 @@ describe('validade da oferta', () => {
     assert.equal(ofertaDe(calcular(perfil(), compra(), dadosBase(), '2026-12-01T00:00')), undefined);
   });
 
-  test('aviso de vencimento: amanhã, 7 dias sim, 8 dias não', () => {
+  test('aviso de vencimento: amanhã, 3 dias sim, 4 dias não (troca o aviso de 7 dias)', () => {
     const avisos = (hoje) => ofertaDe(calcular(perfil(), compra(), dadosBase(), hoje)).avisos;
     assert.ok(avisos('2026-11-29').includes('A oferta vence amanhã (30/11/2026).'));
-    assert.ok(avisos('2026-11-23').includes('A oferta vence em 7 dias (30/11/2026).'));
-    assert.ok(!avisos('2026-11-22').some((a) => a.startsWith('A oferta vence')));
+    assert.ok(avisos('2026-11-27').includes('A oferta vence em 3 dias (30/11/2026).'));
+    assert.ok(!avisos('2026-11-26').some((a) => a.startsWith('A oferta vence')));
+    assert.ok(!avisos('2026-11-23').some((a) => a.startsWith('A oferta vence')));
   });
 
   test('início e fim A_CONFIRMAR: entra, com avisos e texto de validade', () => {
-    const d = dadosCom((x) => { x.ofertas[0].inicio = 'A_CONFIRMAR'; x.ofertas[0].fim = 'A_CONFIRMAR'; });
+    const d = dadosCom((x) => {
+      x.ofertas[0].inicio = 'A_CONFIRMAR'; x.ofertas[0].fim = 'A_CONFIRMAR'; x.ofertas[0].verificado_em = '2029-12-20';
+    });
     const o = ofertaDe(calcular(perfil(), compra(), d, '2030-01-01'));
     assert.ok(o);
     assert.ok(o.avisos.includes('A data de início da oferta não está confirmada.'));
@@ -212,7 +215,7 @@ describe('dado antigo (14 dias)', () => {
     const d = dadosCom((x) => { x.ofertas[0].verificado_em = '2026-10-27'; });
     const ofertaConferida = (hoje) => ofertaDe(calcular(perfil(), compra(), d, hoje)).conferido_em
       .find((c) => c.rotulo === 'oferta Programa A na Loja X');
-    assert.deepEqual(ofertaConferida('2026-11-10'), { rotulo: 'oferta Programa A na Loja X', verificado_em: '2026-10-27', dias: 14, antigo: false });
+    assert.deepEqual(ofertaConferida('2026-11-10'), { rotulo: 'oferta Programa A na Loja X', verificado_em: '2026-10-27', dias: 14, antigo: false, fonte_url: FONTE });
     assert.equal(ofertaConferida('2026-11-11').antigo, true);
   });
 
@@ -246,10 +249,33 @@ describe('escopo por categoria', () => {
     assert.deepEqual(o.o_que_voce_ganharia_se, []);
   });
 
-  test('sem categoria informada: pede a categoria', () => {
+  test('sem categoria informada: conta fora da oferta e diz para quais categorias ela vale', () => {
     const o = ofertaDe(calcular(perfil(), compra(), dadosCom(porCategoria), HOJE));
     assert.equal(o.pontos_do_programa, 100);
-    assert.ok(o.avisos.includes('Informe a categoria do produto para saber se ele entra na oferta.'));
+    assert.equal(o.depende_da_categoria, true);
+    assert.ok(o.avisos.some((a) => a.startsWith('Esta oferta só vale para produtos de: eletro, moveis.') && a.includes('a oferta dá até')));
+  });
+
+  test('categoria excluída e compra sem categoria: lista as exclusões nas condições e avisa', () => {
+    // Caso 8b da revisão independente: antes, 14.000 pontos sem aviso nenhum.
+    const d = dadosCom((x) => { x.ofertas[0].categorias_excluidas = ['celulares', 'gift card']; });
+    const o = ofertaDe(calcular(perfil(), compra(10000), d, HOJE));
+    assert.equal(o.depende_da_categoria, true);
+    assert.ok(o.condicoes_a_cumprir.includes('Conferir se o produto não é de uma categoria fora da oferta: celulares, gift card.'));
+    assert.ok(o.avisos.includes('A oferta não vale para: celulares, gift card. Se o seu produto for de uma dessas categorias, ele rende só 1 ponto por real, e o número acima não vale.'));
+  });
+
+  test('categoria excluída sem pontos fora do escopo confirmados: aviso sem número', () => {
+    const d = dadosCom((x) => { x.ofertas[0].categorias_excluidas = ['celulares']; x.ofertas[0].pontos_fora_do_escopo_por_real = 'A_CONFIRMAR'; });
+    const o = ofertaDe(calcular(perfil(), compra(10000), d, HOJE));
+    assert.ok(o.avisos.some((a) => a.endsWith('ele fica fora da oferta, e o número acima não vale.')));
+  });
+
+  test('categoria informada e fora da lista de exclusões: sem aviso de categoria', () => {
+    const d = dadosCom((x) => { x.ofertas[0].categorias_excluidas = ['celulares']; });
+    const o = ofertaDe(calcular(perfil(), compra(10000, { categoria: 'livros' }), d, HOJE));
+    assert.equal(o.depende_da_categoria, false);
+    assert.ok(!o.avisos.some((a) => a.startsWith('A oferta não vale para')));
   });
 
   test('categoria excluída vence o escopo "todos os produtos"', () => {
@@ -477,4 +503,49 @@ test('oferta repetida nos dados (mesmo id) não quebra a ordem', () => {
   const d = dadosCom((x) => { x.ofertas.push(structuredClone(x.ofertas[0])); });
   const lista = calcular(perfil(), compra(), d, HOJE);
   assert.deepEqual(lista.map((j) => [j.tipo, j.total_pontos]), [['oferta', 500], ['oferta', 500], ['sem_oferta', 0]]);
+});
+
+// ---------------------------------------------------------------------------
+describe('ordem do resultado: pelo valor em reais', () => {
+  // Loja Vazia, R$ 100, sem oferta:
+  //   Cartão A: 2 × 100 = 200 pontos × R$ 20,00 o milheiro = R$ 4,00
+  //   Cartão B: 3 × 100 = 300 pontos × R$ 10,00 o milheiro = R$ 3,00
+  //   Cartão C: 1 × 100 = 100 pontos, sem milheiro → sem valor
+  const lista = () => calcular(
+    perfil([PROG_A], ['cartao-b', 'cartao-c', 'cartao-a']),
+    compra(10000, { loja_id: 'vazia' }), dadosBase(), HOJE,
+  );
+
+  test('mais reais vem primeiro, mesmo com menos pontos', () => {
+    assert.deepEqual(lista().map((j) => [j.cartao.id, j.total_pontos, j.valor_estimado_em_reais?.texto ?? null]),
+      [['cartao-a', 200, 'R$ 4,00'], ['cartao-b', 300, 'R$ 3,00'], ['cartao-c', 100, null]]);
+  });
+
+  test('sem valor conhecido vai depois; entre eles, mais pontos primeiro', () => {
+    const d = dadosCom((x) => { x.programas[0].valor_milheiro_brl = 'A_CONFIRMAR'; x.programas[1].valor_milheiro_brl = 'A_CONFIRMAR'; });
+    const r = calcular(perfil([PROG_A], ['cartao-a', 'cartao-c', 'cartao-b']), compra(10000, { loja_id: 'vazia' }), d, HOJE);
+    assert.deepEqual(r.map((j) => j.cartao.id), ['cartao-b', 'cartao-a', 'cartao-c']);
+  });
+
+  test('quem não rende ponto nenhum fica por último, mesmo valendo R$ 0,00', () => {
+    // Só o Programa C (sem milheiro) com uma oferta; sem cartão, o caso base dá 0 pontos.
+    const d = dadosCom((x) => { x.ofertas[0].programa_id = 'prog-sem-milheiro'; });
+    const r = calcular(perfil([{ programa_id: 'prog-sem-milheiro', clube_ativo: false }], []), compra(), d, HOJE);
+    assert.equal(r[0].tipo, 'oferta');
+    assert.equal(r.at(-1).total_pontos, 0);
+  });
+});
+
+describe('ordem: quando falta o milheiro só de uma parte', () => {
+  test('a parte com valor conhecido conta como piso', () => {
+    // Oferta do Programa A (5/real) + Cartão C (Programa C, sem milheiro), R$ 100:
+    //   500 pontos A × R$ 20,00 ÷ 1.000 = R$ 10,00 (piso) + 100 pontos C sem valor
+    // Sem oferta, Cartão B: 300 pontos × R$ 10,00 ÷ 1.000 = R$ 3,00
+    const r = calcular(perfil([PROG_A], ['cartao-c', 'cartao-b']), compra(), dadosBase(), HOJE);
+    const ofertaComC = r.findIndex((j) => j.tipo === 'oferta' && j.cartao.id === 'cartao-c');
+    const semOfertaB = r.findIndex((j) => j.tipo === 'sem_oferta' && j.cartao.id === 'cartao-b');
+    assert.equal(r[ofertaComC].valor_estimado_em_reais, null);
+    assert.equal(r[ofertaComC].valor_para_ordenar, 10n * 100n * BI);
+    assert.ok(ofertaComC < semOfertaB);
+  });
 });

@@ -42,6 +42,20 @@
       },
       "categorias_incluidas": { "$ref": "#/$defs/lista_de_textos" },
       "categorias_excluidas": { "$ref": "#/$defs/lista_de_textos" },
+      "produtos_em_campanha": {
+        "description": "Opcional. Produtos que a página oficial da campanha cita pelo nome. Rendem as mesmas faixas da oferta. Só nome e link: nunca preço, foto ou texto copiado.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nome", "link"],
+          "properties": {
+            "nome": { "type": "string", "minLength": 1, "maxLength": 120 },
+            "link": { "description": "Página do produto na loja ou da campanha no programa (https).", "$ref": "#/$defs/url" }
+          }
+        }
+      },
       "pontos_fora_do_escopo_por_real": {
         "description": "Pontos por real nos itens fora do escopo (ex.: vendedor parceiro).",
         "anyOf": [{ "type": "number", "minimum": 0 }, { "$ref": "#/$defs/a_confirmar" }]
@@ -67,6 +81,14 @@
       "fonte_url": { "$ref": "#/$defs/url" },
       "verificado_em": { "$ref": "#/$defs/data" },
       "observacoes": { "type": "string" },
+      "vigencia": {
+        "description": "Opcional. \"regra_padrao\" = regra de sempre do parceiro, sem data de fim publicada (fim fica A_CONFIRMAR). Sem o campo, é uma campanha com datas.",
+        "enum": ["campanha", "regra_padrao"]
+      },
+      "destaques": {
+        "description": "Opcional. Frases curtas com o que rende mais dentro da oferta (ex.: categoria com pontos extras). Só aparecem na tela; não entram na conta.",
+        "$ref": "#/$defs/lista_de_textos"
+      },
       "status": {
         "description": "Opcional. A_CONFIRMAR tira a oferta do ranking.",
         "enum": ["confirmado", "A_CONFIRMAR"]

@@ -5,13 +5,19 @@
 // Os números ("rende X pontos por real", "R$ Y a cada R$ 100") vêm SEMPRE do
 // motor (site/js/motor). Aqui só se escolhe o cenário e as palavras.
 
-import { calcularJeitosDeComprar, formatarData } from '../../site/js/motor/index.js';
+import {
+  calcularJeitosDeComprar, DIAS_DADO_ANTIGO, ESTADOS, formatarData, quandoVence, situacaoDaOferta,
+} from '../../site/js/motor/index.js';
 import { formatarNumero, pontosPorReal } from '../../site/js/motor/formatar.js';
-import { fraseDoJeito } from '../../site/js/tela/textos.js';
-import { NOME_DO_SITE } from './config.js';
-import { escaparXml, h, juntar, linkExterno } from './html.js';
+import { fraseDoJeito, siteDaFonte } from '../../site/js/tela/textos.js';
+import { ALERTAS_LIGADO, NOME_DO_SITE } from './config.js';
+import { escaparXml, h, juntar, linkDeSaida, linkExterno } from './html.js';
+import { montarLinkDeSaida, siteTemLinkDeAfiliado, siteUsaAwin } from '../../site/js/saida/links.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 import { paginasInstitucionais } from './institucionais.js';
+import { configDoPlano, paginaDoPlano } from './plano.js';
+import { PASTA_ONDE_RENDE_MAIS, blocoDaLoja, paginaOndeRendeMais } from './onde-rende-mais.js';
+import { SCRIPT_VALIDADE, produtosQueValem, secaoDaLoja, vitrineTemAfiliado } from './produtos.js';
 
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const ID_SEGURO = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -80,12 +86,24 @@ function contar(dados, lojaId, cenario, hoje) {
   return porReal.map((j) => ({ porReal: j, porCem: cem.get(chaveDoJeito(j)) }));
 }
 
+/** Mesmo critério do motor: mais reais (piso conhecido); sem valor perde; empate → mais pontos. */
+function melhorQue(a, b) {
+  const va = a.valor_para_ordenar;
+  const vb = b.valor_para_ordenar;
+  if (va !== vb) {
+    if (va === null) return false;
+    if (vb === null) return true;
+    return va > vb;
+  }
+  return a.total_pontos > b.total_pontos;
+}
+
 /** O melhor jeito de comprar na loja hoje, no cenário mais simples que chega ao máximo. */
 export function melhorJeito(dados, lojaId, hoje) {
   let melhor = null;
   for (const cenario of CENARIOS) {
     const [primeiro] = contar(dados, lojaId, cenario, hoje);
-    if (primeiro && (!melhor || primeiro.porReal.total_pontos > melhor.porReal.total_pontos)) {
+    if (primeiro && (!melhor || melhorQue(primeiro.porReal, melhor.porReal))) {
       melhor = { ...primeiro, cenario };
     }
   }
@@ -105,12 +123,38 @@ export function ofertasAtivasDaLoja(dados, lojaId, hoje) {
   return [...vistas].map(([id, jeito]) => ({ oferta: dados.ofertas.find((o) => o.id === id), ...jeito }));
 }
 
-/** Por que uma oferta da loja ficou fora da conta de hoje. */
-function motivoFora(oferta, hoje) {
-  if (oferta.status === A_CONFIRMAR) return 'ainda em conferência, fica fora da conta';
-  if (confirmado(oferta.fim) && oferta.fim < hoje) return `terminou em ${formatarData(oferta.fim)}`;
-  if (confirmado(oferta.inicio) && oferta.inicio > hoje) return `começa em ${formatarData(oferta.inicio)}`;
-  return 'fora da conta de hoje';
+/** Por que uma oferta da loja ficou fora da conta de hoje (ciclo de vida em site/js/motor/ciclo.js). */
+export function motivoFora(oferta, hoje) {
+  const s = situacaoDaOferta(oferta, hoje);
+  switch (s.estado) {
+    case ESTADOS.EM_CONFERENCIA: return 'ainda em conferência, fica fora da conta';
+    case ESTADOS.VENCIDA: return `terminou em ${formatarData(oferta.fim)}`;
+    case ESTADOS.FUTURA: return `começa em ${formatarData(oferta.inicio)}`;
+    case ESTADOS.RECONFERIR:
+      return `conferida pela última vez em ${formatarData(oferta.verificado_em)}, há ${s.dias_desde_conferencia} dias; fica fora da conta até ser conferida de novo`;
+    default: return 'fora da conta de hoje';
+  }
+}
+
+/** Ofertas da loja que não entram na conta hoje: { fora, historico } (vencidas, da que terminou por último). */
+export function ofertasForaDaConta(dados, lojaId, hoje, idsAtivas) {
+  const fora = [];
+  const historico = [];
+  for (const o of dados.ofertas) {
+    if (o.loja_id !== lojaId || idsAtivas.has(o.id)) continue;
+    (situacaoDaOferta(o, hoje).no_historico ? historico : fora).push(o);
+  }
+  historico.sort((a, b) => (a.fim < b.fim ? 1 : a.fim > b.fim ? -1 : 0));
+  return { fora, historico };
+}
+
+/** Selos de alerta de uma oferta ativa: vence em até 3 dias; conferida há mais de 14 dias. */
+function selosDaOferta(oferta, hoje) {
+  const s = situacaoDaOferta(oferta, hoje);
+  const selos = [];
+  if (s.estado === ESTADOS.VENCE_LOGO) selos.push(h('span', { class: 'selo selo--aviso' }, `Vence ${quandoVence(s.dias_para_vencer)}`));
+  if (s.dado_antigo) selos.push(h('span', { class: 'selo selo--aviso' }, `Conferida há ${s.dias_desde_conferencia} dias`));
+  return selos;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,10 +165,32 @@ function linhaConta(rotulo, ...valor) {
 }
 
 function conferido(registro) {
+  const site = siteDaFonte(registro.fonte_url);
   return juntar(
     `${formatarData(registro.verificado_em)}. `,
-    linkExterno(registro.fonte_url, 'Ver a fonte'),
+    linkExterno(registro.fonte_url, site ? `Ver a fonte (${site})` : 'Ver a fonte'),
   );
+}
+
+/** Selo bem à vista: "Regras conferidas em 25/11/2026 · Fonte: livelo.com.br". */
+function seloDaFonte(registro, rotulo = 'Regras conferidas em') {
+  const site = siteDaFonte(registro.fonte_url);
+  return h('p', { class: 'fonte' },
+    h('span', { class: 'fonte__icone', 'aria-hidden': 'true' }, '✓'),
+    h('span', {}, `${rotulo} ${formatarData(registro.verificado_em)}`),
+    site ? h('span', {}, ' · Fonte: ', linkExterno(registro.fonte_url, site)) : null);
+}
+
+/** Programas que conferimos e que não dão pontos nesta loja. */
+function secaoSemParceria(loja, dados) {
+  const lista = loja.sem_parceria ?? [];
+  if (!lista.length) return null;
+  const nomeProg = (id) => dados.programas.find((p) => p.id === id)?.nome ?? id;
+  return h('section', { class: 'pilha--sm', 'aria-labelledby': 'sem-parceria-titulo' },
+    h('h2', { id: 'sem-parceria-titulo', class: 'pagina__subtitulo' }, 'Programas que conferimos e não dão pontos aqui'),
+    h('ul', { class: 'pagina__lista' }, lista.map((s) => h('li', {},
+      `${nomeProg(s.programa_id)}: ${s.motivo} Conferido em ${formatarData(s.verificado_em)}. `,
+      linkExterno(s.fonte_url, `Fonte (${siteDaFonte(s.fonte_url)})`)))));
 }
 
 // ---------------------------------------------------------------------------
@@ -171,13 +237,16 @@ function textoCupom(oferta) {
   return 'Não confirmado.';
 }
 
-function secaoDaOferta(ativa, dados, indice) {
+function secaoDaOferta(ativa, dados, indice, hoje) {
   const { oferta, porReal } = ativa;
   const nomePrograma = porReal.programa?.nome ?? oferta.programa_id;
   const idTitulo = `oferta-${indice}`;
   const regras = [...oferta.regras].sort((a, b) => b.pontos_por_real - a.pontos_por_real);
+  const selos = selosDaOferta(oferta, hoje);
   return h('section', { class: 'card pilha', 'aria-labelledby': idTitulo },
     h('h3', { id: idTitulo, class: 'card__titulo' }, `Oferta ${nomePrograma}`),
+    selos.length ? h('div', { class: 'card__topo' }, selos) : null,
+    seloDaFonte(oferta),
     h('table', { class: 'tabela' },
       h('caption', {}, 'Pontos por real em cada caso'),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Quem compra'), h('th', { scope: 'col', class: 'numero' }, 'Pontos por real'))),
@@ -187,6 +256,11 @@ function secaoDaOferta(ativa, dados, indice) {
     h('dl', { class: 'lista-conta' },
       linhaConta('Validade', porReal.validade_da_oferta?.texto ?? 'Não confirmada.'),
       linhaConta('Vale para', textoEscopo(oferta)),
+      oferta.destaques?.length ? linhaConta('Rende mais', ...oferta.destaques.map((t, i) => (i ? ` ${t}` : t))) : null,
+      oferta.produtos_em_campanha?.length
+        ? linhaConta('Produtos citados na campanha', h('ul', { class: 'pagina__lista' },
+          oferta.produtos_em_campanha.map((p) => h('li', {}, linkExterno(p.link, p.nome)))))
+        : null,
       linhaConta('Fora da oferta', textoFora(oferta)),
       linhaConta('Soma com o cartão?', textoAcumula(oferta.acumula_com_cartao)),
       linhaConta('Precisa de cupom?', textoCupom(oferta)),
@@ -219,8 +293,11 @@ function respostaDaLoja(loja, melhor, ativas) {
 function cartaoDaResposta(dados, loja, melhor, resposta, raiz) {
   const j = melhor?.porReal;
   const cem = melhor?.porCem;
-  const botao = h('a', { class: 'botao botao--bloco', href: `${raiz}?loja=${encodeURIComponent(loja.id)}` },
-    `Calcular a minha compra ${naLoja(loja)}`);
+  // A conta já foi feita acima; o link de saída só entra depois, sem mudar nada nela.
+  const botao = juntar(
+    h('a', { class: 'botao botao--bloco', href: `${raiz}?loja=${encodeURIComponent(loja.id)}` },
+      `Calcular a minha compra ${naLoja(loja)}`),
+    linkDeSaida(montarLinkDeSaida(loja.id, dados), `Ir para a loja ${loja.nome}`, 'aviso-comissao'));
   if (!resposta.rende) {
     return h('section', { class: 'card pilha', 'aria-label': 'Resposta' },
       h('p', { class: 'resposta' }, resposta.frase),
@@ -232,7 +309,7 @@ function cartaoDaResposta(dados, loja, melhor, resposta, raiz) {
   const valor = cem?.valor_estimado_em_reais;
   const avisos = j.avisos ?? [];
   return h('section', { class: 'card card--destaque pilha', 'aria-label': 'Resposta' },
-    h('p', { class: 'resposta' }, resposta.frase, ' ', fraseDoJeito(j, loja.nome).replace(` na ${loja.nome}`, ` ${naLoja(loja)}`)),
+    h('p', { class: 'resposta' }, resposta.frase, ' ', fraseDoJeito(j, loja)),
     valor
       ? juntar(
         h('p', { class: 'card__valor' }, valor.texto),
@@ -245,15 +322,16 @@ function cartaoDaResposta(dados, loja, melhor, resposta, raiz) {
     botao);
 }
 
-export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
+export function paginaDaLoja(dados, loja, { hoje, urlBase, alertas = ALERTAS_LIGADO, vitrine = null, agora = null }) {
   const raiz = '../../';
   const caminho = `loja/${loja.id}/`;
   const ativas = ofertasAtivasDaLoja(dados, loja.id, hoje);
   const melhor = melhorJeito(dados, loja.id, hoje);
   const resposta = respostaDaLoja(loja, melhor, ativas);
   const idsAtivas = new Set(ativas.map((a) => a.oferta.id));
-  const foraDaConta = dados.ofertas.filter((o) => o.loja_id === loja.id && !idsAtivas.has(o.id));
+  const { fora: foraDaConta, historico } = ofertasForaDaConta(dados, loja.id, hoje, idsAtivas);
   const nomeProg = (id) => dados.programas.find((p) => p.id === id)?.nome ?? id;
+  const produtos = vitrine ? secaoDaLoja(dados, loja, vitrine, { hoje, agora }) : null;
 
   const titulo = `${loja.nome}: pontos e milhas hoje | ${NOME_DO_SITE}`;
   const descricao = resposta.comOferta
@@ -267,15 +345,29 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
       h('h1', {}, `Pontos e milhas ${naLoja(loja)} hoje`),
       h('p', { class: 'texto-suave texto-pequeno' }, `Situação em ${formatarData(hoje)}, com os dados conferidos até agora.`)),
     cartaoDaResposta(dados, loja, melhor, resposta, raiz),
+    blocoDaLoja(dados, loja, hoje, raiz),
+    produtos,
+    alertas
+      ? h('p', {}, h('a', { class: 'botao botao--secundario', href: `${raiz}alertas/?loja=${encodeURIComponent(loja.id)}` },
+        `Me avise por e-mail quando ${naLoja(loja)} render mais`))
+      : null,
     h('section', { class: 'pilha', 'aria-labelledby': 'regras-titulo' },
       h('h2', { id: 'regras-titulo', class: 'pagina__subtitulo' }, ativas.length ? 'Regras das ofertas ativas' : 'Ofertas ativas'),
       ativas.length
-        ? ativas.map((a, i) => secaoDaOferta(a, dados, i + 1))
+        ? ativas.map((a, i) => secaoDaOferta(a, dados, i + 1, hoje))
         : h('p', {}, `Nenhuma oferta de pontos ativa ${naLoja(loja)} hoje.`)),
     foraDaConta.length
       ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'fora-titulo' },
-        h('h2', { id: 'fora-titulo', class: 'pagina__subtitulo' }, 'Ofertas que não valem hoje'),
+        h('h2', { id: 'fora-titulo', class: 'pagina__subtitulo' }, 'Ofertas fora da conta hoje'),
         h('ul', { class: 'pagina__lista' }, foraDaConta.map((o) => h('li', {},
+          `Oferta ${nomeProg(o.programa_id)}: ${motivoFora(o, hoje)}. `,
+          linkExterno(o.fonte_url, 'Fonte')))))
+      : null,
+    secaoSemParceria(loja, dados),
+    historico.length
+      ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'historico-titulo' },
+        h('h2', { id: 'historico-titulo', class: 'pagina__subtitulo' }, 'Histórico: ofertas que já acabaram'),
+        h('ul', { class: 'pagina__lista' }, historico.map((o) => h('li', {},
           `Oferta ${nomeProg(o.programa_id)}: ${motivoFora(o, hoje)}. `,
           linkExterno(o.fonte_url, 'Fonte')))))
       : null,
@@ -313,8 +405,9 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
       titulo, descricao, caminho, raiz, urlBase, atual: null,
       dadosEstruturados: estruturados,
       principal: juntar(conteudo, termosExplicados(conteudo)),
+      scripts: produtos ? [SCRIPT_VALIDADE] : [],
     }),
-    resumo: { loja: loja.id, ofertasAtivas: ativas.length, rende: resposta.rende, frase: resposta.frase },
+    resumo: { loja: loja.id, ofertasAtivas: ativas.length, rende: resposta.rende, frase: resposta.frase, produtos: Boolean(produtos) },
   };
 }
 
@@ -347,7 +440,8 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
     h('section', { class: 'pilha--sm' },
       h('h1', {}, 'Ofertas de pontos ativas hoje'),
       h('p', { class: 'resposta' }, frase),
-      h('p', { class: 'texto-suave texto-pequeno' }, 'Ofertas vencidas saem desta lista. "Até" é o máximo da oferta, que pode pedir clube ou um cartão específico: veja as regras na página da loja.')),
+      h('p', { class: 'texto-suave texto-pequeno' }, `Ofertas vencidas saem desta lista e vão para o histórico. Oferta conferida há mais de ${DIAS_DADO_ANTIGO} dias ganha um aviso; há mais de 30 dias, sai da lista até ser conferida de novo. "Até" é o máximo da oferta, que pode pedir clube ou um cartão específico: veja as regras na página da loja.`),
+      h('p', {}, h('a', { class: 'alvo-toque', href: `${raiz}${PASTA_ONDE_RENDE_MAIS}/` }, 'Ver por categoria e produto em campanha: onde rende mais hoje'))),
     linhas.length
       ? h('table', { class: 'tabela' },
         h('caption', {}, 'Ofertas ativas, da que mais rende para a que menos rende'),
@@ -361,9 +455,13 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
           h('td', { 'data-rotulo': 'Loja' }, h('a', { class: 'alvo-toque', href: `${raiz}loja/${loja.id}/` }, loja.nome)),
           h('td', { 'data-rotulo': 'Programa' }, porReal.programa?.nome ?? oferta.programa_id),
           h('td', { 'data-rotulo': 'Até (pontos por real)', class: 'numero' }, porReal.total_pontos_texto),
-          h('td', { 'data-rotulo': 'Validade' }, confirmado(oferta.fim) ? `até ${formatarData(oferta.fim)}` : 'fim não confirmado'),
-          h('td', { 'data-rotulo': 'Conferido' }, formatarData(oferta.verificado_em), ' · ', linkExterno(oferta.fonte_url, 'fonte', h('span', { class: 'visualmente-oculto' }, ` da oferta ${naLoja(loja)}`)))))))
+          h('td', { 'data-rotulo': 'Validade' }, confirmado(oferta.fim) ? `até ${formatarData(oferta.fim)}` : (oferta.vigencia === 'regra_padrao' ? 'regra de sempre, sem data de fim' : 'fim não confirmado'),
+            ...selosDaOferta(oferta, hoje).slice(0, 1).map((selo) => juntar(' ', selo))),
+          h('td', { 'data-rotulo': 'Conferido' }, formatarData(oferta.verificado_em),
+            situacaoDaOferta(oferta, hoje).dado_antigo ? juntar(' ', h('span', { class: 'selo selo--aviso' }, 'dado antigo')) : null,
+            ' · ', linkExterno(oferta.fonte_url, `fonte: ${siteDaFonte(oferta.fonte_url) ?? 'link'}`, h('span', { class: 'visualmente-oculto' }, ` da oferta ${naLoja(loja)}`)))))))
       : null,
+    listaForaDoRanking(dados, hoje, raiz),
     h('section', { class: 'pilha--sm', 'aria-labelledby': 'lojas-titulo' },
       h('h2', { id: 'lojas-titulo', class: 'pagina__subtitulo' }, 'Todas as lojas'),
       h('ul', { class: 'pagina__lojas' }, [...porLoja]
@@ -407,6 +505,38 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
   };
 }
 
+/** Na página de ofertas: as que saíram por falta de conferência e o histórico das vencidas. */
+function listaForaDoRanking(dados, hoje, raiz) {
+  const lojas = new Map(dados.lojas.map((l) => [l.id, l]));
+  const nomeProg = (id) => dados.programas.find((p) => p.id === id)?.nome ?? id;
+  const reconferir = [];
+  const historico = [];
+  for (const o of dados.ofertas) {
+    const s = situacaoDaOferta(o, hoje);
+    if (s.estado === ESTADOS.RECONFERIR) reconferir.push(o);
+    else if (s.no_historico) historico.push(o);
+  }
+  historico.sort((a, b) => (a.fim < b.fim ? 1 : a.fim > b.fim ? -1 : 0));
+  const item = (o) => {
+    const loja = lojas.get(o.loja_id);
+    return h('li', {},
+      loja ? h('a', { href: `${raiz}loja/${loja.id}/` }, loja.nome) : o.loja_id,
+      ` · ${nomeProg(o.programa_id)}: ${motivoFora(o, hoje)}.`);
+  };
+  return juntar(
+    reconferir.length
+      ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'reconferir-titulo' },
+        h('h2', { id: 'reconferir-titulo', class: 'pagina__subtitulo' }, 'Fora da lista até a gente conferir de novo'),
+        h('ul', { class: 'pagina__lista' }, reconferir.map(item)))
+      : null,
+    historico.length
+      ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'historico-titulo' },
+        h('h2', { id: 'historico-titulo', class: 'pagina__subtitulo' }, 'Histórico: ofertas que já acabaram'),
+        h('ul', { class: 'pagina__lista' }, historico.map(item)))
+      : null,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // sitemap.xml e robots.txt
 
@@ -436,24 +566,40 @@ export function normalizarUrlBase(url) {
  * @param {object} opcoes { hoje: "AAAA-MM-DD", urlBase: string|null }
  * @returns {{ arquivos: {caminho, conteudo}[], resumo: object, avisos: string[] }}
  */
-export function gerarPaginas(dados, { hoje, urlBase = null }) {
+/**
+ * vitrine: produtos com preço vindo das APIs (scripts/produtos/atualizar.js), ou null.
+ * agora:   data e hora ISO do build; produto com preço vencido nesse momento fica de fora.
+ */
+export function gerarPaginas(dados, {
+  hoje, urlBase = null, alertas = ALERTAS_LIGADO, plano = configDoPlano(), vitrine = null, agora = null,
+}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(hoje ?? '')) throw new Error(`hoje precisa ser AAAA-MM-DD (recebido: ${hoje})`);
   const base = normalizarUrlBase(urlBase);
   for (const loja of dados.lojas) {
     if (!ID_SEGURO.test(loja.id)) throw new Error(`id de loja inválido para virar pasta: ${JSON.stringify(loja.id)}`);
   }
-  const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base }));
+  if (vitrine && !Number.isFinite(Date.parse(agora))) throw new Error(`com vitrine, agora precisa ser data e hora ISO (recebido: ${agora})`);
+  const comVitrine = { vitrine, agora };
+  const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base, alertas, ...comVitrine }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
-  const institucionais = paginasInstitucionais({ hoje, urlBase: base });
-  const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
+  const ondeRendeMais = paginaOndeRendeMais(dados, { hoje, urlBase: base, ...comVitrine });
+  const temProdutos = Boolean(vitrine) && produtosQueValem(vitrine, dados, agora).length > 0;
+  // Afiliado: link de loja (dados/links.json) ou link de produto da vitrine.
+  const temAfiliado = siteTemLinkDeAfiliado(dados) || (temProdutos && vitrineTemAfiliado(vitrine, dados, agora));
+  const institucionais = paginasInstitucionais({
+    urlBase: base, temProdutos, temAfiliado, usaAwin: siteUsaAwin(dados), alertas, plano,
+  });
+  const paginaPlano = paginaDoPlano({ urlBase: base, config: plano });
+  const arquivos = [ofertas, ondeRendeMais, ...lojas, ...institucionais.paginas, ...(paginaPlano ? [paginaPlano] : [])].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {
-    const caminhos = ['', 'ofertas/', ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];
+    const caminhos = ['', 'ofertas/', `${PASTA_ONDE_RENDE_MAIS}/`, 'viagens/', 'abastecer/', ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];
     arquivos.push({ caminho: 'sitemap.xml', conteudo: sitemap(base, caminhos, hoje) });
   } else {
     avisos.push('URL base do site A_CONFIRMAR: sem link canônico, sem og:url e sem sitemap.xml. Defina em scripts/paginas/config.js, ou use URL_DO_SITE / --url-base.');
   }
+  if (vitrine?.demo) avisos.push('Vitrine de DEMONSTRAÇÃO: produtos e preços inventados. Não publique estas páginas.');
   arquivos.push({ caminho: 'robots.txt', conteudo: robots(base) });
-  return { arquivos, resumo: { ofertas: ofertas.resumo, lojas: lojas.map((l) => l.resumo) }, avisos };
+  return { arquivos, resumo: { ofertas: ofertas.resumo, ondeRendeMais: ondeRendeMais.resumo, lojas: lojas.map((l) => l.resumo), produtos: temProdutos }, avisos };
 }
 

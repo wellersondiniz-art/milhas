@@ -184,6 +184,209 @@ Cada passo usa a data de hoje (Brasília); para outra data, passe `--data AAAA-M
 
 Para ver o fluxo inteiro sem internet e sem chave: `npm run atualizacao:demo`. Ele usa duas páginas fictícias e respostas do modelo escritas à mão (`testes/atualizacao/`), roda numa cópia temporária do projeto e só simula os comandos de Git.
 
+## Métricas sem cookie (Plausible)
+
+O site conta alguns usos com o [Plausible](https://plausible.io), sem cookie e sem dado pessoal. Não há script de terceiro: o próprio site manda cada evento com `fetch` para `https://plausible.io/api/event` (o único endereço de fora liberado na CSP, em `connect-src`). O código fica em `site/js/metricas/`.
+
+| Evento | Propriedades | Quando |
+| --- | --- | --- |
+| `busca_loja` | `loja`, `origem` (`calculadora` ou `pagina-da-loja`) | Escolheu uma loja na calculadora ou abriu `/loja/<id>/`. Loja digitada que não está na lista vira `fora-da-lista`, sem o texto. |
+| `calculo` | `loja` | Fez uma conta (refazer sozinho porque o perfil mudou não conta). |
+| `clique_saida` | `destino` (site, sem `www.`), `pagina`, `loja` | Clicou num link para outro site. |
+| `instalacao` | nenhuma | Instalou o app (Chrome e Android; o Safari não avisa). |
+| `oferta_vencida_vista` | `pagina`, `loja` | A seção "Histórico" de ofertas que acabaram apareceu na tela. |
+
+Nunca vão: valor da compra, cartões, programas, perfil, texto digitado, o que vem depois de `?` no endereço, cookie ou referrer. Cada valor precisa ser um código curto (`a-z`, `0-9`, `.`, `-`); se não for, o evento inteiro é descartado. Quem liga "Do Not Track" ou "Global Privacy Control" não é medido. A página Privacidade lista o que é medido a partir do próprio código.
+
+### Ligar (uma vez só, feito por você)
+
+1. Crie uma conta em plausible.io (30 dias grátis; depois o plano mais barato custa cerca de US$ 9 por mês, para até 10 mil visualizações).
+2. Adicione o site com o endereço onde ele está no ar (hoje `milhasdavez.pages.dev`). Pode pular o passo de instalar o script: o site já manda os eventos sozinho.
+3. Em Settings → Goals, crie 5 metas do tipo "Custom event", com estes nomes exatos: `busca_loja`, `calculo`, `clique_saida`, `instalacao`, `oferta_vencida_vista`.
+4. Em Settings → Custom Properties, adicione: `loja`, `origem`, `destino`, `pagina`.
+5. Em `site/js/metricas/config.js`, troque `DOMINIO_NO_PLAUSIBLE = 'A_CONFIRMAR'` pelo mesmo endereço do passo 2, e em `scripts/paginas/config.js` troque `TEXTOS_ATUALIZADOS_EM` para a data do dia. Rode `npm test` e publique: a página Privacidade passa a dizer o que é medido.
+6. Quando mudar para `milhasdavez.com.br`, troque o domínio no Plausible (Settings → General → Change domain) e no `config.js` no mesmo dia.
+
+O site só manda eventos quando está aberto exatamente nesse endereço. No seu computador, nos testes e nas prévias da Cloudflare, nada sai.
+
+### Painel semanal
+
+```bash
+PLAUSIBLE_API_KEY=sua-chave npm run painel                 # semana fechada até ontem
+PLAUSIBLE_API_KEY=sua-chave npm run painel -- --fim 2026-11-21
+npm run painel -- --exemplo                                # números inventados, sem chave
+```
+
+A chave sai em plausible.io → Settings (da conta) → API Keys → "New API Key" do tipo Stats API. Ela fica só na variável de ambiente do seu computador: nunca no código, nem no Git. O painel é gravado em `painel/painel-AAAA-MM-DD.md` (fora do Git) com: resumo da semana, lojas mais buscadas, lojas sem oferta valendo hoje (para cadastrar), cliques de saída por site e taxa calcular → clicar (por loja e no total).
+## Avisos de erro (reportes)
+
+Cada resultado pode ter o botão **"Essa informação está errada?"**. Ele abre um formulário curto (o que está errado, link da prova e e-mail opcional; a loja vem do resultado) e envia para a função `functions/api/reportar.js`, que roda na própria Cloudflare Pages, no mesmo endereço do site. A função confere tudo de novo (`servidor/reportar/`), barra robô (campo escondido e envio rápido demais) e abuso (5 avisos por hora por conexão, 50 por dia no total) e abre uma **issue num repositório privado do GitHub**. Aviso sobre oferta que vale hoje ganha a etiqueta `prioridade: oferta ativa`.
+
+O que fica guardado (é o que a página Privacidade diz):
+
+- Na issue: loja, oferta, programa e cartão do resultado (ids dos nossos dados), o texto e o link, os dois dentro de bloco de código (o GitHub não monta link, imagem nem menção). Nada de IP.
+- O e-mail, se a pessoa der um, vai num **comentário à parte**, que o robô `limpar-emails.yml` apaga quando a issue é fechada ou depois de 90 dias. Apagar o comentário (e não editar) tira o e-mail do histórico. Cuidado: se você recebe notificação por e-mail do GitHub, o endereço também chega na sua caixa; apague a notificação depois de responder.
+- No Workers KV: um resumo embaralhado (HMAC) do IP com um contador, que some sozinho em 1 hora, e um contador do dia, sem nada da pessoa.
+
+O botão vem **desligado** (`REPORTE_LIGADO = false` em `site/js/reporte/config.js`). Com ele desligado, a função continua no ar, mas sem configuração responde 503 e não grava nada. Para ligar, siga os passos abaixo uma vez. Os nomes dos botões dos painéis são de memória: se algum estiver diferente, procure o mais parecido.
+
+### Passo 1. Repositório privado para os avisos (GitHub)
+
+O repositório do site é público, e issue de repositório público qualquer pessoa lê. Por isso os avisos vão para outro, privado.
+
+1. Abra <https://github.com/new>. Nome: `milhas-reportes`. Marque **Private** e **Add a README file**. Clique em **Create repository**.
+2. Em **Issues** → **Labels** → **New label**, crie duas etiquetas: `reporte` e `prioridade: oferta ativa` (escreva igual, com os dois-pontos e o espaço; a cor é livre, vermelho para a de prioridade ajuda).
+3. Ainda no `milhas-reportes`: **Add file** → **Create new file**. Nome do arquivo: `.github/workflows/limpar-emails.yml`. Cole o conteúdo de [`servidor/reportar/repo-de-reportes/limpar-emails.yml`](servidor/reportar/repo-de-reportes/limpar-emails.yml) e clique em **Commit changes**. Na aba **Actions**, ele aparece como `limpar-emails`; dá para rodar à mão com **Run workflow**.
+
+Para triar: em **Issues**, filtre por `label:"prioridade: oferta ativa"` primeiro. Corrija em `dados/` (com `fonte_url` e `verificado_em`) e feche a issue; fechar apaga o e-mail.
+
+### Passo 2. Token só para criar issues (GitHub)
+
+1. Abra <https://github.com/settings/personal-access-tokens/new> (fine-grained token).
+2. **Token name**: `milhasdavez-reportes`. **Expiration**: 1 ano (anote a data para trocar antes de vencer).
+3. **Repository access**: **Only select repositories** → escolha só `milhas-reportes`.
+4. **Permissions** → **Repository permissions** → **Issues**: **Read and write**. Não marque mais nada (o "Metadata: Read-only" entra sozinho).
+5. **Generate token** e copie o valor. Ele aparece uma vez só. Não cole em arquivo, chat nem commit: ele vai direto para o passo 4.
+
+### Passo 3. KV para o limite (Cloudflare)
+
+No painel da Cloudflare: **Storage & Databases** → **Workers KV** → **Create** (namespace). Nome: `milhasdavez-reportes-limite`.
+
+### Passo 4. Ligar a função ao token, ao repositório e ao KV (Cloudflare)
+
+Em **Workers & Pages** → `milhasdavez` → **Settings**, no ambiente **Production**:
+
+1. **Bindings** → **Add** → **KV namespace**. Variable name: `REPORTES_LIMITE`. KV namespace: `milhasdavez-reportes-limite`. Salve.
+2. **Variables and Secrets** → **Add**:
+   - Type **Secret**, nome `GITHUB_TOKEN`, valor: o token do passo 2.
+   - Type **Text**, nome `REPORTES_REPO`, valor: `wellersondiniz-art/milhas-reportes`.
+3. Não configure nada disso no ambiente **Preview**: assim os previews dos PRs nunca abrem issue de verdade (respondem 503).
+4. Em **Deployments**, na publicação mais recente da `main`: **...** → **Retry deployment**, para a função pegar as configurações.
+
+### Passo 5. Segunda trava contra abuso (opcional, Cloudflare, só com o domínio próprio)
+
+Depois do domínio `milhasdavez.com.br` ativo na Cloudflare: **Security** → **WAF** → **Rate limiting rules** → **Create rule**. Quando: **URI Path** igual a `/api/reportar`. Limite: 5 pedidos a cada 10 segundos, contando por IP. Ação: **Block** por 10 segundos. O plano gratuito dá uma regra dessas.
+
+### Passo 6. Ligar o botão e testar
+
+1. Troque `REPORTE_LIGADO` para `true` em `site/js/reporte/config.js` (num PR; isso também acrescenta a seção "Quando você avisa de um erro" em Privacidade e a dica em Contato).
+2. Depois do merge, no celular: faça uma conta, toque em "Essa informação está errada?", envie um aviso de teste com o seu e-mail. Espere uns 5 segundos antes de enviar (envio rápido demais é tratado como robô e some em silêncio).
+3. Confira no `milhas-reportes`: a issue apareceu, com o comentário do e-mail. Feche a issue e veja em **Actions** o `limpar-emails` apagar o comentário.
+
+Para desligar de novo: `REPORTE_LIGADO = false`, ou apague o segredo `GITHUB_TOKEN` (a função passa a responder 503 na hora).
+## Alertas por e-mail
+
+A pessoa diz "me avise quando a [loja] tiver [X] pontos por real ou mais para o meu perfil". Depois de cada atualização semanal das ofertas, o robô faz a conta com o **mesmo motor** da calculadora (`site/js/motor/`) e manda um e-mail para quem chegou no alvo. **Está desligado** (`ALERTAS_LIGADO = false` em `scripts/paginas/config.js`) até tudo abaixo estar configurado e testado.
+
+Como funciona:
+
+- **Inscrição** (`site/alertas/`, rota `POST /api/alertas/inscrever`): loja, programa (opcional), pontos por real, e-mail e o aceite. O perfil vai só com ids, clube e data do clube. A resposta é sempre a mesma, exista o e-mail ou não.
+- **Duplo opt-in**: nada vale antes do clique no link de confirmação, que vale 48 horas e uma vez só. O banco guarda só o SHA-256 do token. O link abre uma página com o botão "Confirmar" (o leitor de links do provedor de e-mail não confirma sozinho).
+- **Cancelar**: todo e-mail tem o link (assinado com HMAC) e o cabeçalho `List-Unsubscribe` com cancelamento em um clique. Cancelar apaga o e-mail e os alertas na hora.
+- **Limites**: até 2 e-mails de alerta por pessoa em 7 dias, até 3 e-mails de confirmação por endereço em 24 horas, até 10 alertas por e-mail, até 10 pedidos por IP por dia e até 80 pedidos por dia no total (o plano grátis do Resend manda 100 por dia). Os dois últimos são contados no banco, de forma atômica (`alertas_contar`), com o IP guardado só como resumo HMAC. A mesma oferta com os mesmos pontos não é avisada duas vezes.
+- **Privacidade**: cada e-mail vai para uma pessoa só. O log (`alertas_envios`) tem data, tipo, resultado e quantidade, sem e-mail, id ou loja. A saída do robô só tem contagens.
+- **Código**: regras e envio em `servidor/alertas/`, rotas em `functions/api/alertas/`, robô em `scripts/alertas/enviar.js` e `.github/workflows/alertas.yml`, banco em `supabase/migrations/`.
+
+Para ligar (uma vez só):
+
+1. **Supabase**: crie o projeto (região São Paulo) e aplique, nesta ordem, `supabase/migrations/20261123000000_alertas_email.sql` e `supabase/migrations/20261124000000_alertas_limites.sql`. As tabelas têm RLS forçada, nenhuma política e nenhum grant para `anon`/`authenticated`: só a chave secreta acessa. Em **Project Settings → API Keys**, crie **duas** chaves secretas (`sb_secret_...`): uma para a Cloudflare e outra para o GitHub. Assim dá para revogar uma sem parar a outra.
+2. **Resend**: crie a conta, verifique o domínio de envio (registros DNS no Cloudflare) e crie uma chave com permissão **só de envio**.
+3. **Segredos**: gere 32+ caracteres aleatórios (ex.: `openssl rand -base64 48`) para `ALERTAS_SEGREDO` (assina os links; o mesmo valor vai para a Cloudflare e para o GitHub) e **outro** valor para `IP_SEGREDO` (resume o IP no limite de pedidos; só na Cloudflare).
+4. **Cloudflare Pages** → `milhasdavez` → Settings → Variables and Secrets, no ambiente **Production**: `SUPABASE_URL` (variável), `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `ALERTAS_SEGREDO`, `IP_SEGREDO` (segredos) e `ALERTAS_REMETENTE` (variável, ex.: `Milhas da Vez <alertas@milhasdavez.com.br>`). Recomendado também: uma regra de Rate Limiting em `/api/alertas/*` (Security → WAF), como segunda trava.
+5. **GitHub** → Settings → Environments → New environment `alertas`, com os segredos `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (a outra chave), `RESEND_API_KEY`, `ALERTAS_REMETENTE` e `ALERTAS_SEGREDO`, e a variável `ALERTAS_URL_SITE` (ex.: `https://milhasdavez.com.br`).
+6. **Teste com um e-mail seu** e só então troque `ALERTAS_LIGADO` para `true` (e `TEXTOS_ATUALIZADOS_EM`, porque a Privacidade muda).
+
+Comandos:
+
+- `npm run alertas -- --simular`: avalia todos os alertas e conta, sem enviar nem gravar (precisa só de `SUPABASE_URL` e `SUPABASE_SECRET_KEY`).
+- `npm run alertas`: rodada de verdade (o robô do GitHub faz isso sozinho quando `dados/ofertas.json` muda na `main`; também dá para rodar em Actions → alertas → Run workflow).
+- `npm run test:banco`: aplica a migração num Postgres descartável no Docker e prova que `anon` e `authenticated` não leem nem apagam nada, mais os CHECKs e o limite de alertas. Não toca no Supabase.
+
+## Plano pago (assinatura pelo Stripe)
+
+Plano opcional que **só aumenta os limites dos alertas por e-mail** (até 50 alertas e até 7 e-mails por semana, contra 10 e 2 no grátis). A calculadora, as ofertas e a ordem do resultado são iguais para todos. **Está desligado** (`PLANO_LIGADO = false` em `scripts/paginas/config.js`) e em **modo de teste** (`PLANO_MODO_REAL = false`) até o dono aprovar.
+
+Regras de ouro, e onde cada uma está garantida:
+
+- **O número do cartão nunca passa pelo nosso código**: o botão "Assinar" é um link de pagamento do Stripe (`buy.stripe.com`) e o "Cancelar" é o portal do cliente do Stripe (`billing.stripe.com`). A página `/plano/` não tem formulário nem script (`testes/plano-paginas.test.mjs`).
+- **A situação só muda pelo webhook com assinatura verificada**: `POST /api/plano/stripe` confere o `Stripe-Signature` (HMAC-SHA256 do corpo bruto, janela de 5 minutos) antes de qualquer coisa. Não existe rota do navegador que grave `plano_assinaturas` (`servidor/plano/webhook.js`).
+- **Webhook idempotente**: o id de cada evento fica em `plano_eventos`; um aviso repetido responde 200 e não faz nada. Além disso, o webhook não confia no conteúdo do aviso: busca o cliente e as assinaturas na API do Stripe e grava o estado de agora, então avisos atrasados ou fora de ordem dão o mesmo resultado. Se algo falhar, responde 500 e o Stripe reenvia.
+- **Chaves só no servidor**: `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` vivem só nos segredos da Cloudflare. O auditor (`npm run auditar`) procura chaves do Stripe no Git.
+- **Modo de teste até a aprovação**: sem `PLANO_MODO_REAL=ligado` na Cloudflare, o servidor recusa chave de produção (`sk_live_`/`rk_live_`) e eventos reais; com `PLANO_MODO_REAL = false` no `config.js`, o build recusa links de pagamento que não sejam de teste. Para o modo real, o build também exige `PLANO_VENDEDOR` (nome, CPF ou CNPJ e endereço de quem vende, como pede o Decreto 7.962/2013) e `EMAIL_DE_CONTATO` (o reembolso de 7 dias é pedido por ele). Confira com o contador a nota fiscal de serviço antes de cobrar.
+
+Estados (testados em `testes/plano.test.mjs`):
+
+| No Stripe | Aqui | Benefício |
+| --- | --- | --- |
+| `active`, `trialing` | ativa | sim, até o fim do mês pago |
+| `incomplete` | pendente | não |
+| `past_due`, `unpaid`, `incomplete_expired`, `paused` | falhou | não (volta quando pagar) |
+| `canceled` | cancelada | não |
+| reembolso integral (`charge.refunded`) | reembolsada (e a assinatura é cancelada no Stripe) | não |
+| contestação aberta (`charge.dispute.created`) | contestada | não, até ganhar a contestação |
+
+Cancelar com `cancel_at_period_end` mantém o plano até o fim do mês pago.
+
+Para ligar no **modo de teste** (o dono faz o cadastro; nada é cobrado):
+
+1. **Stripe** (painel em modo de teste): crie o produto com preço mensal recorrente em BRL; crie um **Payment Link** para ele (peça o aceite dos Termos com o link de `/termos/`); ative o **portal do cliente** (cancelar no fim do período, trocar cartão, ver faturas) e copie o link de entrada dele.
+2. **Webhook**: em Developers → Webhooks, endpoint `https://<site>/api/plano/stripe` com os eventos de `EVENTOS_TRATADOS` (`servidor/plano/webhook.js`). Copie o segredo de assinatura (`whsec_...`).
+3. **Chave restrita**: Developers → API keys → chave restrita com **Customers: leitura** e **Subscriptions: escrita**.
+4. **Supabase**: aplique `supabase/migrations/20261124000001_plano_pago.sql` (depois das duas dos alertas).
+5. **Cloudflare Pages** → Production: segredos `STRIPE_SECRET_KEY` (a `rk_test_...`) e `STRIPE_WEBHOOK_SECRET`; `SUPABASE_URL` e `SUPABASE_SECRET_KEY` já vêm dos alertas. **Não** defina `PLANO_MODO_REAL`.
+6. Em `scripts/paginas/config.js`: `PLANO_PRECO_CENTAVOS`, `PLANO_LINK_PAGAMENTO` (`https://buy.stripe.com/test_...`), `PLANO_LINK_PORTAL` (`https://billing.stripe.com/p/login/test_...`) e `PLANO_LIGADO = true` (e `TEXTOS_ATUALIZADOS_EM`).
+7. Teste os quatro estados com os [cartões de teste do Stripe](https://docs.stripe.com/testing): pagar com o cartão de teste que termina em 4242; falhar com um cartão recusado ou com o relógio de teste (test clock) na renovação; cancelar pelo portal; reembolsar pelo painel. Confira em `plano_assinaturas`.
+
+Para o **modo real**, só depois do ok do dono e do advogado: trocar a chave e o segredo do webhook pelos de produção, definir `PLANO_MODO_REAL=ligado` na Cloudflare e trocar `PLANO_MODO_REAL`, os links e o preço no `config.js`.
+
+O que cada parte faz: regras e webhook em `servidor/plano/`, rota em `functions/api/plano/stripe.js`, página em `scripts/paginas/plano.js`, banco em `supabase/migrations/20261124000001_plano_pago.sql` (testes SQL em `supabase/testes/plano_pago.sql`, rodam com `npm run test:banco`).
+## Explica pra mim
+
+Embaixo do resultado pode aparecer o bloco **"Ficou com dúvida?"**, com o botão **"Explica pra mim"**. Ele escreve, em português simples, uma explicação do resultado e responde dúvidas como "vale a pena assinar o clube só para essa compra?".
+
+Como funciona (e por que é seguro):
+
+- O navegador **nunca** fala com o provedor de IA. Ele manda a loja, o valor, o perfil (ids, clube, milheiro) e a pergunta para a função `functions/api/explicar.js`, que roda na própria Cloudflare Pages. A chave da API fica só lá, como segredo.
+- A função **refaz a conta com o nosso motor** e os dados publicados. O modelo recebe esse resultado pronto (com as diferenças já calculadas, como "6.000 pontos a mais") e só explica. Se o melhor jeito do servidor não for o mesmo da tela (dados mudaram), ela pede para refazer a conta.
+- Modelo: **Claude Haiku 5.5** (o mais barato, US$ 0,10 / 0,50 por milhão de tokens; cerca de US$ 0,0005 por explicação). Reserva: **Claude Haiku 4.5**. Tempo-limite de 12 s por tentativa e 25 s no total, nova tentativa com espera crescente nos erros passageiros (429, 5xx, 529, rede) e troca para a reserva quando o principal não responde.
+- Injeção de prompt: a pergunta é tratada como dado. Ela vai neutralizada (sem `<` `>` nem caracteres invisíveis), dentro de uma etiqueta, e as regras ficam só no `system`. A resposta é **conferida por código** antes de chegar à tela: todo número precisa estar no resultado do motor, não pode citar loja/programa/cartão de fora do resultado, nem ter link, e-mail, HTML, Markdown ou pedido de dado pessoal. Se não passar, a pessoa vê um recado fixo. A tela monta tudo com `textContent`.
+- Pergunta com algo parecido com número de cartão, CPF, telefone ou e-mail nem sai do aparelho (e o servidor confere de novo).
+- Limites: 10 explicações por pessoa por dia (resumo HMAC do IP, que some em 2 dias), 200 por dia no total e **teto de US$ 5 por mês** (o servidor soma o custo real de cada chamada e não chama se a próxima não couber).
+
+O botão vem **desligado** (`EXPLICAR_LIGADO = false` em `site/js/explicar/config.js`). Sem a chave, a função responde 503 e não chama nada.
+
+### Para ligar
+
+1. **Conta na Anthropic** (<https://console.anthropic.com>): crie a conta, ponha crédito (o mínimo basta por meses) e, em **Limits**, defina um limite de gasto mensal baixo (por exemplo US$ 10). **Obrigatório**: é a única trava firme do teto. O teto do site reserva a vaga antes de chamar o modelo, mas o Workers KV demora até cerca de 60 segundos para mostrar o valor novo em outros pontos da rede, então pedidos no mesmo instante em lugares diferentes ainda podem passar juntos.
+2. Crie uma chave em **API Keys** com o nome `milhasdavez-explicar`. Copie: ela aparece uma vez só. Não cole em arquivo, chat nem commit.
+3. Antes de ligar, confira o modelo de verdade contra as tentativas de injeção, no seu computador: `ANTHROPIC_API_KEY=... npm run explicar:injecao` (custa menos de US$ 0,02). Tem que terminar com "Nenhum golpe chegou à tela".
+4. **Cloudflare**: **Storage & Databases** → **Workers KV** → **Create**, nome `milhasdavez-explicar-limite`.
+5. Em **Workers & Pages** → `milhasdavez` → **Settings**, só no ambiente **Production**:
+   - **Bindings** → **Add** → **KV namespace**. Variable name: `EXPLICAR_LIMITE`. Namespace: `milhasdavez-explicar-limite`.
+   - **Variables and Secrets** → **Add** → Type **Secret**, nome `ANTHROPIC_API_KEY`, valor: a chave do passo 2.
+   - **Variables and Secrets** → **Add** → Type **Secret**, nome `IP_SEGREDO`, valor: 32+ caracteres aleatórios (ex.: `openssl rand -base64 48`). Serve só para embaralhar o IP no limite por pessoa. Se os alertas por e-mail já estiverem ligados, pode ser o mesmo `IP_SEGREDO` deles.
+   - Opcional (Type **Text**): `EXPLICAR_TETO_MENSAL_USD` (padrão `5`) e `EXPLICAR_POR_DIA_TOTAL` (padrão `200`).
+   - **Obrigatório**: em **Security** → **WAF** → **Rate limiting rules**, uma regra para o caminho `/api/explicar` (por exemplo, 10 pedidos por minuto por IP, bloquear por 10 minutos). Ela barra rajadas antes de chegarem à função.
+   - Em **Deployments**, na publicação mais recente da `main`: **...** → **Retry deployment**.
+6. **Revisão jurídica**: com o botão ligado, Privacidade e Termos ganham um trecho novo (envio da pergunta para a Anthropic, nos Estados Unidos). Mostre ao advogado junto com os outros textos.
+7. Troque `EXPLICAR_LIGADO` para `true` (num PR) e atualize `TEXTOS_ATUALIZADOS_EM` em `scripts/paginas/config.js`.
+
+Os nomes dos botões dos painéis são de memória: se algum estiver diferente, procure o mais parecido. Para desligar de novo: `EXPLICAR_LIGADO = false`, ou apague o segredo `ANTHROPIC_API_KEY` (a função passa a responder 503 na hora).
+## Operação de produção
+
+Monitor de disponibilidade, logs de erro sem dado pessoal, alerta de ofertas paradas, backup diário do banco com teste de restauração, painel de custos e plano de resposta a incidente: tudo em [docs/operacao.md](docs/operacao.md), em linguagem de quem não é de TI. Os robôs ficam em `.github/workflows/` (`disponibilidade`, `vigia`, `custos`, `backup`) e avisam abrindo uma issue com a etiqueta `operacao`. Cada um fica desligado até receber a configuração descrita no guia.
+## Produtos com preço (APIs oficiais das lojas)
+
+Algumas lojas mostram produtos com nome, preço e quantos pontos rendem. Nome e preço vêm **só da API oficial** da loja ou da rede de afiliados dela, nunca de cópia do site da loja. Começa **desligado**: sem credencial, nenhuma API é chamada e o site fica igual.
+
+- **Ver como fica, sem credencial:** `npm run produtos:demo` monta uma cópia do site em `demo-produtos/` (fora do Git) com produtos e ofertas inventados e abre em `http://127.0.0.1:8081/onde-rende-mais/`. Essa vitrine nunca vai para o ar: no build da Cloudflare ou no CI, o gerador para se a vitrine for de demonstração.
+- **Escolher os produtos:** em `dados/produtos.json` (schema em `dados/schemas/produtos.schema.json`), até 10 por loja, pelo código da loja (ASIN, MLB..., itemId da Shopee, aw_product_id da Awin), com a categoria com o mesmo nome usado nas ofertas e se é vendido pela própria loja. Depois troque `"ligado"` para `true`.
+- **Credenciais:** só por variável de ambiente, como segredo, em Cloudflare Pages → Settings → Environment variables (Production). Amazon: `AMAZON_CREDENCIAL_ID`, `AMAZON_CREDENCIAL_SEGREDO`, `AMAZON_TAG_DE_ASSOCIADO`. Mercado Livre: `ML_ACCESS_TOKEN`. Shopee: `SHOPEE_APP_ID`, `SHOPEE_SEGREDO`. Awin: `AWIN_CHAVE_FEED` (e o número do anunciante e do feed em `produtos.json`).
+- **Como roda:** `npm run build` chama `npm run produtos` (`scripts/produtos/atualizar.js`) antes de gerar as páginas. Cada loja tem um adaptador em `scripts/produtos/adaptadores/`. Todo produto passa por `normalizarProduto`: preço em centavos inteiros, moeda BRL, link https no domínio da loja; o que não passa fica de fora, com aviso no log do build. A resposta fica guardada em `.cache/produtos/` por 1 hora; se a API falhar, ficam os preços guardados que ainda valem.
+- **Regras de exibição:** preço com data e hora da consulta (Brasília) e aviso de que pode mudar; validade de no máximo 24 horas (regra da Amazon, usada para todas). Depois disso o preço some da página: no build e, se a página ficou guardada no aparelho, pelo `site/js/produtos-validade.js`. Sem foto de produto (a Amazon proíbe guardar imagem). A ordem é pelos pontos, nunca pelo preço de uma loja contra outra.
+- **Remontar todo dia:** o trabalho `.github/workflows/remontar-site.yml` chama o deploy hook da Cloudflare às 06:17 (Brasília). Fica parado até existir o segredo `CLOUDFLARE_DEPLOY_HOOK` no GitHub.
+- **Afiliado:** se algum produto na vitrine tem link de afiliado, as páginas Termos e Privacidade mudam sozinhas para dizer isso, e cada link ganha `rel="sponsored"` e o aviso de comissão. Ao ligar, troque `TEXTOS_ATUALIZADOS_EM` em `scripts/paginas/config.js`.
+
 ## Pastas
 
 - `site/`: o código do site, legível (`js/motor/` guarda o cálculo puro, sem interface; `js/tela/` monta a tela inicial e só exibe o que o motor devolve; `_headers` define os cabeçalhos de segurança).
@@ -192,6 +395,8 @@ Para ver o fluxo inteiro sem internet e sem chave: `npm run atualizacao:demo`. E
 - `testes/`: testes com `node --test`.
 - `scripts/`: validação dos dados, geração de páginas por loja, montagem de `dist/` (`scripts/publicar/`) e o fluxo semanal de ofertas (`coletar.js`, `extrair.js`, `propor-mudancas.js`, `aprovar-mudancas.js` e `scripts/atualizacao/`).
 - `coleta/`: gerada pelo fluxo semanal, fica fora do Git.
+- `functions/`: funções da Cloudflare Pages (`api/reportar.js`, `api/alertas/`, `api/plano/stripe.js` e `api/explicar.js`). `site/_routes.json` faz só `/api/*` passar por elas; o resto do site continua estático.
+- `servidor/`: o código dessas funções, testado com `node --test` (`servidor/reportar/`, `servidor/alertas/`, `servidor/plano/` e `servidor/explicar/`).
 - `seguranca/`: auditoria de segurança e checklist.
 
 ## Testes

@@ -1,0 +1,19 @@
+[
+  {
+    "loja_id": "loja-teste",
+    "url_base": "https://www.loja-teste.invalid/",
+    "parametro_afiliado": { "nome": "parceiro", "valor": "codigo-de-teste" },
+    "programa_afiliado": "Programa de teste",
+    "observacoes": "Dado de teste: link de afiliado, para conferir o aviso de comissão.",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05"
+  },
+  {
+    "loja_id": "outra-loja",
+    "url_base": "https://outra-loja.invalid/",
+    "programa_afiliado": "A_CONFIRMAR",
+    "observacoes": "Dado de teste: link comum, sem afiliado.",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05"
+  }
+]

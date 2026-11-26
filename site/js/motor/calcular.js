@@ -14,17 +14,16 @@
 //        A cotação entra × 10.000 (R$ 5,3456 = 53456). A divisão é a única
 //        conta que corta casas: guardamos 6 casas de ponto e cortamos para baixo.
 
+import { calcularAbastecimento } from './combustivel.js';
 import { diasEntre, horasGarantidasDesde, lerDataHora, soData } from './datas.js';
+import { DIAS_ALERTA_VENCIMENTO, DIAS_DADO_ANTIGO, quandoVence, situacaoDaOferta } from './ciclo.js';
 import {
   ESCALA_PONTOS, formatarCentavos, formatarCotacao, formatarData, formatarNumero, formatarPontos,
   formatarValor, pontosParaNumero, pontosPorReal,
 } from './formatar.js';
 
 export const A_CONFIRMAR = 'A_CONFIRMAR';
-/** A partir de quantos dias para o fim a oferta ganha o aviso "vence em N dias". */
-export const DIAS_AVISO_VENCIMENTO = 7;
-/** Dado verificado há mais que isso ganha aviso. */
-export const DIAS_DADO_ANTIGO = 14;
+// Prazos do ciclo de vida (vencimento, dado antigo, reconferir): ver ciclo.js.
 /** Escala da cotação do dólar: R$ 5,3456 = 53456. */
 export const ESCALA_COTACAO = 10_000;
 /** id do registro de cambio.json com a cotação do dólar. */
@@ -35,29 +34,18 @@ const ESCALA_PPR = 10_000;
 // ---------------------------------------------------------------------------
 // Entrada
 
-function erro(msg) {
+export function erro(msg) {
   return new Error(`motor de cálculo: ${msg}`);
 }
 
-function validarEntrada(perfil, compra, dados, hoje) {
-  lerDataHora(hoje);
+/** Confere o perfil (comum à compra em loja e ao abastecimento). */
+export function validarPerfil(perfil) {
   if (!perfil || !Array.isArray(perfil.programas) || !Array.isArray(perfil.cartoes)) {
     throw erro('perfil precisa de "programas" e "cartoes" (listas)');
-  }
-  if (!compra || typeof compra.loja_id !== 'string') throw erro('compra precisa de "loja_id"');
-  if (!Number.isSafeInteger(compra.valor_centavos) || compra.valor_centavos < 0) {
-    throw erro(`valor_centavos precisa ser um inteiro entre 0 e ${Number.MAX_SAFE_INTEGER} (recebido: ${compra.valor_centavos})`);
-  }
-  if (compra.tipo_vendedor !== 'loja' && compra.tipo_vendedor !== 'parceiro') {
-    throw erro(`tipo_vendedor precisa ser "loja" ou "parceiro" (recebido: ${compra.tipo_vendedor})`);
-  }
-  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas']) {
-    if (!dados || !Array.isArray(dados[nome])) throw erro(`dados.${nome} precisa ser uma lista`);
   }
   if (perfil.cotacao_dolar !== undefined && (!Number.isSafeInteger(perfil.cotacao_dolar) || perfil.cotacao_dolar <= 0)) {
     throw erro(`cotacao_dolar precisa ser um inteiro > 0, em reais × ${ESCALA_COTACAO} (recebido: ${perfil.cotacao_dolar})`);
   }
-  if (dados && dados.cambio !== undefined && !Array.isArray(dados.cambio)) throw erro('dados.cambio precisa ser uma lista');
   for (const [id, v] of Object.entries(perfil.valor_milheiro_brl ?? {})) {
     if (!Number.isSafeInteger(v) || v < 0) {
       throw erro(`valor_milheiro_brl de "${id}" precisa ser centavos inteiros >= 0 (recebido: ${v})`);
@@ -65,8 +53,29 @@ function validarEntrada(perfil, compra, dados, hoje) {
   }
 }
 
+function validarEntrada(perfil, compra, dados, hoje) {
+  lerDataHora(hoje);
+  validarPerfil(perfil);
+  if (!compra || typeof compra.loja_id !== 'string') throw erro('compra precisa de "loja_id"');
+  if (!Number.isSafeInteger(compra.valor_centavos) || compra.valor_centavos < 0) {
+    throw erro(`valor_centavos precisa ser um inteiro entre 0 e ${Number.MAX_SAFE_INTEGER} (recebido: ${compra.valor_centavos})`);
+  }
+  if (compra.tipo_vendedor !== 'loja' && compra.tipo_vendedor !== 'parceiro') {
+    throw erro(`tipo_vendedor precisa ser "loja" ou "parceiro" (recebido: ${compra.tipo_vendedor})`);
+  }
+  validarListas(dados, ['programas', 'cartoes', 'lojas', 'ofertas']);
+}
+
+/** Confere que dados.<nome> é uma lista (e dados.cambio, se vier). */
+export function validarListas(dados, nomes) {
+  for (const nome of nomes) {
+    if (!dados || !Array.isArray(dados[nome])) throw erro(`dados.${nome} precisa ser uma lista`);
+  }
+  if (dados.cambio !== undefined && !Array.isArray(dados.cambio)) throw erro('dados.cambio precisa ser uma lista');
+}
+
 /** Pontos por real → inteiro × 10.000 (BigInt). null se não for número. */
-function pprEscalado(n) {
+export function pprEscalado(n) {
   if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return null;
   const s = Math.round(n * ESCALA_PPR);
   if (Math.abs(s - n * ESCALA_PPR) > 1e-6) throw erro(`pontos por real com mais de 4 casas decimais: ${n}`);
@@ -80,10 +89,18 @@ function porId(lista) {
 }
 
 function montarContexto(perfil, compra, dados, hoje) {
-  const programas = porId(dados.programas);
-  const cartoesPorId = porId(dados.cartoes);
   const loja = porId(dados.lojas).get(compra.loja_id);
   if (!loja) throw erro(`loja "${compra.loja_id}" não existe nos dados`);
+  return { ...contextoBase(perfil, dados, hoje, compra.valor_centavos), compra, loja };
+}
+
+/**
+ * O que toda conta usa: programas, cartões do perfil, milheiro, cotação e o
+ * valor pago em centavos inteiros (BigInt em ctx.valor).
+ */
+export function contextoBase(perfil, dados, hoje, valorCentavos) {
+  const programas = porId(dados.programas);
+  const cartoesPorId = porId(dados.cartoes);
 
   const programasDoPerfil = new Map();
   for (const p of perfil.programas) {
@@ -98,11 +115,9 @@ function montarContexto(perfil, compra, dados, hoje) {
   const registroCotacao = (dados.cambio ?? []).find((c) => c.id === ID_COTACAO_DOLAR) ?? null;
 
   return {
-    compra,
     hoje,
     dataHoje: soData(hoje),
-    valor: BigInt(compra.valor_centavos),
-    loja,
+    valor: BigInt(valorCentavos),
     programas,
     cartoesPorId,
     cartoes,
@@ -127,17 +142,20 @@ function montarContexto(perfil, compra, dados, hoje) {
 // ---------------------------------------------------------------------------
 // Oferta
 
-function ofertaValeHoje(oferta, dataHoje) {
-  if (oferta.inicio !== A_CONFIRMAR && oferta.inicio > dataHoje) return false;
-  if (oferta.fim !== A_CONFIRMAR && oferta.fim < dataHoje) return false;
-  return true;
+/**
+ * A oferta entra no ranking hoje? Mesma regra da calculadora (ativa ou
+ * vencendo logo, e conferida há no máximo 30 dias; ver ciclo.js). Usada
+ * também por "Onde rende mais" (oportunidades.js).
+ */
+export function ofertaValeHoje(oferta, dataHoje) {
+  return situacaoDaOferta(oferta, dataHoje).no_ranking;
 }
 
+/** Ofertas da loja que entram no ranking hoje (ativas ou vencendo logo; ver ciclo.js). */
 function ofertasQueValem(ctx) {
   return ctx.ofertas
     .filter((o) => o.loja_id === ctx.compra.loja_id)
     .filter((o) => ctx.programasDoPerfil.has(o.programa_id))
-    .filter((o) => o.status !== A_CONFIRMAR)
     .filter((o) => ofertaValeHoje(o, ctx.dataHoje));
 }
 
@@ -160,7 +178,7 @@ function avaliarEscopo(oferta, compra) {
 }
 
 /** O clube do programa conta para esta oferta? */
-function avaliarClube(oferta, doPerfil, hoje) {
+export function avaliarClube(oferta, doPerfil, hoje) {
   const exigidas = oferta.clube_ativo_ha_horas;
   if (!doPerfil || doPerfil.clube_ativo !== true) return { cumpre: false, falta: 'assinar', exigidas };
   if (exigidas === A_CONFIRMAR) return { cumpre: true, horasAConfirmar: true };
@@ -190,7 +208,7 @@ function especificidade(regra) {
 }
 
 /** A regra mais específica que vale; empate → mais pontos; empate → a primeira da lista. */
-function escolherRegra(regras, clubeCumpre, cartaoId) {
+export function escolherRegra(regras, clubeCumpre, cartaoId) {
   let melhor = null;
   for (const regra of regras) {
     if (!regraVale(regra, clubeCumpre, cartaoId)) continue;
@@ -270,7 +288,7 @@ function montarHipotese(ctx, regra, indice, faltas, pontosAtuaisEsc, milheiro) {
 // Peças comuns
 
 /** Lista de avisos que também guarda as datas de verificação dos dados usados. */
-function novosAvisos() {
+export function novosAvisos() {
   const avisos = [];
   avisos.conferidos = [];
   return avisos;
@@ -280,18 +298,19 @@ function novosAvisos() {
  * Anota a data de verificação do registro (vai para `conferido_em` na saída)
  * e avisa se o dado está antigo.
  */
-function avisarDadoAntigo(ctx, registro, rotulo, avisos) {
+export function avisarDadoAntigo(ctx, registro, rotulo, avisos) {
   if (!registro?.verificado_em) return;
   const dias = diasEntre(registro.verificado_em, ctx.dataHoje);
   const antigo = dias > DIAS_DADO_ANTIGO;
   if (!avisos.conferidos.some((c) => c.rotulo === rotulo)) {
-    avisos.conferidos.push({ rotulo, verificado_em: registro.verificado_em, dias, antigo });
+    const fonte = typeof registro.fonte_url === 'string' && registro.fonte_url.startsWith('https://') ? registro.fonte_url : null;
+    avisos.conferidos.push({ rotulo, verificado_em: registro.verificado_em, dias, antigo, fonte_url: fonte });
   }
   if (antigo) avisos.push(`Dado verificado há mais de ${DIAS_DADO_ANTIGO} dias (${dias} dias): ${rotulo}.`);
 }
 
 /** Pontos do cartão: { esc, programaId }. */
-function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
+export function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
   if (!cartao) {
     passos.push('Sem cartão de crédito do seu perfil: 0 pontos de cartão.');
     return { esc: 0n, programaId: null };
@@ -319,19 +338,19 @@ function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
 function pontosDoCartaoEmDolar(ctx, cartao, ppdEsc, avisos, passos) {
   const cot = ctx.cotacao();
   if (!cot) {
-    avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe em "Meu perfil".`);
+    avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe quanto está o dólar em "O que a conta supôs" ou em "Meu perfil".`);
     passos.push(`Pontos do cartão ${cartao.nome}: falta a cotação do dólar, contamos 0.`);
-    return { esc: 0n, programaId: cartao.programa_id };
+    return { esc: 0n, programaId: cartao.programa_id, faltaCotacao: true };
   }
   if (cot.registro) avisarDadoAntigo(ctx, cot.registro, 'cotação do dólar', avisos);
   // pontos × 1.000.000 = centavos × (ppd × 10.000) × 10.000 ÷ (cotação × 10.000)
   const esc = (ctx.valor * ppdEsc * BigInt(ESCALA_COTACAO)) / BigInt(cot.x10000);
   const origem = cot.doPerfil
     ? 'valor que você informou'
-    : `PTAX${cot.registro?.data_referencia && cot.registro.data_referencia !== A_CONFIRMAR ? ` de ${formatarData(cot.registro.data_referencia)}` : ''}`;
+    : `dólar oficial do Banco Central, a PTAX${cot.registro?.data_referencia && cot.registro.data_referencia !== A_CONFIRMAR ? ` de ${formatarData(cot.registro.data_referencia)}` : ''}`;
   avisos.push(
-    `O cartão ${cartao.nome} rende pontos por dólar. Usamos o dólar a ${formatarCotacao(cot.x10000)} (${origem}); ` +
-    'o banco usa a cotação do dia em que fecha a conta, então os pontos podem variar um pouco.',
+    `O cartão ${cartao.nome} rende pontos por dólar. Usamos o dólar a ${formatarCotacao(cot.x10000)} (${origem}). ` +
+    'O banco converte com o dólar dele, que costuma ser um pouco mais alto, então os pontos que caem podem ficar um pouco abaixo deste número.',
   );
   passos.push(
     `Pontos do cartão ${cartao.nome}: ${formatarCentavos(ctx.valor)} ÷ ${formatarCotacao(cot.x10000)} por dólar × ` +
@@ -341,7 +360,7 @@ function pontosDoCartaoEmDolar(ctx, cartao, ppdEsc, avisos, passos) {
 }
 
 /** Valor estimado em bilionésimos de centavo, ou null se falta o milheiro de algum programa com pontos. */
-function estimarValor(ctx, partes, avisos, passos) {
+export function estimarValor(ctx, partes, avisos, passos) {
   const porPrograma = new Map();
   for (const { programaId, esc } of partes) {
     if (esc > 0n) porPrograma.set(programaId, (porPrograma.get(programaId) ?? 0n) + esc);
@@ -360,7 +379,8 @@ function estimarValor(ctx, partes, avisos, passos) {
       faltando.push(nome);
       continue;
     }
-    avisarDadoAntigo(ctx, m.doPerfil ? null : ctx.programas.get(programaId), `valor do milheiro ${nome}`, avisos);
+    const prog = m.doPerfil ? null : ctx.programas.get(programaId);
+    avisarDadoAntigo(ctx, prog ? { ...prog, fonte_url: prog.valor_milheiro_fonte_url ?? prog.fonte_url } : null, `valor do milheiro ${nome}`, avisos);
     const v = esc * BigInt(m.centavos);
     total += v;
     linhas.push(
@@ -380,9 +400,29 @@ function estimarValor(ctx, partes, avisos, passos) {
   return total;
 }
 
+/**
+ * Valor só das partes com milheiro conhecido (piso do valor), para ordenar.
+ * null quando nenhuma parte com pontos tem milheiro. Não aparece na tela.
+ */
+function valorConhecido(ctx, partes) {
+  let total = null;
+  for (const { programaId, esc } of partes) {
+    if (esc <= 0n) continue;
+    const m = ctx.milheiro(programaId);
+    if (m) total = (total ?? 0n) + esc * BigInt(m.centavos);
+  }
+  return total;
+}
+
+/** "na Magalu", "no Mercado Livre", "nas Casas Bahia" (campo opcional `artigo` da loja). */
+export function naLoja(loja) {
+  const artigo = { a: 'na', o: 'no', as: 'nas', os: 'nos' }[loja?.artigo] ?? 'na';
+  return `${artigo} ${loja?.nome ?? loja}`;
+}
+
 function descreverCompra(ctx) {
   const quem = ctx.compra.tipo_vendedor === 'loja' ? 'vendida e entregue pela própria loja' : 'de um vendedor parceiro';
-  return `Compra de ${formatarCentavos(ctx.valor)} na ${ctx.loja.nome}, ${quem}.`;
+  return `Compra de ${formatarCentavos(ctx.valor)} ${naLoja(ctx.loja)}, ${quem}.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -397,33 +437,51 @@ function jeitoComOferta(ctx, oferta, cartao) {
   const clube = avaliarClube(oferta, ctx.programasDoPerfil.get(oferta.programa_id), ctx.hoje);
   const temRegraDeClube = oferta.regras.some(exigeClube);
 
-  // 1. Validade
-  if (oferta.inicio === A_CONFIRMAR) avisos.push('A data de início da oferta não está confirmada.');
-  if (oferta.fim === A_CONFIRMAR) {
+  // 1. Validade. Regra padrão (a de sempre do programa) não tem data de fim.
+  const regraPadrao = oferta.vigencia === 'regra_padrao';
+  if (oferta.inicio === A_CONFIRMAR && !regraPadrao) avisos.push('A data de início da oferta não está confirmada.');
+  if (regraPadrao) {
+    // nada a avisar: vale até o programa mudar a regra, e a gente reconfere toda semana.
+  } else if (oferta.fim === A_CONFIRMAR) {
     avisos.push('A data de fim da oferta não está confirmada; confira antes de comprar.');
   } else {
     const dias = diasEntre(ctx.dataHoje, oferta.fim);
-    const quando = dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : `em ${dias} dias`;
-    if (dias <= DIAS_AVISO_VENCIMENTO) avisos.push(`A oferta vence ${quando} (${formatarData(oferta.fim)}).`);
+    if (dias <= DIAS_ALERTA_VENCIMENTO) avisos.push(`A oferta vence ${quandoVence(dias)} (${formatarData(oferta.fim)}).`);
   }
-  avisarDadoAntigo(ctx, oferta, `oferta ${nomeProg} na ${ctx.loja.nome}`, avisos);
+  avisarDadoAntigo(ctx, oferta, `oferta ${nomeProg} ${naLoja(ctx.loja)}`, avisos);
 
   // 2. Pontos do programa
   let regra = null;
+  let dependeDaCategoria = false;
   let ppr;
   if (escopo.dentro) {
     regra = escolherRegra(oferta.regras, clube.cumpre, cartao?.id ?? null);
     ppr = regra ? regra.pontos_por_real : 0;
     passos.push(
       regra
-        ? `Oferta ${nomeProg} na ${ctx.loja.nome}: vale a faixa "${descreverCondicao(regra, ctx, nomeProg)}", com ${pontosPorReal(ppr)}.`
-        : `Oferta ${nomeProg} na ${ctx.loja.nome}: nenhuma faixa vale para você agora, então 0 ponto por real.`,
+        ? `Oferta ${nomeProg} ${naLoja(ctx.loja)}: vale a faixa "${descreverCondicao(regra, ctx, nomeProg)}", com ${pontosPorReal(ppr)}.`
+        : `Oferta ${nomeProg} ${naLoja(ctx.loja)}: nenhuma faixa vale para você agora, então 0 ponto por real.`,
     );
     if (regra && exigeClube(regra)) condicoes.push(`Estar com o clube ${nomeProg} ativo na hora da compra.`);
     if (oferta.escopo === 'vendido_e_entregue_pela_loja') {
       condicoes.push('Comprar produto vendido e entregue pela própria loja (não de parceiro).');
     } else if (oferta.escopo === 'categorias_selecionadas') {
       condicoes.push(`Produto de uma das categorias da oferta: ${oferta.categorias_incluidas.join(', ')}.`);
+    }
+    // A tela não pergunta a categoria do produto. Se a oferta exclui
+    // categorias e a compra não diz qual é, a pessoa precisa ver a lista,
+    // e o resultado avisa quanto renderia se o produto estivesse fora.
+    const excluidas = oferta.categorias_excluidas ?? [];
+    if (excluidas.length && !ctx.compra.categoria) {
+      dependeDaCategoria = true;
+      condicoes.push(`Conferir se o produto não é de uma categoria fora da oferta: ${excluidas.join(', ')}.`);
+      const fora = oferta.pontos_fora_do_escopo_por_real;
+      avisos.push(
+        `A oferta não vale para: ${excluidas.join(', ')}. ` +
+        (typeof fora === 'number'
+          ? `Se o seu produto for de uma dessas categorias, ele rende só ${pontosPorReal(fora)}, e o número acima não vale.`
+          : 'Se o seu produto for de uma dessas categorias, ele fica fora da oferta, e o número acima não vale.'),
+      );
     }
     if (clube.horasAConfirmar && temRegraDeClube) {
       avisos.push('Não está confirmado há quanto tempo o clube precisa estar ativo antes da compra.');
@@ -436,8 +494,15 @@ function jeitoComOferta(ctx, oferta, cartao) {
     } else {
       avisos.push(`${escopo.motivo} fica fora da oferta, e os pontos fora da oferta não estão confirmados; contamos 0.`);
     }
-    if (escopo.semCategoria) avisos.push('Informe a categoria do produto para saber se ele entra na oferta.');
-    passos.push(`Oferta ${nomeProg} na ${ctx.loja.nome}: este produto fica fora da oferta, então vale ${pontosPorReal(ppr)}.`);
+    if (escopo.semCategoria) {
+      dependeDaCategoria = true;
+      const melhorFaixa = Math.max(...oferta.regras.map((r) => r.pontos_por_real));
+      avisos.push(
+        `Esta oferta só vale para produtos de: ${(oferta.categorias_incluidas ?? []).join(', ')}. ` +
+        `Como não sabemos a categoria do seu produto, contamos só os pontos de fora da oferta. Se ele for de uma delas, a oferta dá até ${pontosPorReal(melhorFaixa)}; confira na loja.`,
+      );
+    }
+    passos.push(`Oferta ${nomeProg} ${naLoja(ctx.loja)}: este produto fica fora da oferta, então vale ${pontosPorReal(ppr)}.`);
   }
   let progEsc = pprEscalado(ppr) * ctx.valor;
   passos.push(`Pontos do programa: ${formatarCentavos(ctx.valor)} × ${formatarNumero(ppr)} = ${formatarPontos(progEsc)} pontos.`);
@@ -476,33 +541,39 @@ function jeitoComOferta(ctx, oferta, cartao) {
   }
 
   // 5. Valor
-  const valorEsc = estimarValor(
-    ctx,
-    [{ programaId: oferta.programa_id, esc: progEsc }, { programaId: cart.programaId, esc: cartEsc }],
-    avisos,
-    passos,
-  );
+  const partes = [{ programaId: oferta.programa_id, esc: progEsc }, { programaId: cart.programaId, esc: cartEsc }];
+  const valorEsc = estimarValor(ctx, partes, avisos, passos);
+  const pisoEsc = valorConhecido(ctx, partes);
   avisarDadoAntigo(ctx, ctx.programas.get(oferta.programa_id), `programa ${nomeProg}`, avisos);
 
   const prazo = oferta.credito_prazo_dias;
   return {
     tipo: 'oferta',
     oferta,
+    situacao: situacaoDaOferta(oferta, ctx.dataHoje),
+    dependeDaCategoria,
+    faltaCotacao: cart.faltaCotacao === true,
     programaId: oferta.programa_id,
     cartao,
     progEsc,
     cartEsc,
     valorEsc,
+    pisoEsc,
     condicoes,
     avisos,
     passos,
     validade: {
       inicio: oferta.inicio,
       fim: oferta.fim,
-      texto:
-        (oferta.inicio === A_CONFIRMAR ? 'Início não confirmado' : `De ${formatarData(oferta.inicio)}`) +
-        (oferta.fim === A_CONFIRMAR ? ', fim não confirmado.' : ` até ${formatarData(oferta.fim)}.`),
+      regra_padrao: regraPadrao,
+      texto: regraPadrao
+        ? (oferta.inicio === A_CONFIRMAR
+          ? 'Regra de sempre do programa, sem data de fim publicada.'
+          : `Regra de sempre do programa, a partir de ${formatarData(oferta.inicio)}, sem data de fim publicada.`)
+        : (oferta.inicio === A_CONFIRMAR ? 'Início não confirmado' : `De ${formatarData(oferta.inicio)}`) +
+          (oferta.fim === A_CONFIRMAR ? ', fim não confirmado.' : ` até ${formatarData(oferta.fim)}.`),
     },
+    destaques: Array.isArray(oferta.destaques) ? [...oferta.destaques] : [],
     prazo: Number.isInteger(prazo)
       ? { dias: prazo, texto: `Os pontos da oferta caem em até ${prazo} dias, segundo a oferta.` }
       : { dias: null, texto: 'Prazo de crédito dos pontos da oferta não confirmado.' },
@@ -515,20 +586,26 @@ function jeitoSemOferta(ctx, cartao) {
   const condicoes = [];
   const passos = [descreverCompra(ctx), 'Sem oferta da loja: só os pontos do cartão.'];
   const cart = pontosDoCartao(ctx, cartao, avisos, passos, condicoes);
-  const valorEsc = estimarValor(ctx, [{ programaId: cart.programaId, esc: cart.esc }], avisos, passos);
+  const partes = [{ programaId: cart.programaId, esc: cart.esc }];
+  const valorEsc = estimarValor(ctx, partes, avisos, passos);
+  const pisoEsc = valorConhecido(ctx, partes);
   if (cartao) avisarDadoAntigo(ctx, ctx.programas.get(cartao.programa_id), `programa ${ctx.nomePrograma(cartao.programa_id)}`, avisos);
   return {
     tipo: 'sem_oferta',
     oferta: null,
+    dependeDaCategoria: false,
+    faltaCotacao: cart.faltaCotacao === true,
     programaId: cartao ? cartao.programa_id : null,
     cartao,
     progEsc: 0n,
     cartEsc: cart.esc,
     valorEsc,
+    pisoEsc,
     condicoes,
     avisos,
     passos,
     validade: null,
+    destaques: [],
     prazo: cartao ? { dias: null, texto: 'Prazo de crédito do cartão não informado nos dados.' } : null,
     hipoteses: [],
   };
@@ -537,15 +614,22 @@ function jeitoSemOferta(ctx, cartao) {
 // ---------------------------------------------------------------------------
 // Ordem e saída
 
+// Ordem: mais reais primeiro (pontos de programas diferentes valem diferente,
+// então só o valor em reais compara de forma justa). Quando falta o milheiro de
+// uma parte, conta o valor das partes conhecidas (um piso). Sem nenhuma parte
+// com valor vai depois. Empate → valor completo antes do piso → mais pontos.
+// Quem não rende ponto nenhum fica sempre por último.
 function comparar(a, b) {
   const ta = a.progEsc + a.cartEsc;
   const tb = b.progEsc + b.cartEsc;
-  if (ta !== tb) return ta > tb ? -1 : 1;
-  if (a.valorEsc !== b.valorEsc) {
-    if (a.valorEsc === null) return 1;
-    if (b.valorEsc === null) return -1;
-    return a.valorEsc > b.valorEsc ? -1 : 1;
+  if ((ta === 0n) !== (tb === 0n)) return ta === 0n ? 1 : -1;
+  if (a.pisoEsc !== b.pisoEsc) {
+    if (a.pisoEsc === null) return 1;
+    if (b.pisoEsc === null) return -1;
+    return a.pisoEsc > b.pisoEsc ? -1 : 1;
   }
+  if ((a.valorEsc === null) !== (b.valorEsc === null)) return a.valorEsc === null ? 1 : -1;
+  if (ta !== tb) return ta > tb ? -1 : 1;
   if (a.tipo !== b.tipo) return a.tipo === 'oferta' ? -1 : 1;
   const chave = (j) => [j.programaId ?? '', j.cartao?.id ?? '', j.oferta?.id ?? ''];
   const ka = chave(a);
@@ -565,28 +649,43 @@ function paraSaida(ctx, j) {
     pontos_do_cartao: pontosParaNumero(j.cartEsc),
     total_pontos: pontosParaNumero(total),
     total_pontos_texto: formatarPontos(total),
+    // Total exato, em pontos × ESCALA_PONTOS (BigInt), para quem precisa comparar sem float (alertas).
+    total_pontos_escalado: total,
     valor_estimado_em_reais:
       j.valorEsc === null ? null : { bilionesimos_de_centavo: j.valorEsc, texto: formatarValor(j.valorEsc) },
     condicoes_a_cumprir: j.condicoes,
     validade_da_oferta: j.validade,
+    situacao_da_oferta: j.situacao ?? null,
+    destaques_da_oferta: j.destaques,
     prazo_de_credito: j.prazo,
     avisos: [...new Set(j.avisos)],
     conferido_em: j.avisos.conferidos,
     tem_dado_antigo: j.avisos.conferidos.some((c) => c.antigo),
     o_que_voce_ganharia_se: j.hipoteses,
+    depende_da_categoria: j.dependeDaCategoria,
+    falta_cotacao_do_dolar: j.faltaCotacao,
+    // Piso do valor (só partes com milheiro conhecido), usado na ordem. Não exibir.
+    valor_para_ordenar: j.pisoEsc,
     explicacao: j.passos,
   };
 }
 
 /**
- * Lista os jeitos de comprar, do melhor ao pior (mais pontos; empate → mais reais).
+ * Lista os jeitos de comprar, do melhor ao pior (mais reais; sem valor conhecido vai
+ * depois; empate → mais pontos).
  *
  * @param {object} perfil  { programas: [{programa_id, clube_ativo, clube_ativo_desde}], cartoes: [cartao_id], valor_milheiro_brl?: {programa_id: centavos}, cotacao_dolar?: reais × 10.000 }
  * @param {object} compra  { loja_id, valor_centavos, tipo_vendedor: "loja"|"parceiro", categoria?, cupom_aplicado? }
+ *                         ou, para abastecer, { tipo: "combustivel", ... } (ver calcularAbastecimento em combustivel.js)
  * @param {object} dados   { programas, cartoes, lojas, ofertas, cambio? }
  * @param {string} hoje    "AAAA-MM-DD" (ou "AAAA-MM-DDTHH:MM")
  */
 export function calcularJeitosDeComprar(perfil, compra, dados, hoje) {
+  // Abastecimento tem conta própria (combustivel.js); a lista sai no mesmo formato de "jeitos".
+  if (compra?.tipo === 'combustivel') return calcularAbastecimento(perfil, compra, dados, hoje).jeitos;
+  if (compra && compra.tipo !== undefined && compra.tipo !== 'loja') {
+    throw erro(`tipo de compra precisa ser "loja" ou "combustivel" (recebido: ${compra.tipo})`);
+  }
   validarEntrada(perfil, compra, dados, hoje);
   const ctx = { ...montarContexto(perfil, compra, dados, hoje), ofertas: dados.ofertas };
   const opcoesDeCartao = ctx.cartoes.length ? ctx.cartoes : [null];

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bonus-transferencia.schema.json",
+  "title": "Campanhas de bônus de transferência",
+  "description": "Transferência bonificada: por alguns dias, o programa de destino dá milhas a mais sobre o que chegar. Cada campanha vale para uma rota de transferencias.json e pode ter faixas (todos os clientes, assinantes de clube etc.).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "transferencia_id", "inicio", "fim", "faixas", "limite_bonus", "exige_cadastro", "fonte_url", "verificado_em"],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "transferencia_id": { "description": "id da rota em transferencias.json.", "$ref": "#/$defs/id" },
+      "inicio": { "anyOf": [{ "$ref": "#/$defs/data" }, { "$ref": "#/$defs/a_confirmar" }] },
+      "fim": { "anyOf": [{ "$ref": "#/$defs/data" }, { "$ref": "#/$defs/a_confirmar" }] },
+      "faixas": {
+        "description": "Quem ganha quanto. A primeira faixa é a que vale para qualquer pessoa (a conta parte dela quando ninguém disse ter clube).",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "quem", "bonus_percentual"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" },
+            "quem": { "description": "Quem tem direito, em texto simples.", "type": "string", "minLength": 1 },
+            "bonus_percentual": {
+              "description": "Bônus em % inteiro sobre as milhas da transferência (80 = 80%).",
+              "anyOf": [{ "type": "integer", "minimum": 0 }, { "$ref": "#/$defs/a_confirmar" }]
+            }
+          }
+        }
+      },
+      "limite_bonus": {
+        "description": "Máximo de milhas bônus por pessoa (CPF) na campanha.",
+        "anyOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "exige_cadastro": { "description": "true = precisa se cadastrar na campanha antes de transferir.", "type": "boolean" },
+      "observacoes": { "type": "string" },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" }
+    }
+  },
+  "$defs": {
+    "id": { "description": "Letras minúsculas, números e hífen.", "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" }
+  }
+}

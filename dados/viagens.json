@@ -1,0 +1,486 @@
+[
+  {
+    "id": "latam-nacional",
+    "tipo": "passagem",
+    "programa_id": "latam-pass",
+    "vendedor": "LATAM",
+    "trechos": "nacional_e_america_do_sul",
+    "escolha": {
+      "pergunta_id": "tarifa-latam",
+      "pergunta": "Qual tarifa da LATAM?",
+      "resposta_id": "light-ou-acima",
+      "resposta": "Light ou acima"
+    },
+    "moeda": "BRL",
+    "a_cada": 1,
+    "base_de_calculo": "tarifa, sem impostos, taxas aeroportuárias e cobranças adicionais",
+    "niveis": [
+      {
+        "id": "latam",
+        "nome": "LATAM (inicial)",
+        "pontos": 1.5
+      },
+      {
+        "id": "gold",
+        "nome": "Gold",
+        "pontos": 2
+      },
+      {
+        "id": "platinum",
+        "nome": "Platinum",
+        "pontos": 3.5
+      },
+      {
+        "id": "black",
+        "nome": "Black",
+        "pontos": 5
+      },
+      {
+        "id": "black-signature",
+        "nome": "Black Signature",
+        "pontos": 6
+      }
+    ],
+    "observacoes": "Voos domésticos e dentro da América do Sul. Exemplo oficial: Platinum, voo de R$ 400 → 1.400 milhas.",
+    "fonte_url": "https://latampass.latam.com/br/pt/passagens",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "latam-internacional",
+    "tipo": "passagem",
+    "programa_id": "latam-pass",
+    "vendedor": "LATAM",
+    "trechos": "fora_da_america_do_sul",
+    "escolha": {
+      "pergunta_id": "tarifa-latam",
+      "pergunta": "Qual tarifa da LATAM?",
+      "resposta_id": "light-ou-acima",
+      "resposta": "Light ou acima"
+    },
+    "moeda": "USD",
+    "a_cada": 1,
+    "base_de_calculo": "tarifa, sem impostos, taxas aeroportuárias e cobranças adicionais",
+    "niveis": [
+      {
+        "id": "latam",
+        "nome": "LATAM (inicial)",
+        "pontos": 5
+      },
+      {
+        "id": "gold",
+        "nome": "Gold",
+        "pontos": 8
+      },
+      {
+        "id": "platinum",
+        "nome": "Platinum",
+        "pontos": 10
+      },
+      {
+        "id": "black",
+        "nome": "Black",
+        "pontos": 11
+      },
+      {
+        "id": "black-signature",
+        "nome": "Black Signature",
+        "pontos": 12
+      }
+    ],
+    "observacoes": "Voos para fora da América do Sul: milhas por dólar gasto.",
+    "fonte_url": "https://latampass.latam.com/br/pt/passagens",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "latam-basic",
+    "tipo": "passagem",
+    "programa_id": "latam-pass",
+    "vendedor": "LATAM",
+    "trechos": "todos",
+    "escolha": {
+      "pergunta_id": "tarifa-latam",
+      "pergunta": "Qual tarifa da LATAM?",
+      "resposta_id": "basic",
+      "resposta": "Basic"
+    },
+    "moeda": "USD",
+    "a_cada": 1,
+    "base_de_calculo": "tarifa, sem impostos, taxas aeroportuárias e cobranças adicionais",
+    "niveis": [
+      {
+        "id": "todas",
+        "nome": "Qualquer categoria",
+        "pontos": 1
+      }
+    ],
+    "observacoes": "Na tarifa Basic a LATAM dá 1 milha por dólar gasto, em qualquer categoria.",
+    "fonte_url": "https://latampass.latam.com/br/pt/passagens",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "gol-nacional",
+    "tipo": "passagem",
+    "programa_id": "smiles",
+    "vendedor": "GOL",
+    "trechos": "nacional_e_america_do_sul",
+    "moeda": "BRL",
+    "a_cada": 1,
+    "base_de_calculo": "valor gasto na passagem GOL",
+    "niveis": [
+      {
+        "id": "smiles",
+        "nome": "Smiles (inicial)",
+        "pontos": 1
+      },
+      {
+        "id": "prata",
+        "nome": "Prata",
+        "pontos": 2
+      },
+      {
+        "id": "ouro",
+        "nome": "Ouro",
+        "pontos": 3
+      },
+      {
+        "id": "diamante",
+        "nome": "Diamante",
+        "pontos": 5
+      },
+      {
+        "id": "magno",
+        "nome": "Magno",
+        "pontos": 6
+      }
+    ],
+    "observacoes": "Milhas da categoria em voos GOL, sem a Rota Favorita (bônus para quem cadastra trechos antes).",
+    "fonte_url": "https://www.smiles.com.br/portal/milhas-ao-voar-gol",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "gol-internacional",
+    "tipo": "passagem",
+    "programa_id": "smiles",
+    "vendedor": "GOL",
+    "trechos": "fora_da_america_do_sul",
+    "moeda": "USD",
+    "a_cada": 1,
+    "base_de_calculo": "valor gasto na passagem GOL, convertido em dólar pela cotação do dia da compra",
+    "niveis": [
+      {
+        "id": "smiles",
+        "nome": "Smiles (inicial)",
+        "pontos": 5
+      },
+      {
+        "id": "prata",
+        "nome": "Prata",
+        "pontos": 8
+      },
+      {
+        "id": "ouro",
+        "nome": "Ouro",
+        "pontos": 10
+      },
+      {
+        "id": "diamante",
+        "nome": "Diamante",
+        "pontos": 11
+      },
+      {
+        "id": "magno",
+        "nome": "Magno",
+        "pontos": 12
+      }
+    ],
+    "teto_por_trecho": 60000,
+    "observacoes": "Vale para passagens emitidas a partir de 17/06/2026. Limite de 60.000 milhas por trecho. Sem a Rota Favorita.",
+    "fonte_url": "https://www.smiles.com.br/portal/milhas-ao-voar-gol",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "azul-voos",
+    "tipo": "passagem",
+    "programa_id": "azul-fidelidade",
+    "vendedor": "Azul",
+    "trechos": "todos",
+    "moeda": "BRL",
+    "a_cada": 1,
+    "base_de_calculo": "tarifa da passagem e serviços adicionais à viagem",
+    "niveis": [
+      {
+        "id": "azul-fidelidade",
+        "nome": "Azul Fidelidade (inicial)",
+        "pontos": 1
+      },
+      {
+        "id": "topazio",
+        "nome": "Topázio",
+        "pontos": 2
+      },
+      {
+        "id": "safira",
+        "nome": "Safira",
+        "pontos": 3
+      },
+      {
+        "id": "diamante",
+        "nome": "Diamante",
+        "pontos": 4
+      },
+      {
+        "id": "diamante-unique",
+        "nome": "Diamante Unique",
+        "pontos": 5
+      }
+    ],
+    "observacoes": "Os pontos vão para quem voou, mesmo que não seja o titular da reserva.",
+    "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade/regulamento/niveis",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "smiles-booking",
+    "tipo": "hotel",
+    "programa_id": "smiles",
+    "vendedor": "Booking.com pelo link da Smiles",
+    "trechos": "todos",
+    "moeda": "BRL",
+    "a_cada": 1,
+    "base_de_calculo": "valor gasto na hospedagem (a página não detalha se conta taxas)",
+    "niveis": [
+      {
+        "id": "todas",
+        "nome": "Qualquer categoria",
+        "pontos": 2
+      }
+    ],
+    "fim": "2026-12-31",
+    "observacoes": "Precisa entrar no Booking.com pelo link da página da Smiles. Válido até 31/12/2026.",
+    "fonte_url": "https://www.smiles.com.br/home",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "accor-maioria",
+    "tipo": "hotel",
+    "programa_id": "all-accor",
+    "vendedor": "Hotéis Accor (reserva direta)",
+    "trechos": "todos",
+    "escolha": {
+      "pergunta_id": "marca-accor",
+      "pergunta": "Qual hotel Accor?",
+      "resposta_id": "maioria",
+      "resposta": "Maioria das marcas (Novotel, Mercure, Pullman, Sofitel e outras)"
+    },
+    "moeda": "EUR",
+    "a_cada": 10,
+    "base_de_calculo": "valor da hospedagem sem taxas, mais o que for gasto no hotel (restaurante, bar, spa)",
+    "niveis": [
+      {
+        "id": "classic",
+        "nome": "Classic (inicial)",
+        "pontos": 25
+      },
+      {
+        "id": "silver",
+        "nome": "Silver",
+        "pontos": 31
+      },
+      {
+        "id": "gold",
+        "nome": "Gold",
+        "pontos": 37
+      },
+      {
+        "id": "platinum",
+        "nome": "Platinum",
+        "pontos": 44
+      },
+      {
+        "id": "diamond",
+        "nome": "Diamond",
+        "pontos": 50
+      },
+      {
+        "id": "limitless",
+        "nome": "Limitless",
+        "pontos": 50
+      }
+    ],
+    "valor_do_ponto": {
+      "moeda": "EUR",
+      "centimos_por_mil": 2000,
+      "fonte_url": "https://all.accor.com/loyalty-program/pt-br/reasontojoin/index.vhtml"
+    },
+    "observacoes": "Só pontua reserva feita direto com a Accor (site, app ou hotel); reservas por sites de viagem não pontuam. A tabela oficial dá os pontos a cada 10 euros; a conta aqui divide em partes iguais (2,5 pontos por euro no Classic). Valor do ponto: 1.000 pontos = 20 euros de desconto em hotel Accor.",
+    "fonte_url": "https://all.accor.com/loyalty-program/earn/stay/index.pt-br.shtml",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "accor-ibis",
+    "tipo": "hotel",
+    "programa_id": "all-accor",
+    "vendedor": "Hotéis Accor (reserva direta)",
+    "trechos": "todos",
+    "escolha": {
+      "pergunta_id": "marca-accor",
+      "pergunta": "Qual hotel Accor?",
+      "resposta_id": "ibis",
+      "resposta": "Ibis, Ibis Styles ou Mama Shelter"
+    },
+    "moeda": "EUR",
+    "a_cada": 10,
+    "base_de_calculo": "valor da hospedagem sem taxas, mais o que for gasto no hotel (restaurante, bar, spa)",
+    "niveis": [
+      {
+        "id": "classic",
+        "nome": "Classic (inicial)",
+        "pontos": 12.5
+      },
+      {
+        "id": "silver",
+        "nome": "Silver",
+        "pontos": 15.5
+      },
+      {
+        "id": "gold",
+        "nome": "Gold",
+        "pontos": 18.5
+      },
+      {
+        "id": "platinum",
+        "nome": "Platinum",
+        "pontos": 22
+      },
+      {
+        "id": "diamond",
+        "nome": "Diamond",
+        "pontos": 25
+      },
+      {
+        "id": "limitless",
+        "nome": "Limitless",
+        "pontos": 25
+      }
+    ],
+    "valor_do_ponto": {
+      "moeda": "EUR",
+      "centimos_por_mil": 2000,
+      "fonte_url": "https://all.accor.com/loyalty-program/pt-br/reasontojoin/index.vhtml"
+    },
+    "observacoes": "Só pontua reserva feita direto com a Accor (site, app ou hotel); reservas por sites de viagem não pontuam. A tabela oficial dá os pontos a cada 10 euros; a conta aqui divide em partes iguais (2,5 pontos por euro no Classic). Valor do ponto: 1.000 pontos = 20 euros de desconto em hotel Accor.",
+    "fonte_url": "https://all.accor.com/loyalty-program/earn/stay/index.pt-br.shtml",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "accor-estadia-longa",
+    "tipo": "hotel",
+    "programa_id": "all-accor",
+    "vendedor": "Hotéis Accor (reserva direta)",
+    "trechos": "todos",
+    "escolha": {
+      "pergunta_id": "marca-accor",
+      "pergunta": "Qual hotel Accor?",
+      "resposta_id": "estadia-longa",
+      "resposta": "Mantra, Peppers, BreakFree, Art Series, Adagio Original ou estadia longa"
+    },
+    "moeda": "EUR",
+    "a_cada": 10,
+    "base_de_calculo": "valor da hospedagem sem taxas, mais o que for gasto no hotel (restaurante, bar, spa)",
+    "niveis": [
+      {
+        "id": "classic",
+        "nome": "Classic (inicial)",
+        "pontos": 10
+      },
+      {
+        "id": "silver",
+        "nome": "Silver",
+        "pontos": 12.5
+      },
+      {
+        "id": "gold",
+        "nome": "Gold",
+        "pontos": 15
+      },
+      {
+        "id": "platinum",
+        "nome": "Platinum",
+        "pontos": 17.5
+      },
+      {
+        "id": "diamond",
+        "nome": "Diamond",
+        "pontos": 20
+      },
+      {
+        "id": "limitless",
+        "nome": "Limitless",
+        "pontos": 20
+      }
+    ],
+    "valor_do_ponto": {
+      "moeda": "EUR",
+      "centimos_por_mil": 2000,
+      "fonte_url": "https://all.accor.com/loyalty-program/pt-br/reasontojoin/index.vhtml"
+    },
+    "observacoes": "Só pontua reserva feita direto com a Accor (site, app ou hotel); reservas por sites de viagem não pontuam. A tabela oficial dá os pontos a cada 10 euros; a conta aqui divide em partes iguais (2,5 pontos por euro no Classic). Valor do ponto: 1.000 pontos = 20 euros de desconto em hotel Accor.",
+    "fonte_url": "https://all.accor.com/loyalty-program/earn/stay/index.pt-br.shtml",
+    "verificado_em": "2026-11-25"
+  },
+  {
+    "id": "accor-economico",
+    "tipo": "hotel",
+    "programa_id": "all-accor",
+    "vendedor": "Hotéis Accor (reserva direta)",
+    "trechos": "todos",
+    "escolha": {
+      "pergunta_id": "marca-accor",
+      "pergunta": "Qual hotel Accor?",
+      "resposta_id": "economico",
+      "resposta": "Adagio Access, Jo&Joe ou Greet"
+    },
+    "moeda": "EUR",
+    "a_cada": 10,
+    "base_de_calculo": "valor da hospedagem sem taxas, mais o que for gasto no hotel (restaurante, bar, spa)",
+    "niveis": [
+      {
+        "id": "classic",
+        "nome": "Classic (inicial)",
+        "pontos": 5
+      },
+      {
+        "id": "silver",
+        "nome": "Silver",
+        "pontos": 6.25
+      },
+      {
+        "id": "gold",
+        "nome": "Gold",
+        "pontos": 7.5
+      },
+      {
+        "id": "platinum",
+        "nome": "Platinum",
+        "pontos": 8.75
+      },
+      {
+        "id": "diamond",
+        "nome": "Diamond",
+        "pontos": 10
+      },
+      {
+        "id": "limitless",
+        "nome": "Limitless",
+        "pontos": 10
+      }
+    ],
+    "valor_do_ponto": {
+      "moeda": "EUR",
+      "centimos_por_mil": 2000,
+      "fonte_url": "https://all.accor.com/loyalty-program/pt-br/reasontojoin/index.vhtml"
+    },
+    "observacoes": "Só pontua reserva feita direto com a Accor (site, app ou hotel); reservas por sites de viagem não pontuam. A tabela oficial dá os pontos a cada 10 euros; a conta aqui divide em partes iguais (2,5 pontos por euro no Classic). Valor do ponto: 1.000 pontos = 20 euros de desconto em hotel Accor.",
+    "fonte_url": "https://all.accor.com/loyalty-program/earn/stay/index.pt-br.shtml",
+    "verificado_em": "2026-11-25"
+  }
+]

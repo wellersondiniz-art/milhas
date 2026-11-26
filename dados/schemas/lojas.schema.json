@@ -18,6 +18,11 @@
         "description": "Opcional. Artigo do nome da loja, para escrever \"na Magalu\", \"no Mercado Livre\", \"nas Casas Bahia\". Sem ele, vale \"a\".",
         "enum": ["a", "o", "as", "os"]
       },
+      "prioridade": {
+        "description": "Opcional. Ordem de importância da loja para a reconferência semanal (1 = a mais buscada). PROVISÓRIO: o site não mede buscas (sem métricas e sem cookies), então esta ordem é escolhida à mão e pode ser editada. Sem ela, a loja vai para o fim da fila.",
+        "type": "integer",
+        "minimum": 1
+      },
       "dominio": {
         "description": "Domínio do site, sem https:// (ex.: loja.com.br).",
         "anyOf": [
@@ -38,6 +43,22 @@
         "anyOf": [{ "type": "boolean" }, { "$ref": "#/$defs/a_confirmar" }]
       },
       "observacoes": { "type": "string" },
+      "sem_parceria": {
+        "description": "Opcional. Programas que conferimos e que NÃO dão pontos em compras nesta loja hoje, com a fonte.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["programa_id", "motivo", "fonte_url", "verificado_em"],
+          "properties": {
+            "programa_id": { "description": "id de um registro de programas.json.", "$ref": "#/$defs/id" },
+            "motivo": { "type": "string", "minLength": 1 },
+            "fonte_url": { "$ref": "#/$defs/url" },
+            "verificado_em": { "$ref": "#/$defs/data" }
+          }
+        }
+      },
       "fonte_url": { "$ref": "#/$defs/url" },
       "verificado_em": { "$ref": "#/$defs/data" }
     }

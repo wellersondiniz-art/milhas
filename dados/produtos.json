@@ -1,0 +1,43 @@
+{
+  "ligado": false,
+  "lojas": [
+    {
+      "loja_id": "amazon",
+      "api": "amazon",
+      "validade_horas": 24,
+      "itens": [],
+      "fonte_url": "https://affiliate-program.amazon.com/creatorsapi/docs/en-us/migrating-to-creatorsapi-from-paapi",
+      "verificado_em": "2026-11-25",
+      "observacoes": "Creators API (substituiu a PA-API 5, que responde 403 desde 2026). Exige conta no Associados Amazon com aceite final e vendas qualificadas. Preço guardado por no máximo 24 horas, com data/hora e aviso ao lado."
+    },
+    {
+      "loja_id": "mercado-livre",
+      "api": "mercado-livre",
+      "validade_horas": 6,
+      "itens": [],
+      "fonte_url": "https://developers.mercadolivre.com.br/pt-br/itens-e-buscas",
+      "verificado_em": "2026-11-25",
+      "observacoes": "API de itens do Mercado Livre (/items/bulk), com token de acesso de um aplicativo criado no DevCenter. O token dura 6 horas e o refresh_token só pode ser usado uma vez."
+    },
+    {
+      "loja_id": "shopee",
+      "api": "shopee",
+      "validade_horas": 24,
+      "itens": [],
+      "fonte_url": "https://affiliate.shopee.com.br/open_api",
+      "verificado_em": "2026-11-25",
+      "observacoes": "Open API do Programa de Afiliados Shopee Brasil (GraphQL, productOfferV2). A documentação só abre com login de afiliado aprovado: conferir a assinatura antes de ligar."
+    },
+    {
+      "loja_id": "casas-bahia",
+      "api": "awin",
+      "validade_horas": 24,
+      "awin_anunciante_id": "A_CONFIRMAR",
+      "awin_feed_id": "A_CONFIRMAR",
+      "itens": [],
+      "fonte_url": "https://help.awin.com/developers/docs/downloading-feeds-using-create-a-feed",
+      "verificado_em": "2026-11-25",
+      "observacoes": "Feed de produtos da Awin (Create-a-Feed). Casas Bahia aparece como anunciante Awin em fonte não oficial: confirmar dentro da conta Awin antes de ligar."
+    }
+  ]
+}

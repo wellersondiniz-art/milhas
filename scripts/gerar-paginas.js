@@ -2,8 +2,12 @@
 // Gera as páginas estáticas a partir de dados/*.json:
 //   site/loja/<id>/index.html   uma por loja
 //   site/ofertas/index.html     ofertas ativas hoje
+//   site/onde-rende-mais/       ofertas ativas por categoria e produto em campanha
 //   site/como-funciona/, sobre-os-dados/, privacidade/, termos/, contato/
 //                               páginas institucionais (scripts/paginas/institucionais.js)
+//   produtos com preço         na página da loja e em onde-rende-mais/, quando
+//                               .cache/produtos/vitrine.json tiver produtos
+//                               (scripts/produtos/atualizar.js, que o build roda antes)
 //   site/sitemap.xml            só quando a URL base do site estiver definida
 //   site/robots.txt
 //
@@ -12,7 +16,7 @@
 // (são geradas e ficam fora do Git, como site/dados/).
 //
 // Uso:
-//   node scripts/gerar-paginas.js [--hoje AAAA-MM-DD] [--url-base https://...] [--saida pasta]
+//   node scripts/gerar-paginas.js [--hoje AAAA-MM-DD] [--url-base https://...] [--saida pasta] [--vitrine arquivo.json]
 // A URL base também pode vir de URL_DO_SITE. Sem ela, vale scripts/paginas/config.js.
 
 import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -22,6 +26,7 @@ import { ARQUIVOS, hojeEmBrasilia, validarDados } from './validar-dados.js';
 import { URL_BASE } from './paginas/config.js';
 import { conferirHtml, lerDescricao, lerTitulo } from './paginas/conferir-html.js';
 import { gerarPaginas } from './paginas/montar.js';
+import { PASTA_ONDE_RENDE_MAIS } from './paginas/onde-rende-mais.js';
 import { PASTAS_INSTITUCIONAIS } from './paginas/institucionais.js';
 
 const RAIZ = new URL('../', import.meta.url);
@@ -33,20 +38,38 @@ export async function lerDados(pasta) {
 }
 
 /** Valida, monta e grava. Devolve a lista de arquivos escritos e os avisos. */
-export async function gerarNoDisco({ pastaDados, saida, hoje, urlBase }) {
+/** Lê a vitrine de produtos. Sem arquivo, null (site sem produtos). */
+export async function lerVitrine(arquivo) {
+  let texto;
+  try { texto = await readFile(arquivo, 'utf8'); } catch { return null; }
+  const vitrine = JSON.parse(texto);
+  if (!vitrine || !Array.isArray(vitrine.produtos)) throw new Error(`vitrine sem lista de produtos: ${fileURLToPath(arquivo)}`);
+  return vitrine;
+}
+
+/** Vitrine de demonstração nunca vai para o ar: no build da Cloudflare ou no CI, para. */
+export function conferirVitrineParaPublicar(vitrine, env) {
+  if (vitrine?.demo && (env.CF_PAGES || env.CI)) {
+    throw new Error('Vitrine de demonstração no build de publicação. Rode npm run produtos (sem demo) antes.');
+  }
+}
+
+export async function gerarNoDisco({ pastaDados, saida, hoje, urlBase, vitrine = null, agora = null }) {
   const { erros } = await validarDados(pastaDados, { hoje });
   if (erros.length) {
     const lista = erros.map((e) => `- ${e}`).join('\n');
     throw new Error(`Dados inválidos; nenhuma página foi gerada:\n${lista}`);
   }
   const dados = await lerDados(pastaDados);
-  const resultado = gerarPaginas(dados, { hoje, urlBase });
+  const resultado = gerarPaginas(dados, { hoje, urlBase, vitrine, agora });
   const problemas = conferirPaginas(resultado.arquivos);
   if (problemas.length) throw new Error(`HTML gerado com problema; nada foi gravado:\n${problemas.map((p) => `- ${p}`).join('\n')}`);
 
   await rm(new URL('loja/', saida), { recursive: true, force: true });
   await rm(new URL('ofertas/', saida), { recursive: true, force: true });
+  await rm(new URL(`${PASTA_ONDE_RENDE_MAIS}/`, saida), { recursive: true, force: true });
   for (const pasta of PASTAS_INSTITUCIONAIS) await rm(new URL(`${pasta}/`, saida), { recursive: true, force: true });
+  await rm(new URL('plano/', saida), { recursive: true, force: true });
   await rm(new URL('sitemap.xml', saida), { force: true });
   for (const { caminho, conteudo } of resultado.arquivos) {
     const destino = new URL(caminho, saida);
@@ -96,13 +119,18 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       hoje: { type: 'string' },
       'url-base': { type: 'string' },
       saida: { type: 'string' },
+      vitrine: { type: 'string' },
     },
   });
   const hoje = values.hoje ?? hojeEmBrasilia();
   const urlBase = values['url-base'] ?? process.env.URL_DO_SITE ?? URL_BASE;
   const saida = values.saida ? new URL(`${values.saida.replace(/\/?$/, '/')}`, `file://${process.cwd()}/`) : new URL('site/', RAIZ);
+  const agora = new Date().toISOString();
   try {
-    const { arquivos, resumo, avisos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje, urlBase });
+    const arquivoVitrine = values.vitrine ? new URL(values.vitrine, `file://${process.cwd()}/`) : new URL('.cache/produtos/vitrine.json', RAIZ);
+    const vitrine = await lerVitrine(arquivoVitrine);
+    conferirVitrineParaPublicar(vitrine, process.env);
+    const { arquivos, resumo, avisos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje, urlBase, vitrine, agora });
     for (const aviso of avisos) console.log(`Aviso: ${aviso}`);
     console.log(`Páginas geradas em ${fileURLToPath(saida)} (hoje = ${hoje}):`);
     for (const { caminho } of arquivos) console.log(`  ${caminho}`);

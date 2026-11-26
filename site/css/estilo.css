@@ -53,8 +53,14 @@ main {
 
 .topo__menu {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--espaco-1);
   margin-inline-end: calc(-1 * var(--espaco-3));
+}
+
+/* Celular estreito: com quatro links, o menu desce para a linha de baixo. */
+@media (max-width: 30rem) {
+  .topo__link { padding-inline: var(--espaco-2); }
 }
 
 .topo__link {
@@ -62,6 +68,7 @@ main {
   align-items: center;
   min-height: var(--altura-toque);
   padding-inline: var(--espaco-3);
+  white-space: nowrap;
   color: var(--cor-sobre-primaria);
   font-weight: var(--peso-medio);
   text-decoration: none;
@@ -69,6 +76,20 @@ main {
 }
 
 .topo__link:hover { color: var(--cor-sobre-primaria); text-decoration: underline; }
+
+/* Celular: os quatro links cabem numa linha a partir de 360 px.
+   Em tela menor ainda, o menu quebra a linha em vez de vazar. */
+@media (max-width: 30rem) {
+  .topo__menu {
+    gap: 0;
+    margin-inline-end: -0.375rem;
+  }
+
+  .topo__link {
+    padding-inline: 0.375rem;
+    font-size: var(--texto-sm);
+  }
+}
 
 .topo__link[aria-current="page"] {
   font-weight: var(--peso-extra);
@@ -194,6 +215,48 @@ main {
 
 .resultado__card .card__bloco p { overflow-wrap: anywhere; }
 
+/* Selo "Conferido hoje · Fonte: livelo.com.br", logo abaixo do número. */
+.fonte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-1);
+  margin: var(--espaco-2) 0 0;
+  padding: var(--espaco-1) var(--espaco-3);
+  border-radius: var(--raio-md);
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso-texto);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  overflow-wrap: anywhere;
+}
+
+.fonte--antiga {
+  background: var(--cor-aviso-fundo);
+  color: var(--cor-aviso-texto);
+}
+
+.fonte__icone { font-weight: var(--peso-forte); }
+/* O "·" só separa quando as duas partes cabem na mesma linha (telas largas). */
+.fonte__ponto { display: none; }
+@media (min-width: 30rem) { .fonte__ponto { display: inline; } }
+
+.fonte__link,
+.resultado__conferido a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  display: inline-block;
+  min-height: 24px;
+}
+
+.resultado__destaques {
+  margin-top: var(--espaco-4);
+  padding: var(--espaco-3) var(--espaco-4);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie-2);
+}
+
 .resultado__avisos {
   margin-top: var(--espaco-4);
   padding: var(--espaco-3) var(--espaco-4);
@@ -237,6 +300,79 @@ main {
 .card__acoes .termo { background: var(--cor-superficie-2); }
 
 .alerta .botao { margin-top: var(--espaco-3); }
+
+/* "Essa informação está errada?" (js/reporte/formulario.js) */
+.reporte {
+  margin-top: var(--espaco-4);
+  padding-top: var(--espaco-3);
+  border-top: 1px solid var(--cor-borda);
+}
+
+.reporte__abrir {
+  min-height: 44px;
+  padding-inline: 0;
+  font-size: var(--texto-sm);
+}
+
+.reporte__painel { margin-top: var(--espaco-2); }
+
+.reporte__titulo { font-weight: var(--peso-forte); }
+
+.reporte__texto { min-height: 6rem; resize: vertical; }
+
+.reporte__status:empty { display: none; }
+.reporte__status { font-weight: var(--peso-medio); }
+
+.reporte__feito {
+  color: var(--cor-sucesso-texto);
+  font-weight: var(--peso-forte);
+}
+
+/* Isca para robô: fora da tela, sem ocupar espaço. */
+.reporte__isca {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+/* Explica pra mim -------------------------------------------------------- */
+
+.explicar__campo {
+  min-height: calc(var(--altura-toque) * 1.75);
+  resize: vertical;
+}
+
+.explicar__sugestoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+}
+
+/* As sugestões quebram linha no celular: texto à esquerda, altura livre. */
+.explicar__sugestao {
+  height: auto;
+  min-height: var(--altura-toque);
+  white-space: normal;
+  text-align: left;
+  font-size: var(--texto-sm);
+}
+
+.explicar__saida:empty { display: none; }
+
+.explicar__saida {
+  padding: var(--espaco-3) var(--espaco-4);
+  border-left: 4px solid var(--cor-primaria);
+  border-radius: var(--raio-md);
+  background: var(--cor-primaria-suave);
+  overflow-wrap: anywhere;
+}
+
+.explicar__saida p { margin: 0; }
+
+.explicar__saida > * + * { margin-top: var(--espaco-2); }
+
+.explicar__erro { font-weight: var(--peso-medio); }
 
 /* Perfil ----------------------------------------------------------------- */
 
@@ -325,6 +461,57 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 
 .convite .linha { margin-top: var(--espaco-3); }
 
+/* Exemplos de um toque --------------------------------------------------- */
+
+.exemplos { min-height: 5.5rem; }
+.exemplos__titulo { margin: 0 0 var(--espaco-2); font-size: var(--texto-sm); }
+.exemplos__lista { display: flex; flex-wrap: wrap; gap: var(--espaco-2); }
+.exemplos__botao { min-height: var(--altura-toque); font-variant-numeric: tabular-nums; }
+
+/* O que a conta supôs ------------------------------------------------------ */
+
+.ajuste__premissas { margin: 0; padding-left: var(--espaco-5); }
+.ajuste__premissas > li + li { margin-top: var(--espaco-2); }
+.ajuste__falta { color: var(--cor-aviso-texto); font-weight: var(--peso-medio); }
+.ajuste__status:empty { display: none; }
+.ajuste__status { margin: 0; color: var(--cor-sucesso-texto); font-weight: var(--peso-medio); }
+
+/* Vale a pena? ------------------------------------------------------------- */
+
+.vale__bloco + .vale__bloco {
+  border-top: 1px solid var(--cor-borda);
+  padding-top: var(--espaco-5);
+}
+.vale__titulo { margin: 0; font-size: var(--texto-lg); }
+.vale__campos { display: grid; gap: var(--espaco-3); }
+.linha--justa { flex-wrap: nowrap; gap: var(--espaco-2); }
+.linha--justa > input { flex: 1 1 6rem; min-width: 0; }
+.linha--justa > select { flex: 0 1 10rem; width: auto; }
+.vale__saida:empty { display: none; }
+.vale__saida {
+  background: var(--cor-superficie-2);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-4);
+}
+.vale__saida > * + * { margin-top: var(--espaco-3); }
+.vale__opcoes { list-style: none; margin: 0; padding: 0; }
+.vale__opcoes > li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-3);
+  padding-block: var(--espaco-1);
+}
+.vale__vencedor { font-weight: var(--peso-forte); }
+.vale__vencedor > span::before { content: "★ "; }
+.vale__veredito { margin: 0; font-weight: var(--peso-medio); }
+.vale__veredito--compensa { color: var(--cor-sucesso-texto); }
+.vale__veredito--nao_compensa { color: var(--cor-aviso-texto); }
+.resultado__sem-pontos { margin: 0; }
+
+@media (min-width: 40rem) {
+  .vale__campos { grid-template-columns: 1fr 1fr; }
+}
+
 /* Telas maiores ---------------------------------------------------------- */
 
 @media (min-width: 40rem) {
@@ -335,3 +522,39 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 .avisos-app > :not(:empty) { margin-bottom: var(--espaco-6); }
 .avisos-app .alerta .linha { margin-top: var(--espaco-3); }
 .avisos-app .alerta .linha .botao { margin-top: 0; }
+
+/* Milhas em viagens */
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-2);
+}
+
+.lista-limpa {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.campo__entrada--curta { max-width: 8rem; }
+
+/* Mais jeitos de ganhar pontos (atalhos da tela inicial) ------------------ */
+.mais-jeitos__titulo { font-size: var(--texto-lg); margin: 0; }
+.mais-jeitos__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espaco-2); }
+.mais-jeitos__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  min-height: var(--altura-toque);
+  padding: var(--espaco-3) var(--espaco-4);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-left: 4px solid var(--cor-destaque);
+  border-radius: var(--raio-lg);
+  color: var(--cor-texto);
+  text-decoration: none;
+}
+.mais-jeitos__link:hover { border-color: var(--cor-primaria); border-left-color: var(--cor-destaque); }
+.mais-jeitos__nome { font-weight: var(--peso-extra); color: var(--cor-primaria); text-decoration: underline; text-underline-offset: 0.15em; }
+.mais-jeitos__texto { font-size: var(--texto-sm); color: var(--cor-texto-suave); }
+@media (min-width: 48rem) { .mais-jeitos__lista { grid-template-columns: repeat(3, 1fr); } }

@@ -1,0 +1,106 @@
+name: app-publicar
+
+# Gera as versões ASSINADAS do app para as lojas. Só roda quando alguém
+# clica em "Run workflow" (Actions > app-publicar). Nada roda sozinho.
+#
+# Os segredos ficam no ambiente "lojas" do GitHub (Settings > Environments),
+# nunca no repositório. Passo a passo em app/PUBLICAR.md.
+#   Android: ANDROID_CHAVE_BASE64, ANDROID_CHAVE_SENHA_ARQUIVO,
+#            ANDROID_CHAVE_APELIDO, ANDROID_CHAVE_SENHA
+#   iOS:     APPLE_TEAM_ID, ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64
+#
+# Android: o .aab assinado fica como artefato da execução por 7 dias; você
+#          baixa e envia no Google Play Console.
+# iOS:     o build vai direto para o TestFlight (App Store Connect); de lá
+#          você manda para revisão.
+
+on:
+  workflow_dispatch:
+    inputs:
+      loja:
+        description: 'Qual loja'
+        type: choice
+        options: [android, ios, as-duas]
+        default: as-duas
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-publicar
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Android (.aab assinado)
+    if: ${{ inputs.loja == 'android' || inputs.loja == 'as-duas' }}
+    environment: lojas
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - name: Testes unitários e dados
+        run: npm run test:unidade && npm run validar
+      - run: npm run app:montar
+      - name: Compilar e assinar o .aab
+        working-directory: app/android
+        env:
+          ANDROID_CHAVE_BASE64: ${{ secrets.ANDROID_CHAVE_BASE64 }}
+          ANDROID_CHAVE_SENHA_ARQUIVO: ${{ secrets.ANDROID_CHAVE_SENHA_ARQUIVO }}
+          ANDROID_CHAVE_APELIDO: ${{ secrets.ANDROID_CHAVE_APELIDO }}
+          ANDROID_CHAVE_SENHA: ${{ secrets.ANDROID_CHAVE_SENHA }}
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          export JAVA_HOME="$JAVA_HOME_21_X64"
+          export ANDROID_CHAVE_ARQUIVO="$RUNNER_TEMP/envio.jks"
+          trap 'rm -f "$ANDROID_CHAVE_ARQUIVO"' EXIT
+          printf '%s' "$ANDROID_CHAVE_BASE64" | base64 --decode > "$ANDROID_CHAVE_ARQUIVO"
+          ./gradlew --no-daemon bundleRelease
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: milhas-da-vez-play-aab-${{ github.run_number }}
+          path: app/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 7
+
+  ios:
+    name: iOS (envio para o TestFlight)
+    if: ${{ inputs.loja == 'ios' || inputs.loja == 'as-duas' }}
+    environment: lojas
+    timeout-minutes: 60
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm run app:montar
+      - name: Arquivar, assinar e enviar
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          NUMERO: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          CHAVE="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          trap 'rm -f "$CHAVE"' EXIT
+          printf '%s' "$ASC_KEY_P8_BASE64" | base64 --decode > "$CHAVE"
+          sed "s/__TIME__/${APPLE_TEAM_ID}/" app/ios/ExportOptions.plist > "$RUNNER_TEMP/ExportOptions.plist"
+          AUTENTICACAO=(-allowProvisioningUpdates
+            -authenticationKeyPath "$CHAVE"
+            -authenticationKeyID "$ASC_KEY_ID"
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -project app/ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="$NUMERO" \
+            "${AUTENTICACAO[@]}" archive
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/envio" \
+            "${AUTENTICACAO[@]}"
