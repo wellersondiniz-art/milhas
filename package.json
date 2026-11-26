@@ -29,7 +29,9 @@
     "painel": "node scripts/painel-semanal.js",
     "test:extensao": "playwright test -c playwright.extensao.config.mjs",
     "extensao": "node scripts/extensao/montar.js",
-    "extensao:conferir": "node scripts/extensao/montar.js --conferir"
+    "extensao:conferir": "node scripts/extensao/montar.js --conferir",
+    "alertas": "node scripts/alertas/enviar.js",
+    "test:banco": "bash supabase/testes/rodar-local.sh"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0"

@@ -10,7 +10,7 @@ import {
 } from '../../site/js/motor/index.js';
 import { formatarNumero, pontosPorReal } from '../../site/js/motor/formatar.js';
 import { fraseDoJeito } from '../../site/js/tela/textos.js';
-import { NOME_DO_SITE } from './config.js';
+import { ALERTAS_LIGADO, NOME_DO_SITE } from './config.js';
 import { escaparXml, h, juntar, linkDeSaida, linkExterno } from './html.js';
 import { montarLinkDeSaida, siteTemLinkDeAfiliado, siteUsaAwin } from '../../site/js/saida/links.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
@@ -279,7 +279,7 @@ function cartaoDaResposta(dados, loja, melhor, resposta, raiz) {
     botao);
 }
 
-export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
+export function paginaDaLoja(dados, loja, { hoje, urlBase, alertas = ALERTAS_LIGADO }) {
   const raiz = '../../';
   const caminho = `loja/${loja.id}/`;
   const ativas = ofertasAtivasDaLoja(dados, loja.id, hoje);
@@ -301,6 +301,10 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase }) {
       h('h1', {}, `Pontos e milhas ${naLoja(loja)} hoje`),
       h('p', { class: 'texto-suave texto-pequeno' }, `Situação em ${formatarData(hoje)}, com os dados conferidos até agora.`)),
     cartaoDaResposta(dados, loja, melhor, resposta, raiz),
+    alertas
+      ? h('p', {}, h('a', { class: 'botao botao--secundario', href: `${raiz}alertas/?loja=${encodeURIComponent(loja.id)}` },
+        `Me avise por e-mail quando ${naLoja(loja)} render mais`))
+      : null,
     h('section', { class: 'pilha', 'aria-labelledby': 'regras-titulo' },
       h('h2', { id: 'regras-titulo', class: 'pagina__subtitulo' }, ativas.length ? 'Regras das ofertas ativas' : 'Ofertas ativas'),
       ativas.length
@@ -513,15 +517,15 @@ export function normalizarUrlBase(url) {
  * @param {object} opcoes { hoje: "AAAA-MM-DD", urlBase: string|null }
  * @returns {{ arquivos: {caminho, conteudo}[], resumo: object, avisos: string[] }}
  */
-export function gerarPaginas(dados, { hoje, urlBase = null }) {
+export function gerarPaginas(dados, { hoje, urlBase = null, alertas = ALERTAS_LIGADO }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(hoje ?? '')) throw new Error(`hoje precisa ser AAAA-MM-DD (recebido: ${hoje})`);
   const base = normalizarUrlBase(urlBase);
   for (const loja of dados.lojas) {
     if (!ID_SEGURO.test(loja.id)) throw new Error(`id de loja inválido para virar pasta: ${JSON.stringify(loja.id)}`);
   }
-  const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base }));
+  const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base, alertas }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
-  const institucionais = paginasInstitucionais({ urlBase: base, temAfiliado: siteTemLinkDeAfiliado(dados), usaAwin: siteUsaAwin(dados) });
+  const institucionais = paginasInstitucionais({ urlBase: base, temAfiliado: siteTemLinkDeAfiliado(dados), usaAwin: siteUsaAwin(dados), alertas });
   const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {

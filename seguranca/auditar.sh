@@ -26,7 +26,7 @@ listar() { cut -d: -f"$1" | sort -u | sed 's/^/           - /'; }
 EXCLUIR=(':!seguranca/auditar.sh' ':!seguranca/CHECKLIST.md')
 
 # Padrões de segredos comuns.
-SEGREDOS='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|(api[_-]?key|secret|token|senha|password|passwd)["'\'']?[[:space:]]*[:=][[:space:]]*["'\''][^"'\'' ]{8,}["'\'']'
+SEGREDOS='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|sb_secret_[A-Za-z0-9_-]{10,}|\bre_[A-Za-z0-9]{6,}_[A-Za-z0-9_]{10,}|(api[_-]?key|secret|token|senha|password|passwd)["'\'']?[[:space:]]*[:=][[:space:]]*["'\''][^"'\'' ]{8,}["'\'']'
 
 # Dados pessoais: CPF formatado e número de cartão (16 dígitos).
 PESSOAIS='[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|\b[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}\b'
@@ -66,6 +66,8 @@ fi
 # ---------------------------------------------------------------------------
 secao "3. Arquivos sensíveis rastreados"
 sensiveis="$(git ls-files | grep -iE '(^|/)\.env($|\.)|\.(pem|key|p12|pfx|jks|keystore|gpg|sql|dump|bak|xls|xlsx|xlsm|ods|csv|pdf|docx?)$|(^|/)id_(rsa|ed25519)|credentials.*\.json$|service-account.*\.json$|(^|/)\.npmrc$|(^|/)\.dev\.vars$' || true)"
+# Migrações e testes SQL do Supabase são código (esquema), não dump de dados.
+sensiveis="$(printf '%s\n' "$sensiveis" | grep -vE '^supabase/(migrations|testes)/[A-Za-z0-9_.-]+\.sql$' | grep -v '^$' || true)"
 if [ -n "$sensiveis" ]; then
   falha "arquivo que não deveria estar no Git:"
   printf '%s\n' "$sensiveis" | sed 's/^/           - /'
@@ -139,7 +141,7 @@ if [ -d functions ]; then
   # Com functions/, a Cloudflare roda a função em todo pedido, a não ser que
   # _routes.json diga quais caminhos são dela. Sem isso, o site estático
   # passaria a gastar a cota de Workers e a responder mais devagar.
-  if [ -f dist/_routes.json ] && node -e 'const r=require("./dist/_routes.json");process.exit(r.version===1&&r.include.every((c)=>c.startsWith("/api/"))?0:1)' 2>/dev/null; then
+  if [ -f dist/_routes.json ] && node -e 'const r=require("./dist/_routes.json");process.exit(r.version===1&&r.include.length>0&&r.include.every((c)=>c.startsWith("/api/"))?0:1)' 2>/dev/null; then
     ok "dist/_routes.json limita as funções a /api/*"
   else
     falha "functions/ existe, mas dist/_routes.json não limita as funções a /api/*"
@@ -150,6 +152,14 @@ if [ -d functions ]; then
     printf '%s\n' "$segredo_fixo" | listar 1,2
   else
     ok "token e repositório de reportes só vêm do ambiente da Cloudflare"
+  fi
+  # Chaves dos alertas só vêm do ambiente (Cloudflare e GitHub Actions).
+  chave_fixa="$(git grep -nIE '(SUPABASE_SECRET_KEY|RESEND_API_KEY|ALERTAS_SEGREDO|service_role_key)[[:space:]]*[:=][[:space:]]*["'\''`]' -- functions servidor scripts .github 2>/dev/null || true)"
+  if [ -n "$chave_fixa" ]; then
+    falha "chave dos alertas escrita no código (use segredo no ambiente):"
+    printf '%s\n' "$chave_fixa" | listar 1,2
+  else
+    ok "chaves do Supabase e do Resend só vêm do ambiente"
   fi
 fi
 

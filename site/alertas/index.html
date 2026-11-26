@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alerta de pontos por e-mail · Milhas da Vez</title>
+  <meta name="description" content="Receba um e-mail quando uma loja chegar no tanto de pontos por real que você quer, calculado com o seu perfil.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#1f6b3a">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../img/icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../img/icones/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <script type="module" src="../js/alertas/formulario.js"></script>
+</head>
+<body>
+  <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <div class="container topo__linha">
+      <a class="topo__marca" href="../">Milhas da Vez</a>
+      <nav class="topo__menu" aria-label="Principal">
+        <a class="topo__link" href="../">Comparar</a>
+        <a class="topo__link" href="../ofertas/">Ofertas</a>
+        <a class="topo__link" href="../#/perfil">Meu perfil</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="container pilha--lg">
+    <section class="pilha--sm">
+      <h1>Alerta de pontos por e-mail</h1>
+      <p>Diga a loja e quantos pontos por real você quer. Depois de cada atualização semanal das ofertas, a gente faz a conta com o seu perfil e manda um e-mail se a loja chegar lá.</p>
+      <p class="texto-suave texto-pequeno"><strong>Pontos por real</strong> é quanto você ganha de pontos ou milhas para cada R$&nbsp;1 gasto. Ex.: 10 pontos por real numa compra de R$&nbsp;200,00 dão 2.000 pontos.</p>
+    </section>
+
+    <section class="card pilha--sm" aria-labelledby="perfil-titulo">
+      <h2 id="perfil-titulo" class="card__titulo">O seu perfil</h2>
+      <p id="perfil-resumo">Carregando o seu perfil…</p>
+      <p><a href="../#/perfil">Mudar em Meu perfil</a></p>
+    </section>
+
+    <form id="form-alerta" class="pilha" novalidate>
+      <div class="campo">
+        <label class="campo__rotulo" for="alerta-loja">Loja</label>
+        <select class="campo__entrada" id="alerta-loja" name="loja_id" required aria-describedby="alerta-loja-erro">
+          <option value="">Escolha a loja</option>
+        </select>
+        <span class="campo__erro" id="alerta-loja-erro"></span>
+      </div>
+
+      <div class="campo">
+        <label class="campo__rotulo" for="alerta-programa">Programa de pontos</label>
+        <select class="campo__entrada" id="alerta-programa" name="programa_id" aria-describedby="alerta-programa-ajuda alerta-programa-erro">
+          <option value="">Qualquer programa do meu perfil</option>
+        </select>
+        <span class="campo__ajuda" id="alerta-programa-ajuda">Deixe "qualquer programa" para valer o que render mais.</span>
+        <span class="campo__erro" id="alerta-programa-erro"></span>
+      </div>
+
+      <div class="campo">
+        <label class="campo__rotulo" for="alerta-pontos">Me avise a partir de quantos pontos por real?</label>
+        <input class="campo__entrada" id="alerta-pontos" name="pontos_por_real" type="text" inputmode="decimal" autocomplete="off"
+               required aria-describedby="alerta-pontos-ajuda alerta-pontos-erro">
+        <span class="campo__ajuda" id="alerta-pontos-ajuda">Ex.: 10 ou 2,5. Conta tudo: a oferta da loja e o seu cartão.</span>
+        <span class="campo__erro" id="alerta-pontos-erro"></span>
+      </div>
+
+      <div class="campo">
+        <label class="campo__rotulo" for="alerta-email">Seu e-mail</label>
+        <input class="campo__entrada" id="alerta-email" name="email" type="email" autocomplete="email" inputmode="email"
+               required aria-describedby="alerta-email-ajuda alerta-email-erro">
+        <span class="campo__ajuda" id="alerta-email-ajuda">Vamos mandar um link para você confirmar. Sem a confirmação, não mandamos nada.</span>
+        <span class="campo__erro" id="alerta-email-erro"></span>
+      </div>
+
+      <!-- Armadilha para robô: fica escondida de quem usa o site. -->
+      <div class="visualmente-oculto" aria-hidden="true">
+        <label for="alerta-site">Não preencha</label>
+        <input id="alerta-site" name="site" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="campo">
+        <label class="opcao" for="alerta-consentimento">
+          <input id="alerta-consentimento" name="consentimento" type="checkbox" required aria-describedby="alerta-consentimento-erro">
+          <span>Quero receber e-mails de alerta. Sei que são no máximo 2 por semana e que posso cancelar pelo link de qualquer e-mail.</span>
+        </label>
+        <span class="campo__erro" id="alerta-consentimento-erro"></span>
+      </div>
+
+      <button class="botao botao--bloco" id="alerta-enviar" type="submit">Criar alerta</button>
+      <div id="alerta-status" role="status" aria-live="polite"></div>
+    </form>
+
+    <section class="pilha--sm" aria-labelledby="alerta-privacidade">
+      <h2 id="alerta-privacidade" class="pagina__subtitulo">O que a gente guarda</h2>
+      <p>Para o alerta funcionar, guardamos no servidor o seu e-mail, o alerta e o seu perfil (só os programas, o clube e os cartões pelo nome). Nada de número de cartão. Ao cancelar, apagamos tudo. Veja a <a href="../privacidade/">Privacidade</a>.</p>
+    </section>
+  </main>
+
+  <footer class="container rodape">
+    <nav aria-label="Sobre o site">
+      <ul class="rodape__links">
+        <li><a href="../como-funciona/">Como funciona</a></li>
+        <li><a href="../sobre-os-dados/">Sobre os dados</a></li>
+        <li><a href="../privacidade/">Privacidade</a></li>
+        <li><a href="../termos/">Termos de uso</a></li>
+        <li><a href="../contato/">Contato</a></li>
+      </ul>
+    </nav>
+    <p class="texto-suave texto-pequeno">Não pedimos número de cartão nem CPF. Os números são estimativas a partir das regras publicadas pelas lojas e programas: confira sempre antes de comprar.</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,53 @@
+name: alertas
+
+# Rodada dos alertas por e-mail. Roda quando a atualização semanal das ofertas
+# (dados/ofertas.json) entra na main, e também à mão (Actions → alertas →
+# Run workflow), com a opção de só simular.
+#
+# Os segredos ficam no ambiente "alertas" do GitHub (Settings → Environments),
+# nunca no código. Sem eles, o robô avisa que os alertas estão desligados e
+# termina sem erro. Passo a passo no README, seção "Alertas por e-mail".
+
+on:
+  push:
+    branches: [main]
+    paths: ['dados/ofertas.json']
+  workflow_dispatch:
+    inputs:
+      simular:
+        description: 'Só simular (avalia e conta, não envia nem grava)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Uma rodada por vez: duas ao mesmo tempo poderiam mandar o mesmo alerta duas vezes.
+concurrency:
+  group: alertas
+  cancel-in-progress: false
+
+jobs:
+  rodada:
+    name: Rodada de alertas
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: alertas
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      # Sem npm install: o motor e os alertas não usam dependências.
+      - name: Avaliar e enviar
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERTAS_REMETENTE: ${{ secrets.ALERTAS_REMETENTE }}
+          ALERTAS_SEGREDO: ${{ secrets.ALERTAS_SEGREDO }}
+          ALERTAS_URL_SITE: ${{ vars.ALERTAS_URL_SITE }}
+          SIMULAR: ${{ inputs.simular && '--simular' || '' }}
+        run: |
+          set -o pipefail
+          node scripts/alertas/enviar.js $SIMULAR | tee -a "$GITHUB_STEP_SUMMARY"
