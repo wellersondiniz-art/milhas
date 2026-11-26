@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { documento } from '../scripts/paginas/moldura.js';
 
 const MENU = ['Comparar', 'Abastecer', 'Viagens', 'Ofertas', 'Meu perfil'];
-const A_MAO = ['index.html', '404.html', 'viagens/index.html', 'abastecer/index.html', 'alertas/index.html'];
+const A_MAO = ['index.html', '404.html', 'viagens/index.html', 'salas-vip/index.html', 'abastecer/index.html', 'alertas/index.html'];
 
 function textosDoMenu(html) {
   const nav = html.match(/<nav class="topo__menu" aria-label="Principal">([\s\S]*?)<\/nav>/);

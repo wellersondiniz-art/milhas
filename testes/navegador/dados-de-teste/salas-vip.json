@@ -1,0 +1,13 @@
+[
+  {
+    "id": "cartao-alfa-sala",
+    "cartao_id": "cartao-alfa",
+    "rede": "Rede Teste de Salas",
+    "acessos_por_ano": 2,
+    "quem_usa": "Titular e adicionais",
+    "acompanhantes": "Contam dentro dos 2 acessos.",
+    "status": "confirmado",
+    "fonte_url": "https://exemplo.invalid/salas",
+    "verificado_em": "2026-11-05"
+  }
+]

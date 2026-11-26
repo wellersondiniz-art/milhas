@@ -13,7 +13,7 @@ import { conferirDestino } from '../site/js/saida/links.js';
 
 export const ARQUIVOS = [
   'programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'links', 'redes-postos', 'regras-postos',
-  'cotacoes', 'transferencias', 'bonus-transferencia', 'viagens',
+  'cotacoes', 'transferencias', 'bonus-transferencia', 'viagens', 'salas-vip',
 ];
 /** Campo que identifica o registro. Em links.json, é a loja (um link por loja). */
 const CHAVE = { links: 'loja_id' };
@@ -328,6 +328,7 @@ function regrasExtras(dados, hoje) {
   });
 
   regrasDeViagem(dados, hoje, erros, avisos, existe);
+  regrasDeSalasEValidade(dados, hoje, erros, avisos, existe);
 
   return { erros, avisos };
 }
@@ -345,6 +346,28 @@ const EFEITO_A_CONFIRMAR = {
   status: 'a oferta inteira fica fora do cálculo',
   link_oferta: 'a tela não mostra o link da oferta',
 };
+/** Salas VIP por cartão e validade dos pontos por programa. */
+function regrasDeSalasEValidade(dados, hoje, erros, avisos, existe) {
+  (dados['salas-vip'] ?? []).forEach((s, i) => {
+    existe('salas-vip', i, ['cartao_id'], 'cartoes', s.cartao_id);
+    if (s.status === A_CONFIRMAR) avisos.push(`sala VIP ${JSON.stringify(s.id)}: status "A_CONFIRMAR"; aparece sem números`);
+    else if (s.acessos_por_ano === A_CONFIRMAR) {
+      erros.push({ arquivo: 'salas-vip', indice: i, caminho: ['acessos_por_ano'], mensagem: 'confirmado sem número de acessos: use status "A_CONFIRMAR"' });
+    }
+  });
+  (dados.programas ?? []).forEach((p, i) => {
+    const v = p.validade_pontos;
+    if (!v) { avisos.push(`programa ${JSON.stringify(p.id)}: sem validade_pontos`); return; }
+    if (dataValida(v.verificado_em) && v.verificado_em > hoje) {
+      erros.push({ arquivo: 'programas', indice: i, caminho: ['validade_pontos', 'verificado_em'], mensagem: `data no futuro: ${v.verificado_em} (hoje é ${hoje})` });
+    }
+    if (v.como_prorrogar_fonte_url !== undefined && v.como_prorrogar === undefined) {
+      erros.push({ arquivo: 'programas', indice: i, caminho: ['validade_pontos', 'como_prorrogar'], mensagem: 'tem fonte de como prorrogar, mas falta o texto' });
+    }
+    if (v.meses === A_CONFIRMAR) avisos.push(`programa ${JSON.stringify(p.id)}: validade dos pontos "A_CONFIRMAR"`);
+  });
+}
+
 /** Transferências, campanhas de bônus e regras de passagem/hotel (PR das viagens). */
 function regrasDeViagem(dados, hoje, erros, avisos, existe) {
   const rotas = new Map((dados.transferencias ?? []).map((t) => [t.id, t]));

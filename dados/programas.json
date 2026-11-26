@@ -8,7 +8,14 @@
     "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
     "url": "https://www.voeazul.com.br/br/pt/programa-fidelidade",
     "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": 24,
+      "resumo": "No mínimo 24 meses a partir do acúmulo; pode ser mais, conforme o seu nível no programa. Pontos de campanha ou de produto (como o Clube Azul) seguem a regra própria.",
+      "como_prorrogar": "A Azul vende a renovação de pontos a vencer ou já vencidos.",
+      "fonte_url": "https://www.voeazul.com.br/br/pt/programa-fidelidade/regulamento/novo-2024",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "livelo",
@@ -19,7 +26,13 @@
     "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
     "url": "https://www.livelo.com.br",
     "fonte_url": "https://www.livelo.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": 24,
+      "resumo": "24 meses a partir do crédito para pontos de campanhas da Livelo. Pontos que vêm de parceiros (como o banco do cartão) e do Clube Livelo seguem a regra de cada um.",
+      "fonte_url": "https://www.livelo.com.br/regulamentos/programa-pontos-livelo",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "all-accor",
@@ -28,7 +41,15 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://all.accor.com",
     "fonte_url": "https://all.accor.com/loyalty-program/pt-br/reasontojoin/index.vhtml",
-    "verificado_em": "2026-11-25"
+    "verificado_em": "2026-11-25",
+    "validade_pontos": {
+      "meses": 12,
+      "resumo": "12 meses a partir do acúmulo. Cada nova atividade que dá pontos estende o saldo por mais 12 meses.",
+      "como_prorrogar": "Ganhar pontos de novo (uma hospedagem ou um parceiro) renova o prazo do saldo.",
+      "como_prorrogar_fonte_url": "https://all.accor.com/a/en/limitless/thematics/travel-tips-guides/extending-the-life-of-your-reward-points.html",
+      "fonte_url": "https://all.accor.com/a/en/limitless/thematics/travel-tips-guides/extending-the-life-of-your-reward-points.html",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "smiles",
@@ -39,7 +60,15 @@
     "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
     "url": "https://www.smiles.com.br",
     "fonte_url": "https://www.smiles.com.br",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": 36,
+      "resumo": "Milhas de cartão, parceiros e transferência do banco: 3 anos (categorias Smiles e Prata), 4 anos (Ouro) e 10 anos (Diamante). Voos GOL: de 6 a 20 anos. Milhas bônus de promoções: 6 meses. Clube Smiles: 10 anos ou não expiram, conforme o plano.",
+      "como_prorrogar": "O app Smiles vende extensão de 30, 60 ou 90 dias; milhas vencidas podem ser reativadas (ficam valendo 12 meses).",
+      "como_prorrogar_fonte_url": "https://www.smiles.com.br/portal/validade-de-milhas",
+      "fonte_url": "https://www.smiles.com.br/portal/validade-de-milhas",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "esfera",
@@ -50,7 +79,15 @@
     "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
     "url": "https://www.esfera.com.vc",
     "fonte_url": "https://www.esfera.com.vc",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": "depende_do_cartao",
+      "resumo": "Pontos do cartão Santander valem 24 ou 36 meses, ou não expiram, conforme o modelo do cartão. Campanhas e compra de pontos: 24 meses. Santander Shopping: 90 dias. Os pontos mais perto de vencer são usados primeiro.",
+      "como_prorrogar": "Quem assina o Clube Esfera não perde pontos enquanto for assinante.",
+      "como_prorrogar_fonte_url": "https://esfera.zendesk.com/hc/pt-br/articles/53778474033939-Qual-a-validade-dos-meus-pontos",
+      "fonte_url": "https://esfera.zendesk.com/hc/pt-br/articles/53778474033939-Qual-a-validade-dos-meus-pontos",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "latam-pass",
@@ -61,7 +98,15 @@
     "valor_milheiro_fonte_url": "https://www.livelo.com.br/quanto-vale-1000-pontos-em-milhas-calculo-livelo",
     "url": "https://latampass.latam.com/br/pt",
     "fonte_url": "https://latampass.latam.com/br/pt",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": 24,
+      "resumo": "24 meses a partir de cada acúmulo, em voos LATAM, companhias parceiras e parceiros fora da aviação. Produtos e campanhas podem ter prazo próprio.",
+      "como_prorrogar": "Cada voo feito pela LATAM dá mais 36 meses de validade.",
+      "como_prorrogar_fonte_url": "https://www.latamairlines.com/br/pt/imprensa/noticias/latam-reformulacao-latam-pass",
+      "fonte_url": "https://www.latamairlines.com/br/pt/central-ajuda/perguntas/latam-pass/pontos/data-vencimento-pontos",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "pontos-itau",
@@ -70,7 +115,13 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://www.itau.com.br/pontos-e-cashback",
     "fonte_url": "https://www.itau.com.br/pontos-e-cashback",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": "depende_do_cartao",
+      "resumo": "Cada cartão tem a sua regra. No Itaú Personnalité, os pontos bonificados para troca no app não expiram; os demais seguem a regra do cartão.",
+      "fonte_url": "https://www.itau.com.br/personnalite/cartoes",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "c6-atomos",
@@ -79,7 +130,13 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://www.c6bank.com.br/programa-de-pontos-atomos/",
     "fonte_url": "https://www.c6bank.com.br/programa-de-pontos-atomos/",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": "nao_expira",
+      "resumo": "O C6 Bank diz que os pontos Átomos não expiram.",
+      "fonte_url": "https://www.c6bank.com.br/blog/cartao-de-credito-com-milhas",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "pontos-caixa",
@@ -88,7 +145,13 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://www.caixa.gov.br/voce/cartoes/programa-pontos/Paginas/default.aspx",
     "fonte_url": "https://www.caixa.gov.br/voce/cartoes/programa-pontos/Paginas/default.aspx",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": "depende_do_cartao",
+      "resumo": "Internacional, Gold, Mais, Platinum e Grafite: 24 meses. Infinite, Black e Nanquim: 36 meses. Diners Club e CAIXA Ícone: não expiram.",
+      "fonte_url": "https://www.caixa.gov.br/voce/cartoes/perguntas-frequentes/Paginas/default.aspx",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "portoplus",
@@ -97,7 +160,13 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://www.portoseguro.com.br/cartao-de-credito/regulamento-porto-plus",
     "fonte_url": "https://www.portoseguro.com.br/cartao-de-credito/regulamento-porto-plus",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": 24,
+      "resumo": "24 meses a partir do acúmulo. A cada mês vencem os pontos mais antigos, no primeiro dia útil do mês seguinte ao fim do prazo. Os cartões Visa Infinite e Mastercard Black têm regra própria no regulamento.",
+      "fonte_url": "https://www.portoseguro.com.br/cartao-de-credito/regulamento-porto-plus",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "pontos-btg",
@@ -106,7 +175,13 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://banking.btgpactual.com/beneficios/programa-de-fidelidade",
     "fonte_url": "https://banking.btgpactual.com/cartao-de-credito",
-    "verificado_em": "2026-11-22"
+    "verificado_em": "2026-11-22",
+    "validade_pontos": {
+      "meses": 24,
+      "resumo": "O BTG diz que os pontos acumulados expiram em 24 meses.",
+      "fonte_url": "https://banking.btgpactual.com/ajuda/programadefidelidade/btgpontos",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "km-de-vantagens",
@@ -115,7 +190,13 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://www.ipiranga.com.br/wps/portal/pt-br/ipiranga/km-de-vantagens",
     "fonte_url": "https://www.ipiranga.com.br/wps/portal/pt-br/ipiranga/km-de-vantagens",
-    "verificado_em": "2026-11-23"
+    "verificado_em": "2026-11-23",
+    "validade_pontos": {
+      "meses": 12,
+      "resumo": "Até 12 meses a contar da data em que os Km foram acumulados.",
+      "fonte_url": "https://www.ipiranga.com.br/wps/portal/pt-br/ipiranga/km-de-vantagens",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "petrobras-premmia",
@@ -124,7 +205,13 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://www.postospetrobras.com.br/ganhe-mais-com/premmia",
     "fonte_url": "https://www.postospetrobras.com.br/ganhe-mais-com/premmia",
-    "verificado_em": "2026-11-23"
+    "verificado_em": "2026-11-23",
+    "validade_pontos": {
+      "meses": 12,
+      "resumo": "Com cadastro completo, os pontos valem 12 meses.",
+      "fonte_url": "https://www.postospetrobras.com.br/sites/default/files/2026-10/regulamento-premmia-revisado.pdf",
+      "verificado_em": "2026-11-26"
+    }
   },
   {
     "id": "stix",
@@ -133,6 +220,12 @@
     "valor_milheiro_brl": "A_CONFIRMAR",
     "url": "https://www.soustix.com.br",
     "fonte_url": "https://www.shell.com.br/motoristas/app-shell-box/regulamento-shell-box-clube.html",
-    "verificado_em": "2026-11-23"
+    "verificado_em": "2026-11-23",
+    "validade_pontos": {
+      "meses": "A_CONFIRMAR",
+      "resumo": "Os Stix vencem uma vez por ano, sempre em setembro. O prazo exato de cada lote está no app.",
+      "fonte_url": "https://www.paodeacucar.com/duvidas-frequentes/7/7.22/como-funciona-o-pagstix",
+      "verificado_em": "2026-11-26"
+    }
   }
 ]

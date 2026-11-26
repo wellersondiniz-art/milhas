@@ -380,3 +380,23 @@ test('perfil só com cotação: não é descartado, e a conta usa todos com essa
   assert.equal(todos.cartoes.length, DADOS.cartoes.length);
   assert.equal('cotacao_dolar' in perfilDeTodos(DADOS), false);
 });
+
+test('vencimento dos pontos: fica no aparelho, sai no arquivo e volta na importação', () => {
+  const comData = {
+    ...PERFIL_CHEIO,
+    programas: [{ programa_id: 'prog-a', clube_ativo: false, pontos_vencem_em: '2027-01-15' }],
+  };
+  assert.deepEqual(limparPerfil(comData, DADOS).programas, [{ programa_id: 'prog-a', clube_ativo: false, pontos_vencem_em: '2027-01-15' }]);
+  const r = validarImportacao(textoParaExportar(limparPerfil(comData, DADOS), '2026-11-22T10:00:00.000Z'), DADOS, HOJE);
+  assert.equal(r.ok, true);
+  assert.equal(r.perfil.programas[0].pontos_vencem_em, '2027-01-15');
+});
+
+test('vencimento dos pontos: data quebrada some do aparelho e reprova na importação', () => {
+  const quebrado = { ...PERFIL_CHEIO, programas: [{ programa_id: 'prog-a', clube_ativo: false, pontos_vencem_em: '2027-02-30' }] };
+  assert.equal(limparPerfil(quebrado, DADOS).programas[0].pontos_vencem_em, undefined);
+  const texto = JSON.stringify({ app: APP, versao: 2, programas: quebrado.programas, cartoes: [] });
+  const r = validarImportacao(texto, DADOS, HOJE);
+  assert.equal(r.ok, false);
+  assert.match(r.erros[0], /Programa A: a data de vencimento dos pontos "2027-02-30" não é uma data válida/);
+});

@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 export const ARQUIVOS = [
   'programas.json', 'cartoes.json', 'lojas.json', 'ofertas.json', 'cambio.json', 'links.json', 'redes-postos.json', 'regras-postos.json',
   'cotacoes.json', 'transferencias.json', 'bonus-transferencia.json', 'viagens.json',
+  'salas-vip.json',
 ];
 
 export async function copiarDados(origem, destino) {
