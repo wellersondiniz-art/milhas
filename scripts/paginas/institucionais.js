@@ -60,7 +60,7 @@ const privacidade = (texto = 'Privacidade') => link('privacidade/', texto);
 // ---------------------------------------------------------------------------
 // Como funciona
 
-function comoFunciona(plano) {
+function comoFunciona(plano, explicarLigado) {
   return {
     pasta: 'como-funciona',
     titulo: 'Como funciona',
@@ -91,9 +91,13 @@ function comoFunciona(plano) {
         'Bônus na transferência de pontos entre programas, cashback, frete, anuidade do cartão e o preço do produto em outras lojas.',
       ]), p('Mais detalhes em ', sobreOsDados(), '.')),
       secao('mesma-conta', 'A conta é sempre a mesma',
-        p('A conta segue regras fixas, escritas no código do site, sem inteligência artificial e sem palpite. A mesma compra, no mesmo dia, dá sempre o mesmo resultado.'),
+        explicarLigado
+          ? p('A conta segue regras fixas, escritas no código do site, sem inteligência artificial e sem palpite. A mesma compra, no mesmo dia, dá sempre o mesmo resultado. O botão "Explica pra mim" usa inteligência artificial só para explicar em palavras um resultado que a conta já fez; ele não muda a conta.')
+          : p('A conta segue regras fixas, escritas no código do site, sem inteligência artificial e sem palpite. A mesma compra, no mesmo dia, dá sempre o mesmo resultado.'),
         p('A ordem do resultado é só pelos pontos. Comissão de loja não entra na conta: a parte do site que faz a conta nem sabe quais lojas pagam comissão. Veja os ', termos(), '.'),
-        p('E a conta é feita no seu próprio aparelho: o valor que você digita e os cartões que você marca não vão para nenhum servidor. Veja ', privacidade(), '.')),
+        explicarLigado
+          ? p('E a conta é feita no seu próprio aparelho: o valor que você digita e os cartões que você marca ficam nele. A exceção é quando você toca em "Explica pra mim": aí a loja, o valor, o seu perfil e a sua pergunta vão para o nosso servidor e para a empresa de inteligência artificial que escreve a explicação. Veja ', privacidade(), '.')
+          : p('E a conta é feita no seu próprio aparelho: o valor que você digita e os cartões que você marca não vão para nenhum servidor. Veja ', privacidade(), '.')),
       secao('nao-fazemos', 'O que a gente não faz', lista([
         plano.ligado
           ? 'A calculadora é de graça. O único pagamento é o plano opcional, que só dá mais alertas por e-mail e não muda a conta nem a ordem do resultado.'
@@ -484,7 +488,7 @@ export function paginasInstitucionais({
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email, reporteLigado);
-  const todas = [comoFunciona(plano), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado }), paginaTermos(temAfiliado, plano, explicarLigado), contatoPagina];
+  const todas = [comoFunciona(plano, explicarLigado), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano, explicarLigado }), paginaTermos(temAfiliado, plano, explicarLigado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

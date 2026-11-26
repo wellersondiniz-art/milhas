@@ -8,9 +8,17 @@
 //     nanodólares) e, ANTES de chamar, confere se o custo máximo da próxima
 //     tentativa ainda cabe. Se não couber, não chama.
 //
-// O KV é "eventualmente consistente": pedidos no mesmo segundo podem passar
-// juntos, e o teto pode estourar por alguns centavos de dólar. A segunda
-// trava é o limite de gasto na própria conta da Anthropic (README).
+// Ordem (achado S2 da revisão independente): a vaga é RESERVADA antes de
+// chamar o modelo (+1 para a pessoa e o dia, + o custo máximo no mês) e o
+// gasto é acertado depois, com o custo real. Antes, o código lia, chamava o
+// modelo (segundos) e só então gravava: 50 pedidos ao mesmo tempo passavam
+// todos. Além disso, cada cópia do servidor deixa só UM pedido por pessoa de
+// cada vez (umPorVez).
+//
+// O KV continua "eventualmente consistente": pedidos no mesmo instante, em
+// pontos diferentes da rede, ainda podem passar juntos. Por isso o limite de
+// gasto na conta da Anthropic e a regra de limite no painel da Cloudflare são
+// OBRIGATÓRIOS antes de ligar o botão (README).
 
 const DIA = 86_400;
 
@@ -54,14 +62,40 @@ export function cabeNoTeto(lido, gastoNestePedido, custoNano) {
   return lido.gasto.valor + gastoNestePedido + custoNano <= lido.tetoNano;
 }
 
-/** Grava o uso: +1 para a pessoa e para o dia, + o custo no mês. */
-export async function registrar(kv, lido, gastoNano) {
+/**
+ * Reserva a vaga ANTES de chamar o modelo: +1 para a pessoa e para o dia, e o
+ * custo máximo previsto no gasto do mês.
+ */
+export async function reservar(kv, lido, reservaNano) {
   const escritas = [
     kv.put(lido.pessoa.chave, String(lido.pessoa.valor + 1), { expirationTtl: lido.pessoa.ttl }),
     kv.put(lido.dia.chave, String(lido.dia.valor + 1), { expirationTtl: lido.dia.ttl }),
   ];
-  if (gastoNano > 0) {
-    escritas.push(kv.put(lido.gasto.chave, String(lido.gasto.valor + gastoNano), { expirationTtl: lido.gasto.ttl }));
+  if (reservaNano > 0) {
+    escritas.push(kv.put(lido.gasto.chave, String(lido.gasto.valor + reservaNano), { expirationTtl: lido.gasto.ttl }));
   }
   await Promise.all(escritas);
+}
+
+/**
+ * Depois da chamada, troca a reserva pelo custo real. Lê o valor de novo,
+ * porque outros pedidos podem ter reservado no meio tempo.
+ */
+export async function acertarGasto(kv, lido, reservaNano, gastoNano) {
+  if (gastoNano === reservaNano) return;
+  const atual = numero(await kv.get(lido.gasto.chave));
+  await kv.put(lido.gasto.chave, String(Math.max(0, atual - reservaNano + gastoNano)), { expirationTtl: lido.gasto.ttl });
+}
+
+// Pedidos em andamento nesta cópia do servidor, por pessoa (resumo do IP).
+const emAndamento = new Set();
+
+/**
+ * Deixa só um pedido por pessoa de cada vez nesta cópia do servidor.
+ * @returns {null | (() => void)} função para liberar, ou null se já há um em andamento.
+ */
+export function umPorVez(resumo) {
+  if (emAndamento.has(resumo)) return null;
+  emAndamento.add(resumo);
+  return () => emAndamento.delete(resumo);
 }
