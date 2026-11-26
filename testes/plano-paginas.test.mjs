@@ -17,7 +17,11 @@ const TESTE = configDoPlano({
   linkPortal: 'https://billing.stripe.com/p/login/test_xyz789',
   modoReal: false,
 });
-const REAL = { ...TESTE, modoReal: true, linkPagamento: 'https://buy.stripe.com/abc123', linkPortal: 'https://billing.stripe.com/p/login/xyz789' };
+const VENDEDOR = { nome: 'Vendedor de Teste', documento: 'CNPJ de teste', endereco: 'Endereço de teste' };
+const REAL = {
+  ...TESTE, modoReal: true, linkPagamento: 'https://buy.stripe.com/abc123', linkPortal: 'https://billing.stripe.com/p/login/xyz789',
+  vendedor: VENDEDOR, emailDeContato: 'contato@exemplo.com.br',
+};
 const DESLIGADO = configDoPlano({ ligado: false });
 
 const pagina = (plano, nome) => paginasInstitucionais({ plano }).paginas.find((p) => p.caminho === `${nome}/index.html`).conteudo;
@@ -92,7 +96,29 @@ test('ligado: build gera /plano/ e Privacidade e Termos ganham a parte do plano'
   for (const trecho of [
     'com um plano pago opcional', 'Ele não muda a conta nem a ordem do resultado',
     'renovado automaticamente', 'href="../plano/"', 'primeiros 7 dias', '30 dias de antecedência', 'maiores de 18 anos',
-    'Contestação no cartão', 'O site se mantém com o plano pago opcional',
+    'Se você contestar a cobrança com o banco do cartão', 'O site se mantém com o plano pago opcional',
   ]) assert.ok(termos.includes(trecho), trecho);
   assert.match(termos, /R\$\s9,90 por mês, com tributos/);
+});
+
+test('modo real exige quem vende e e-mail de contato (T6); a página mostra quem vende', () => {
+  assert.deepEqual(problemasDoPlano(REAL), []);
+  const semVendedor = problemasDoPlano({ ...REAL, vendedor: { ...VENDEDOR, endereco: 'A_CONFIRMAR' } });
+  assert.ok(semVendedor.some((x) => /PLANO_VENDEDOR/.test(x)));
+  assert.ok(problemasDoPlano({ ...REAL, emailDeContato: 'A_CONFIRMAR' }).some((x) => /EMAIL_DE_CONTATO/.test(x)));
+  // No modo de teste, não trava, mas a página diz que falta.
+  assert.deepEqual(problemasDoPlano({ ...TESTE, vendedor: { nome: 'A_CONFIRMAR' } }), []);
+  const teste = paginaDoPlano({ config: { ...TESTE, vendedor: { nome: 'A_CONFIRMAR' } } }).conteudo;
+  assert.match(teste, /Falta informar quem vende/);
+  const real = paginaDoPlano({ config: REAL }).conteudo;
+  assert.match(real, /Vendedor de Teste/);
+  assert.match(real, /Endereço de teste/);
+  assert.doesNotMatch(real, /Falta informar quem vende/);
+});
+
+test('Como funciona (T1): com o plano ligado, não diz "não cobramos nada"', () => {
+  assert.match(pagina(DESLIGADO, 'como-funciona'), /não cobramos nada/);
+  const ligado = pagina(TESTE, 'como-funciona');
+  assert.doesNotMatch(ligado, /não cobramos nada/);
+  assert.match(ligado, /O único pagamento é o plano opcional/);
 });

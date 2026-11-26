@@ -59,7 +59,7 @@ const privacidade = (texto = 'Privacidade') => link('privacidade/', texto);
 // ---------------------------------------------------------------------------
 // Como funciona
 
-function comoFunciona() {
+function comoFunciona(plano) {
   return {
     pasta: 'como-funciona',
     titulo: 'Como funciona',
@@ -94,7 +94,9 @@ function comoFunciona() {
         p('A ordem do resultado é só pelos pontos. Comissão de loja não entra na conta: a parte do site que faz a conta nem sabe quais lojas pagam comissão. Veja os ', termos(), '.'),
         p('E a conta é feita no seu próprio aparelho: o valor que você digita e os cartões que você marca não vão para nenhum servidor. Veja ', privacidade(), '.')),
       secao('nao-fazemos', 'O que a gente não faz', lista([
-        'Não vendemos nada e não cobramos nada.',
+        plano.ligado
+          ? 'A calculadora é de graça. O único pagamento é o plano opcional, que só dá mais alertas por e-mail e não muda a conta nem a ordem do resultado.'
+          : 'Não vendemos nada e não cobramos nada.',
         'Não entramos na sua conta do banco, da loja ou do programa de pontos.',
         'Não creditamos pontos: quem credita é o programa, depois que a loja confirma a compra.',
         juntar('Não garantimos que os pontos vão cair. Confira as regras na loja antes de comprar (veja os ', termos(), ').'),
@@ -276,7 +278,7 @@ function secaoDoPlanoNosTermos(plano) {
       'Arrependimento: nos primeiros 7 dias depois de assinar, devolvemos o valor inteiro, sem perguntas, e o plano acaba.',
       'Depois dos 7 dias, o mês em curso não é devolvido em parte. Cobrança em dobro ou erro nosso, devolvemos sempre.',
       'Pagamento recusado: o Stripe tenta de novo por alguns dias. Enquanto não der certo, os alertas voltam aos limites do grátis, sem multa.',
-      'Contestação no cartão: enquanto estiver aberta, o plano fica suspenso.',
+      'Se você contestar a cobrança com o banco do cartão: enquanto a contestação estiver aberta, o plano fica suspenso.',
       'Mudança de preço: avisamos por e-mail com 30 dias de antecedência. Vale só a partir da renovação seguinte, e você pode cancelar antes, sem custo.',
       'Fim do plano: se um dia o plano pago acabar, avisamos com 30 dias e devolvemos a parte não usada.',
       'Só para maiores de 18 anos.',
@@ -450,7 +452,7 @@ export function paginasInstitucionais({
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email, reporteLigado);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano }), paginaTermos(temAfiliado, plano), contatoPagina];
+  const todas = [comoFunciona(plano), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alertas, plano }), paginaTermos(temAfiliado, plano), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {

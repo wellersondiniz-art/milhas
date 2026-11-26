@@ -70,3 +70,10 @@ export const PLANO_LINK_PORTAL = 'A_CONFIRMAR';
 // false = modo de teste: o build recusa links que não sejam de teste. Só o
 // dono do site troca para true, junto com PLANO_MODO_REAL=ligado na Cloudflare.
 export const PLANO_MODO_REAL = false;
+
+// Quem vende o plano (Decreto 7.962/2013, comércio pela internet): nome ou
+// razão social, CPF ou CNPJ e endereço, que aparecem na página /plano/.
+// Só o dono do site tem esses dados: preencha com o advogado e o contador
+// (veja também a nota fiscal de serviço). Com algum "A_CONFIRMAR", o build
+// RECUSA o modo real; no modo de teste, a página mostra que falta.
+export const PLANO_VENDEDOR = { nome: 'A_CONFIRMAR', documento: 'A_CONFIRMAR', endereco: 'A_CONFIRMAR' };
