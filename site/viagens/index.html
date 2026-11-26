@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Milhas em viagens · Milhas da Vez</title>
+  <meta name="description" content="Transferência de pontos com bônus, milhas ao comprar passagem e pontos ao reservar hotel: veja quanto rende e quanto custa o milheiro.">
+  <meta name="theme-color" content="#1f6b3a">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../img/icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../img/icones/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <script type="module" src="../js/viagens.js"></script>
+</head>
+<body>
+  <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <div class="container topo__linha">
+      <a class="topo__marca" href="../">Milhas da Vez</a>
+      <nav class="topo__menu" aria-label="Principal">
+        <a class="topo__link" href="../">Comparar</a>
+        <a class="topo__link" href="./" aria-current="page">Viagens</a>
+        <a class="topo__link" href="../ofertas/">Ofertas</a>
+        <a class="topo__link" href="../#/perfil">Meu perfil</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="container">
+   <div class="pilha--lg">
+    <section class="pilha--sm">
+      <h1>Milhas em viagens</h1>
+      <p class="texto-suave">É aqui que as milhas mais rendem: mandar pontos do cartão para a companhia aérea na hora do bônus, e juntar pontos ao comprar a passagem e o hotel.</p>
+      <nav class="atalhos" aria-label="Nesta página">
+        <a class="botao botao--secundario" href="#transferir">Transferir pontos</a>
+        <a class="botao botao--secundario" href="#passagem">Comprar passagem</a>
+        <a class="botao botao--secundario" href="#hotel">Reservar hotel</a>
+      </nav>
+    </section>
+
+    <section id="bonus-hoje" class="pilha--sm" aria-labelledby="bonus-hoje-titulo">
+      <h2 id="bonus-hoje-titulo">Bônus de transferência hoje</h2>
+      <div id="bonus-hoje-lista" aria-busy="true"><p class="texto-suave">Buscando as campanhas…</p></div>
+    </section>
+
+    <!-- 1. Transferir -->
+    <section id="transferir" class="pilha" aria-labelledby="transferir-titulo">
+      <div class="pilha--sm">
+        <h2 id="transferir-titulo">Transferir pontos com bônus</h2>
+        <p class="texto-suave">Diga de onde saem os pontos e quantos são. A gente mostra para onde rendem mais hoje e quanto sai cada 1.000 milhas.</p>
+      </div>
+      <form id="transferir-form" class="card pilha" novalidate autocomplete="off">
+        <div class="campo">
+          <label class="campo__rotulo" for="transferir-origem">Seus pontos estão em</label>
+          <select class="campo__entrada" id="transferir-origem" disabled></select>
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="transferir-pontos">Quantos pontos?</label>
+          <input class="campo__entrada" id="transferir-pontos" type="text" inputmode="numeric" autocomplete="off"
+            enterkeyhint="go" placeholder="Ex.: 50.000" aria-describedby="transferir-pontos-erro">
+          <span class="campo__erro" id="transferir-pontos-erro"></span>
+        </div>
+        <label class="opcao"><input type="checkbox" id="transferir-clube"> Tenho clube ou categoria alta no programa de destino (o bônus costuma ser maior)</label>
+        <details class="termo">
+          <summary>Comprei esses pontos (opcional)</summary>
+          <div class="campo termo__texto">
+            <label class="campo__rotulo" for="transferir-custo">Quanto pagou por 1.000 pontos?</label>
+            <div class="campo__moeda">
+              <input class="campo__entrada" id="transferir-custo" type="text" inputmode="numeric" autocomplete="off"
+                placeholder="0,00" aria-describedby="transferir-custo-ajuda">
+            </div>
+            <span class="campo__ajuda" id="transferir-custo-ajuda">Só números: para R$ 35,00, digite 3500. Sem isso, usamos o valor estimado do milheiro do programa.</span>
+          </div>
+        </details>
+        <button class="botao botao--bloco" id="transferir-ver" type="submit" disabled>Ver para onde rende mais</button>
+      </form>
+      <div id="transferir-resultado" class="pilha" tabindex="-1" hidden></div>
+    </section>
+
+    <!-- 2. Passagem -->
+    <section id="passagem" class="pilha" aria-labelledby="passagem-titulo">
+      <div class="pilha--sm">
+        <h2 id="passagem-titulo">Milhas ao comprar passagem</h2>
+        <p class="texto-suave">Quem compra passagem com dinheiro também ganha milhas da companhia, e mais ainda com o cartão certo.</p>
+      </div>
+      <form id="passagem-form" class="card pilha" novalidate autocomplete="off">
+        <div class="campo">
+          <label class="campo__rotulo" for="passagem-companhia">Companhia aérea</label>
+          <select class="campo__entrada" id="passagem-companhia" disabled></select>
+        </div>
+        <fieldset class="grupo pilha--sm">
+          <legend class="campo__rotulo">Para onde?</legend>
+          <label class="opcao"><input type="radio" name="passagem-trechos" value="nacional_e_america_do_sul" checked> Brasil ou América do Sul</label>
+          <label class="opcao"><input type="radio" name="passagem-trechos" value="fora_da_america_do_sul"> Fora da América do Sul</label>
+        </fieldset>
+        <div id="passagem-perguntas" class="pilha--sm"></div>
+        <div class="campo">
+          <label class="campo__rotulo" for="passagem-valor">Valor da passagem, sem taxas</label>
+          <div class="campo__moeda">
+            <input class="campo__entrada campo__entrada--valor" id="passagem-valor" type="text" inputmode="numeric" autocomplete="off"
+              enterkeyhint="go" placeholder="0,00" aria-describedby="passagem-valor-ajuda passagem-valor-erro">
+          </div>
+          <span class="campo__ajuda" id="passagem-valor-ajuda">A companhia conta só a tarifa. Os centavos entram sozinhos: para R$ 400,00, digite 40000.</span>
+          <span class="campo__erro" id="passagem-valor-erro"></span>
+        </div>
+        <div class="campo">
+          <label class="campo__rotulo" for="passagem-taxas">Taxas de embarque e outras (opcional)</label>
+          <div class="campo__moeda">
+            <input class="campo__entrada" id="passagem-taxas" type="text" inputmode="numeric" autocomplete="off" placeholder="0,00"
+              aria-describedby="passagem-taxas-ajuda">
+          </div>
+          <span class="campo__ajuda" id="passagem-taxas-ajuda">As taxas não dão milhas da companhia, mas o cartão pontua sobre elas.</span>
+        </div>
+        <details class="termo">
+          <summary>Cotação do dólar (opcional)</summary>
+          <div class="campo termo__texto">
+            <label class="campo__rotulo" for="passagem-dolar">Quanto vale 1 dólar, em reais</label>
+            <div class="campo__moeda">
+              <input class="campo__entrada" id="passagem-dolar" type="text" inputmode="numeric" autocomplete="off"
+                placeholder="0,0000" aria-describedby="passagem-dolar-ajuda">
+            </div>
+            <span class="campo__ajuda" id="passagem-dolar-ajuda">Voo para fora da América do Sul e cartões que pontuam por dólar fazem a conta em dólar. Para R$ 5,80, digite 58000. Se você já informou em Meu perfil, pode deixar vazio.</span>
+          </div>
+        </details>
+        <button class="botao botao--bloco" id="passagem-ver" type="submit" disabled>Ver quantas milhas</button>
+      </form>
+      <div id="passagem-resultado" class="pilha" tabindex="-1" hidden></div>
+    </section>
+
+    <!-- 3. Hotel -->
+    <section id="hotel" class="pilha" aria-labelledby="hotel-titulo">
+      <div class="pilha--sm">
+        <h2 id="hotel-titulo">Pontos ao reservar hotel</h2>
+        <p class="texto-suave">Compare reservar direto na rede do hotel com reservar por um site parceiro de programa de milhas.</p>
+      </div>
+      <form id="hotel-form" class="card pilha" novalidate autocomplete="off">
+        <div id="hotel-perguntas" class="pilha--sm"></div>
+        <div class="campo">
+          <label class="campo__rotulo" for="hotel-valor">Valor da hospedagem, sem taxas</label>
+          <div class="campo__moeda">
+            <input class="campo__entrada campo__entrada--valor" id="hotel-valor" type="text" inputmode="numeric" autocomplete="off"
+              enterkeyhint="go" placeholder="0,00" aria-describedby="hotel-valor-ajuda hotel-valor-erro">
+          </div>
+          <span class="campo__ajuda" id="hotel-valor-ajuda">O total das diárias. Para R$ 900,00, digite 90000.</span>
+          <span class="campo__erro" id="hotel-valor-erro"></span>
+        </div>
+        <button class="botao botao--bloco" id="hotel-ver" type="submit" disabled>Ver onde rende mais</button>
+      </form>
+      <div id="hotel-resultado" class="pilha" tabindex="-1" hidden></div>
+    </section>
+
+    <section id="categorias" class="pilha" aria-labelledby="categorias-titulo">
+      <div class="pilha--sm">
+        <h2 id="categorias-titulo">Sua categoria nos programas</h2>
+        <p class="texto-suave">Categoria é o nível que você tem no programa (por exemplo, Gold ou Diamante). Quem tem categoria mais alta ganha mais por real. Se não souber, deixe a inicial: a conta fica do lado seguro. Guardamos só neste aparelho.</p>
+      </div>
+      <form id="categorias-form" class="card pilha" novalidate autocomplete="off"></form>
+    </section>
+
+    <p id="viagens-anuncio" class="visualmente-oculto" role="status"></p>
+
+    <section class="pilha--sm texto-pequeno texto-suave">
+      <h2 class="resultado__subtitulo">De onde vêm os números</h2>
+      <p>Usamos só as regras gerais publicadas pelos próprios programas, com o link e a data em que conferimos. O que não achamos em página oficial fica de fora da conta. Não guardamos preço de passagem nem de hotel. O valor das milhas é uma estimativa: você pode trocar em Meu perfil.</p>
+    </section>
+   </div>
+  </main>
+
+  <footer class="container rodape">
+    <nav aria-label="Sobre o site">
+      <ul class="rodape__links">
+        <li><a href="../como-funciona/">Como funciona</a></li>
+        <li><a href="../sobre-os-dados/">Sobre os dados</a></li>
+        <li><a href="../privacidade/">Privacidade</a></li>
+        <li><a href="../termos/">Termos de uso</a></li>
+        <li><a href="../contato/">Contato</a></li>
+      </ul>
+    </nav>
+    <p class="texto-suave texto-pequeno">Não pedimos número de cartão nem CPF. O que você marca fica só neste aparelho. Os números são estimativas a partir das regras publicadas pelos programas: confira sempre antes de transferir ou comprar.</p>
+  </footer>
+</body>
+</html>

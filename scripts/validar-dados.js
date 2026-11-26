@@ -10,7 +10,9 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
+export const ARQUIVOS = [
+  'programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'cotacoes', 'transferencias', 'bonus-transferencia', 'viagens',
+];
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const PASTA_DADOS = new URL('../dados/', import.meta.url);
 
@@ -235,7 +237,61 @@ function regrasExtras(dados, hoje) {
     }
   });
 
+  regrasDeViagem(dados, hoje, erros, avisos, existe);
+
   return { erros, avisos };
+}
+
+/** Transferências, campanhas de bônus e regras de passagem/hotel (PR das viagens). */
+function regrasDeViagem(dados, hoje, erros, avisos, existe) {
+  const rotas = new Map((dados.transferencias ?? []).map((t) => [t.id, t]));
+
+  (dados.transferencias ?? []).forEach((t, i) => {
+    existe('transferencias', i, ['origem_id'], 'programas', t.origem_id);
+    existe('transferencias', i, ['destino_id'], 'programas', t.destino_id);
+    if (t.origem_id === t.destino_id) {
+      erros.push({ arquivo: 'transferencias', indice: i, caminho: ['destino_id'], mensagem: 'origem e destino são o mesmo programa' });
+    }
+    if (t.paridade === A_CONFIRMAR) avisos.push(`transferência ${JSON.stringify(t.id)}: proporção "A_CONFIRMAR"; a rota aparece, mas fica fora da conta`);
+  });
+
+  (dados['bonus-transferencia'] ?? []).forEach((c, i) => {
+    const e = (caminho, mensagem) => erros.push({ arquivo: 'bonus-transferencia', indice: i, caminho, mensagem });
+    existe('bonus-transferencia', i, ['transferencia_id'], 'transferencias', c.transferencia_id);
+    if (dataValida(c.inicio) && dataValida(c.fim) && c.fim < c.inicio) e(['fim'], `fim (${c.fim}) é anterior ao início (${c.inicio})`);
+    const ids = (c.faixas ?? []).map((f) => f.id);
+    if (new Set(ids).size !== ids.length) e(['faixas'], 'faixa com id repetido');
+    if (rotas.get(c.transferencia_id)?.paridade === A_CONFIRMAR) {
+      avisos.push(`campanha ${JSON.stringify(c.id)}: a rota está com proporção "A_CONFIRMAR", então o bônus não entra na conta`);
+    }
+    if (dataValida(c.fim) && c.fim < hoje) avisos.push(`campanha ${JSON.stringify(c.id)}: já terminou (fim ${c.fim}, hoje ${hoje})`);
+  });
+
+  const perguntas = new Map();
+  (dados.viagens ?? []).forEach((r, i) => {
+    const e = (caminho, mensagem) => erros.push({ arquivo: 'viagens', indice: i, caminho, mensagem });
+    existe('viagens', i, ['programa_id'], 'programas', r.programa_id);
+    if (dataValida(r.inicio) && dataValida(r.fim) && r.fim < r.inicio) e(['fim'], `fim (${r.fim}) é anterior ao início (${r.inicio})`);
+    if (r.tipo === 'hotel' && r.trechos !== undefined && r.trechos !== 'todos') e(['trechos'], 'hotel usa trechos "todos"');
+    const ids = (r.niveis ?? []).map((n) => n.id);
+    if (new Set(ids).size !== ids.length) e(['niveis'], 'nível com id repetido');
+    (r.niveis ?? []).forEach((n, j) => {
+      if (typeof n.pontos === 'number' && Math.abs(Math.round(n.pontos * 10_000) - n.pontos * 10_000) > 1e-6) {
+        e(['niveis', j, 'pontos'], `até 4 casas decimais (recebido: ${n.pontos})`);
+      }
+    });
+    if (r.escolha) {
+      const ja = perguntas.get(r.escolha.pergunta_id);
+      if (ja && ja !== r.escolha.pergunta) e(['escolha', 'pergunta'], `a pergunta "${r.escolha.pergunta_id}" já tem outro texto: ${JSON.stringify(ja)}`);
+      perguntas.set(r.escolha.pergunta_id, r.escolha.pergunta);
+    }
+    if (dataValida(r.fim) && r.fim < hoje) avisos.push(`regra de viagem ${JSON.stringify(r.id)}: já terminou (fim ${r.fim}, hoje ${hoje})`);
+    if (r.status === A_CONFIRMAR) avisos.push(`regra de viagem ${JSON.stringify(r.id)}: status "A_CONFIRMAR", fica fora da conta`);
+  });
+
+  (dados.cotacoes ?? []).forEach((c) => {
+    if (c.reais_por_unidade === A_CONFIRMAR) avisos.push(`cotação ${JSON.stringify(c.id)}: "A_CONFIRMAR"; a pessoa precisa informar na tela`);
+  });
 }
 
 // ---------------------------------------------------------------------------

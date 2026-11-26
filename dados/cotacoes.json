@@ -1,0 +1,12 @@
+[
+  {
+    "id": "eur-brl",
+    "moeda": "EUR",
+    "reais_por_unidade": 64413,
+    "origem": "ptax",
+    "data_referencia": "2026-11-25",
+    "observacoes": "PTAX de venda do euro, boletim de fechamento de 25/11/2026 (R$ 6,4413), lida na API de dados abertos do Banco Central. Serve para converter hotel que pontua em euro (ALL Accor). Cada pessoa pode trocar a cotação na tela.",
+    "fonte_url": "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@moeda='EUR'&@dataInicial='11-25-2026'&@dataFinalCotacao='11-25-2026'&$format=json",
+    "verificado_em": "2026-11-25"
+  }
+]

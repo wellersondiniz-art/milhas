@@ -7,11 +7,11 @@ import { pathToFileURL } from 'node:url';
 import { dataValida, validarDados, validarSchema } from '../scripts/validar-dados.js';
 
 const DADOS = new URL('../dados/', import.meta.url);
-const HOJE = '2026-11-22';
+const HOJE = '2026-11-25';
 
 async function lerReais() {
   const dados = {};
-  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio']) {
+  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'cotacoes', 'transferencias', 'bonus-transferencia', 'viagens']) {
     dados[nome] = JSON.parse(await readFile(new URL(`${nome}.json`, DADOS), 'utf8'));
   }
   return dados;
@@ -148,7 +148,7 @@ test('exige cupom quando exige_cupom é true e categorias no escopo por categori
 test('reprova JSON quebrado com o nome do arquivo', async () => {
   const pasta = await mkdtemp(join(tmpdir(), 'dados-'));
   await cp(new URL('schemas/', DADOS), join(pasta, 'schemas'), { recursive: true });
-  for (const nome of ['programas', 'cartoes', 'lojas', 'cambio']) await writeFile(join(pasta, `${nome}.json`), '[]');
+  for (const nome of ['programas', 'cartoes', 'lojas', 'cambio', 'cotacoes', 'transferencias', 'bonus-transferencia', 'viagens']) await writeFile(join(pasta, `${nome}.json`), '[]');
   await writeFile(join(pasta, 'ofertas.json'), '[{');
   const { erros } = await validarDados(pathToFileURL(pasta + '/'), { hoje: HOJE });
   assert.equal(erros.length, 1);

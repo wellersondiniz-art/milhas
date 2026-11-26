@@ -22,6 +22,15 @@
     "verificado_em": "2026-11-22"
   },
   {
+    "id": "all-accor",
+    "nome": "ALL Accor",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://all.accor.com",
+    "fonte_url": "https://all.accor.com/loyalty-program/pt-br/reasontojoin/index.vhtml",
+    "verificado_em": "2026-11-25"
+  },
+  {
     "id": "smiles",
     "nome": "Smiles",
     "tipo": "milhas",

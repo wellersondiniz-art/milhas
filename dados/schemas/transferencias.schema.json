@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "transferencias.schema.json",
+  "title": "Transferências de pontos entre programas",
+  "description": "Por onde dá para mandar pontos de um programa (banco, cartão, Livelo, Esfera) para outro (companhia aérea, hotel), e em qual proporção. Bônus de campanha fica em bonus-transferencia.json.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "origem_id", "destino_id", "paridade", "minimo_origem", "multiplo_origem", "prazo", "fonte_url", "verificado_em"],
+    "properties": {
+      "id": { "$ref": "#/$defs/id" },
+      "origem_id": { "description": "id do programa de onde saem os pontos (programas.json).", "$ref": "#/$defs/id" },
+      "destino_id": { "description": "id do programa que recebe (programas.json).", "$ref": "#/$defs/id" },
+      "paridade": {
+        "description": "Proporção sem bônus, em números inteiros: { pontos_origem: 7, pontos_destino: 2 } = 3,5 pontos da origem viram 1 do destino. A_CONFIRMAR deixa a rota fora da conta.",
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pontos_origem", "pontos_destino"],
+            "properties": {
+              "pontos_origem": { "type": "integer", "minimum": 1 },
+              "pontos_destino": { "type": "integer", "minimum": 1 }
+            }
+          },
+          { "$ref": "#/$defs/a_confirmar" }
+        ]
+      },
+      "minimo_origem": {
+        "description": "Menor quantidade de pontos da origem aceita numa transferência.",
+        "anyOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "multiplo_origem": {
+        "description": "A transferência anda em blocos deste tamanho (pontos da origem).",
+        "anyOf": [{ "type": "integer", "minimum": 1 }, { "$ref": "#/$defs/a_confirmar" }]
+      },
+      "prazo": { "description": "Prazo de crédito, como a fonte escreve (ex.: até 1 dia útil).", "type": "string", "minLength": 1 },
+      "observacoes": { "type": "string" },
+      "fonte_url": { "$ref": "#/$defs/url" },
+      "verificado_em": { "$ref": "#/$defs/data" }
+    }
+  },
+  "$defs": {
+    "id": { "description": "Letras minúsculas, números e hífen.", "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "url": { "type": "string", "format": "uri", "pattern": "^https://" },
+    "data": { "type": "string", "format": "date" },
+    "a_confirmar": { "const": "A_CONFIRMAR" }
+  }
+}

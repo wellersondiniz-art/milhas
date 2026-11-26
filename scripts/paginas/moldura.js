@@ -25,6 +25,7 @@ function cabecalho(raiz, atual) {
       h('a', { class: 'topo__marca', href: raiz }, NOME_DO_SITE),
       h('nav', { class: 'topo__menu', 'aria-label': 'Principal' },
         link(raiz, 'Comparar', 'inicio'),
+        link(`${raiz}viagens/`, 'Viagens', 'viagens'),
         link(`${raiz}ofertas/`, 'Ofertas', 'ofertas'),
         link(`${raiz}#/perfil`, 'Meu perfil', 'perfil'))));
 }

@@ -20,7 +20,7 @@ import { aprovar } from '../../scripts/aprovar-mudancas.js';
 
 const AQUI = new URL('./', import.meta.url);
 const RAIZ_REAL = new URL('../../', import.meta.url);
-export const DATA = '2026-11-22';
+export const DATA = '2026-11-25';
 
 export const FONTES = [
   {

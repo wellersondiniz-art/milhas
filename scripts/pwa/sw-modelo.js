@@ -58,7 +58,7 @@ function classificar(metodo, enderecoTexto, modo) {
   if (caminho === 'sw.js') return 'ignorar';
   if (/^dados\/[a-z0-9-]+\.json$/.test(caminho)) return url.search ? 'ignorar' : 'dados';
   if (caminho === '' || caminho === 'index.html') return 'app';
-  if (modo === 'navigate' && /^(loja\/[a-z0-9-]+\/|ofertas\/)(index\.html)?$/.test(caminho)) return 'pagina';
+  if (modo === 'navigate' && /^(loja\/[a-z0-9-]+\/|ofertas\/|viagens\/)(index\.html)?$/.test(caminho)) return 'pagina';
   return 'ignorar';
 }
 
