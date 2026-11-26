@@ -4,14 +4,14 @@ import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { dataValida, validarDados, validarSchema } from '../scripts/validar-dados.js';
+import { ARQUIVOS, dataValida, validarDados, validarSchema } from '../scripts/validar-dados.js';
 
 const DADOS = new URL('../dados/', import.meta.url);
-const HOJE = '2026-11-22';
+const HOJE = '2026-11-23';
 
 async function lerReais() {
   const dados = {};
-  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'links']) {
+  for (const nome of ARQUIVOS) {
     dados[nome] = JSON.parse(await readFile(new URL(`${nome}.json`, DADOS), 'utf8'));
   }
   return dados;
@@ -148,7 +148,7 @@ test('exige cupom quando exige_cupom é true e categorias no escopo por categori
 test('reprova JSON quebrado com o nome do arquivo', async () => {
   const pasta = await mkdtemp(join(tmpdir(), 'dados-'));
   await cp(new URL('schemas/', DADOS), join(pasta, 'schemas'), { recursive: true });
-  for (const nome of ['programas', 'cartoes', 'lojas', 'cambio', 'links']) await writeFile(join(pasta, `${nome}.json`), '[]');
+  for (const nome of ARQUIVOS.filter((n) => n !== 'ofertas')) await writeFile(join(pasta, `${nome}.json`), '[]');
   await writeFile(join(pasta, 'ofertas.json'), '[{');
   const { erros } = await validarDados(pathToFileURL(pasta + '/'), { hoje: HOJE });
   assert.equal(erros.length, 1);
@@ -202,4 +202,77 @@ test('cotação do dólar: reprova número quebrado, zero e moeda desconhecida',
   assert.ok(erros.some((e) => e.includes('cambio.json › registro 0') && e.includes('reais_por_dolar')));
   assert.ok(erros.some((e) => e.includes('cambio.json › registro 1') && e.includes('reais_por_dolar')));
   assert.ok(erros.some((e) => e.includes('cambio.json › registro 1') && e.includes('moeda')));
+});
+
+// ---------------------------------------------------------------------------
+// Postos de combustível
+
+test('regra de posto aponta para rede e programa que existem', async () => {
+  const { erros } = await validarCom((d) => {
+    d['regras-postos'][1].rede_id = 'posto-inventado';
+    d['regras-postos'][1].programa_id = 'programa-inventado';
+  });
+  assert.deepEqual(erros, [
+    'regras-postos.json › registro 1 (id "petrobras-premmia") › campo rede_id: id "posto-inventado" não existe em redes-postos.json',
+    'regras-postos.json › registro 1 (id "petrobras-premmia") › campo programa_id: id "programa-inventado" não existe em programas.json',
+  ]);
+});
+
+test('regra de posto: combustível fora da lista, unidade e forma de pagamento inventadas são reprovados', async () => {
+  const { erros } = await validarCom((d) => {
+    d['regras-postos'][1].combustiveis = ['gasolina_comum', 'querosene'];
+    d['regras-postos'][1].unidade = 'galao';
+    d['regras-postos'][1].formas_de_pagamento = ['dinheiro'];
+  });
+  assert.equal(erros.length, 3);
+  assert.ok(erros.every((e) => e.startsWith('regras-postos.json › registro 1')));
+});
+
+test('regra de posto: preço de combustível e posto individual não cabem no modelo', async () => {
+  const { erros } = await validarCom((d) => {
+    d['regras-postos'][1].preco_litro = 6299;
+    d['redes-postos'][0].endereco = 'Rua X, 10';
+  });
+  assert.deepEqual(erros, [
+    'redes-postos.json › registro 0 (id "ipiranga") › campo endereco: campo desconhecido (não existe no schema)',
+    'regras-postos.json › registro 1 (id "petrobras-premmia") › campo preco_litro: campo desconhecido (não existe no schema)',
+  ]);
+});
+
+test('regra de posto: fim antes do início, bloco sem unidade e item repetido', async () => {
+  const { erros } = await validarCom((d) => {
+    Object.assign(d['regras-postos'][1], { inicio: '2026-11-20', fim: '2026-11-10' });
+    d['regras-postos'][0].pontua_a_cada = 100;
+    d['regras-postos'][2].combustiveis = ['gnv', 'gnv'];
+  });
+  assert.equal(erros.length, 3);
+  assert.ok(erros.some((e) => /petrobras-premmia.*fim \(2026-11-10\) é anterior ao início/.test(e)));
+  assert.ok(erros.some((e) => /ipiranga-km-de-vantagens.*pontua_a_cada: sem unidade confirmada/.test(e)));
+  assert.ok(erros.some((e) => /shell-box-clube-comum.*combustiveis: item repetido/.test(e)));
+});
+
+test('regra de posto: fonte e data de verificação são obrigatórias', async () => {
+  const { erros } = await validarCom((d) => {
+    delete d['regras-postos'][1].fonte_url;
+    d['redes-postos'][1].verificado_em = '2026-12-01';
+  });
+  assert.equal(erros.length, 2);
+  assert.ok(erros.some((e) => /regras-postos.*fonte_url: campo obrigatório ausente/.test(e)));
+  assert.ok(erros.some((e) => /redes-postos.*verificado_em: data no futuro/.test(e)));
+});
+
+test('regra de posto: avisa o que está A_CONFIRMAR e o que já terminou', async () => {
+  const { avisos } = await validarDados(DADOS, { hoje: HOJE });
+  assert.ok(avisos.includes('regra de posto "ipiranga-km-de-vantagens": pontos_por_unidade está "A_CONFIRMAR"'));
+  const comFim = await validarCom((d) => { Object.assign(d['regras-postos'][1], { inicio: '2026-11-01', fim: '2026-11-10' }); });
+  assert.ok(comFim.avisos.includes('regra de posto "petrobras-premmia": já terminou (fim 2026-11-10, hoje 2026-11-23)'));
+});
+
+test('regras de posto do repositório: todo registro tem fonte oficial https e nenhum guarda preço', async () => {
+  const regras = JSON.parse(await readFile(new URL('regras-postos.json', DADOS), 'utf8'));
+  const oficiais = /^https:\/\/www\.(shell\.com\.br|postospetrobras\.com\.br|ipiranga\.com\.br)\//;
+  for (const r of regras) {
+    assert.match(r.fonte_url, oficiais, r.id);
+    assert.ok(!Object.keys(r).some((k) => /preco|endereco|cnpj/.test(k)), r.id);
+  }
 });

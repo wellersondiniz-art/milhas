@@ -14,6 +14,7 @@
 //        A cotação entra × 10.000 (R$ 5,3456 = 53456). A divisão é a única
 //        conta que corta casas: guardamos 6 casas de ponto e cortamos para baixo.
 
+import { calcularAbastecimento } from './combustivel.js';
 import { diasEntre, horasGarantidasDesde, lerDataHora, soData } from './datas.js';
 import { DIAS_ALERTA_VENCIMENTO, DIAS_DADO_ANTIGO, quandoVence, situacaoDaOferta } from './ciclo.js';
 import {
@@ -33,29 +34,18 @@ const ESCALA_PPR = 10_000;
 // ---------------------------------------------------------------------------
 // Entrada
 
-function erro(msg) {
+export function erro(msg) {
   return new Error(`motor de cálculo: ${msg}`);
 }
 
-function validarEntrada(perfil, compra, dados, hoje) {
-  lerDataHora(hoje);
+/** Confere o perfil (comum à compra em loja e ao abastecimento). */
+export function validarPerfil(perfil) {
   if (!perfil || !Array.isArray(perfil.programas) || !Array.isArray(perfil.cartoes)) {
     throw erro('perfil precisa de "programas" e "cartoes" (listas)');
-  }
-  if (!compra || typeof compra.loja_id !== 'string') throw erro('compra precisa de "loja_id"');
-  if (!Number.isSafeInteger(compra.valor_centavos) || compra.valor_centavos < 0) {
-    throw erro(`valor_centavos precisa ser um inteiro entre 0 e ${Number.MAX_SAFE_INTEGER} (recebido: ${compra.valor_centavos})`);
-  }
-  if (compra.tipo_vendedor !== 'loja' && compra.tipo_vendedor !== 'parceiro') {
-    throw erro(`tipo_vendedor precisa ser "loja" ou "parceiro" (recebido: ${compra.tipo_vendedor})`);
-  }
-  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas']) {
-    if (!dados || !Array.isArray(dados[nome])) throw erro(`dados.${nome} precisa ser uma lista`);
   }
   if (perfil.cotacao_dolar !== undefined && (!Number.isSafeInteger(perfil.cotacao_dolar) || perfil.cotacao_dolar <= 0)) {
     throw erro(`cotacao_dolar precisa ser um inteiro > 0, em reais × ${ESCALA_COTACAO} (recebido: ${perfil.cotacao_dolar})`);
   }
-  if (dados && dados.cambio !== undefined && !Array.isArray(dados.cambio)) throw erro('dados.cambio precisa ser uma lista');
   for (const [id, v] of Object.entries(perfil.valor_milheiro_brl ?? {})) {
     if (!Number.isSafeInteger(v) || v < 0) {
       throw erro(`valor_milheiro_brl de "${id}" precisa ser centavos inteiros >= 0 (recebido: ${v})`);
@@ -63,8 +53,29 @@ function validarEntrada(perfil, compra, dados, hoje) {
   }
 }
 
+function validarEntrada(perfil, compra, dados, hoje) {
+  lerDataHora(hoje);
+  validarPerfil(perfil);
+  if (!compra || typeof compra.loja_id !== 'string') throw erro('compra precisa de "loja_id"');
+  if (!Number.isSafeInteger(compra.valor_centavos) || compra.valor_centavos < 0) {
+    throw erro(`valor_centavos precisa ser um inteiro entre 0 e ${Number.MAX_SAFE_INTEGER} (recebido: ${compra.valor_centavos})`);
+  }
+  if (compra.tipo_vendedor !== 'loja' && compra.tipo_vendedor !== 'parceiro') {
+    throw erro(`tipo_vendedor precisa ser "loja" ou "parceiro" (recebido: ${compra.tipo_vendedor})`);
+  }
+  validarListas(dados, ['programas', 'cartoes', 'lojas', 'ofertas']);
+}
+
+/** Confere que dados.<nome> é uma lista (e dados.cambio, se vier). */
+export function validarListas(dados, nomes) {
+  for (const nome of nomes) {
+    if (!dados || !Array.isArray(dados[nome])) throw erro(`dados.${nome} precisa ser uma lista`);
+  }
+  if (dados.cambio !== undefined && !Array.isArray(dados.cambio)) throw erro('dados.cambio precisa ser uma lista');
+}
+
 /** Pontos por real → inteiro × 10.000 (BigInt). null se não for número. */
-function pprEscalado(n) {
+export function pprEscalado(n) {
   if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return null;
   const s = Math.round(n * ESCALA_PPR);
   if (Math.abs(s - n * ESCALA_PPR) > 1e-6) throw erro(`pontos por real com mais de 4 casas decimais: ${n}`);
@@ -78,10 +89,18 @@ function porId(lista) {
 }
 
 function montarContexto(perfil, compra, dados, hoje) {
-  const programas = porId(dados.programas);
-  const cartoesPorId = porId(dados.cartoes);
   const loja = porId(dados.lojas).get(compra.loja_id);
   if (!loja) throw erro(`loja "${compra.loja_id}" não existe nos dados`);
+  return { ...contextoBase(perfil, dados, hoje, compra.valor_centavos), compra, loja };
+}
+
+/**
+ * O que toda conta usa: programas, cartões do perfil, milheiro, cotação e o
+ * valor pago em centavos inteiros (BigInt em ctx.valor).
+ */
+export function contextoBase(perfil, dados, hoje, valorCentavos) {
+  const programas = porId(dados.programas);
+  const cartoesPorId = porId(dados.cartoes);
 
   const programasDoPerfil = new Map();
   for (const p of perfil.programas) {
@@ -96,11 +115,9 @@ function montarContexto(perfil, compra, dados, hoje) {
   const registroCotacao = (dados.cambio ?? []).find((c) => c.id === ID_COTACAO_DOLAR) ?? null;
 
   return {
-    compra,
     hoje,
     dataHoje: soData(hoje),
-    valor: BigInt(compra.valor_centavos),
-    loja,
+    valor: BigInt(valorCentavos),
     programas,
     cartoesPorId,
     cartoes,
@@ -262,7 +279,7 @@ function montarHipotese(ctx, regra, indice, faltas, pontosAtuaisEsc, milheiro) {
 // Peças comuns
 
 /** Lista de avisos que também guarda as datas de verificação dos dados usados. */
-function novosAvisos() {
+export function novosAvisos() {
   const avisos = [];
   avisos.conferidos = [];
   return avisos;
@@ -272,7 +289,7 @@ function novosAvisos() {
  * Anota a data de verificação do registro (vai para `conferido_em` na saída)
  * e avisa se o dado está antigo.
  */
-function avisarDadoAntigo(ctx, registro, rotulo, avisos) {
+export function avisarDadoAntigo(ctx, registro, rotulo, avisos) {
   if (!registro?.verificado_em) return;
   const dias = diasEntre(registro.verificado_em, ctx.dataHoje);
   const antigo = dias > DIAS_DADO_ANTIGO;
@@ -283,7 +300,7 @@ function avisarDadoAntigo(ctx, registro, rotulo, avisos) {
 }
 
 /** Pontos do cartão: { esc, programaId }. */
-function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
+export function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
   if (!cartao) {
     passos.push('Sem cartão de crédito do seu perfil: 0 pontos de cartão.');
     return { esc: 0n, programaId: null };
@@ -333,7 +350,7 @@ function pontosDoCartaoEmDolar(ctx, cartao, ppdEsc, avisos, passos) {
 }
 
 /** Valor estimado em bilionésimos de centavo, ou null se falta o milheiro de algum programa com pontos. */
-function estimarValor(ctx, partes, avisos, passos) {
+export function estimarValor(ctx, partes, avisos, passos) {
   const porPrograma = new Map();
   for (const { programaId, esc } of partes) {
     if (esc > 0n) porPrograma.set(programaId, (porPrograma.get(programaId) ?? 0n) + esc);
@@ -578,10 +595,16 @@ function paraSaida(ctx, j) {
  *
  * @param {object} perfil  { programas: [{programa_id, clube_ativo, clube_ativo_desde}], cartoes: [cartao_id], valor_milheiro_brl?: {programa_id: centavos}, cotacao_dolar?: reais × 10.000 }
  * @param {object} compra  { loja_id, valor_centavos, tipo_vendedor: "loja"|"parceiro", categoria?, cupom_aplicado? }
+ *                         ou, para abastecer, { tipo: "combustivel", ... } (ver calcularAbastecimento em combustivel.js)
  * @param {object} dados   { programas, cartoes, lojas, ofertas, cambio? }
  * @param {string} hoje    "AAAA-MM-DD" (ou "AAAA-MM-DDTHH:MM")
  */
 export function calcularJeitosDeComprar(perfil, compra, dados, hoje) {
+  // Abastecimento tem conta própria (combustivel.js); a lista sai no mesmo formato de "jeitos".
+  if (compra?.tipo === 'combustivel') return calcularAbastecimento(perfil, compra, dados, hoje).jeitos;
+  if (compra && compra.tipo !== undefined && compra.tipo !== 'loja') {
+    throw erro(`tipo de compra precisa ser "loja" ou "combustivel" (recebido: ${compra.tipo})`);
+  }
   validarEntrada(perfil, compra, dados, hoje);
   const ctx = { ...montarContexto(perfil, compra, dados, hoje), ofertas: dados.ofertas };
   const opcoesDeCartao = ctx.cartoes.length ? ctx.cartoes : [null];

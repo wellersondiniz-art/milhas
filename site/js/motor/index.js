@@ -7,3 +7,6 @@ export { dataHoraEmSaoPaulo } from './datas.js';
 export {
   ESCALA_PONTOS, ESCALA_VALOR, arredondarParaCentavos, formatarCentavos, formatarCotacao, formatarData, formatarPontos, formatarValor,
 } from './formatar.js';
+export {
+  COMBUSTIVEIS, LITROS_MAXIMOS_ML, PRECO_MAXIMO_MILESIMOS, calcularAbastecimento, formatarLitros, formatarPrecoLitro,
+} from './combustivel.js';

@@ -42,6 +42,16 @@ for (const tema of ['claro', 'escuro']) {
       await expect(page).toHaveScreenshot(`resultado-${tema}.png`, { fullPage: true });
     });
 
+    test('abastecer', async ({ page }) => {
+      await page.goto('/abastecer/');
+      await expect(page.getByRole('button', { name: 'Ver quanto rende' })).toBeEnabled();
+      await page.getByRole('textbox', { name: 'Quantos litros?' }).fill('40');
+      await page.getByRole('textbox', { name: 'Preço do litro na bomba (opcional)' }).pressSequentially('5000');
+      await page.getByRole('button', { name: 'Ver quanto rende' }).click();
+      await expect(page.getByRole('heading', { level: 2, name: '40 litros de gasolina comum' })).toBeFocused();
+      await expect(page).toHaveScreenshot(`abastecer-${tema}.png`, { fullPage: true });
+    });
+
     test('meu perfil', async ({ page }) => {
       await marcarPerfil(page);
       await page.locator('#perfil-titulo').focus();

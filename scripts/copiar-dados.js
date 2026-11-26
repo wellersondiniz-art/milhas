@@ -9,7 +9,9 @@
 import { copyFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-export const ARQUIVOS = ['programas.json', 'cartoes.json', 'lojas.json', 'ofertas.json', 'cambio.json', 'links.json'];
+export const ARQUIVOS = [
+  'programas.json', 'cartoes.json', 'lojas.json', 'ofertas.json', 'cambio.json', 'links.json', 'redes-postos.json', 'regras-postos.json',
+];
 
 export async function copiarDados(origem, destino) {
   await mkdir(destino, { recursive: true });

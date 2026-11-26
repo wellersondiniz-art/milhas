@@ -1,0 +1,29 @@
+[
+  {
+    "id": "rede-alfa",
+    "nome": "Rede Alfa",
+    "site": "https://exemplo.invalid/dados-de-teste",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "observacoes": "Dado de teste, não é uma rede real."
+  },
+  {
+    "id": "rede-beta",
+    "nome": "Rede Beta",
+    "outros_nomes": [
+      "RB"
+    ],
+    "site": "https://exemplo.invalid/dados-de-teste",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "observacoes": "Dado de teste, não é uma rede real."
+  },
+  {
+    "id": "rede-gama",
+    "nome": "Rede Gama",
+    "site": "https://exemplo.invalid/dados-de-teste",
+    "fonte_url": "https://exemplo.invalid/dados-de-teste",
+    "verificado_em": "2026-11-05",
+    "observacoes": "Dado de teste, não é uma rede real."
+  }
+]

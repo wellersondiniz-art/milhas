@@ -11,7 +11,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { conferirDestino } from '../site/js/saida/links.js';
 
-export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'links'];
+export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'links', 'redes-postos', 'regras-postos'];
 /** Campo que identifica o registro. Em links.json, é a loja (um link por loja). */
 const CHAVE = { links: 'loja_id' };
 export const A_CONFIRMAR = 'A_CONFIRMAR';
@@ -254,6 +254,26 @@ function regrasExtras(dados, hoje) {
     if (dataValida(o.fim) && o.fim < hoje) avisos.push(`${nome}: já terminou (fim ${o.fim}, hoje ${hoje})`);
     for (const campo of Object.keys(o)) {
       if (o[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR" e fica fora do cálculo`);
+    }
+  });
+
+  (dados['regras-postos'] ?? []).forEach((r, i) => {
+    const e = (caminho, mensagem) => erros.push({ arquivo: 'regras-postos', indice: i, caminho, mensagem });
+    existe('regras-postos', i, ['rede_id'], 'redes-postos', r.rede_id);
+    existe('regras-postos', i, ['programa_id'], 'programas', r.programa_id);
+    if (dataValida(r.inicio) && dataValida(r.fim) && r.fim < r.inicio) {
+      e(['fim'], `fim (${r.fim}) é anterior ao início (${r.inicio})`);
+    }
+    if (r.pontua_a_cada !== undefined && r.unidade === A_CONFIRMAR) {
+      e(['pontua_a_cada'], 'sem unidade confirmada não dá para saber se o bloco é em centavos ou em mililitros');
+    }
+    for (const campo of ['combustiveis', 'formas_de_pagamento']) {
+      if (Array.isArray(r[campo]) && new Set(r[campo]).size !== r[campo].length) e([campo], 'item repetido');
+    }
+    const nome = `regra de posto ${JSON.stringify(r.id)}`;
+    if (dataValida(r.fim) && r.fim < hoje) avisos.push(`${nome}: já terminou (fim ${r.fim}, hoje ${hoje})`);
+    for (const campo of Object.keys(r)) {
+      if (r[campo] === A_CONFIRMAR) avisos.push(`${nome}: ${campo} está "A_CONFIRMAR"`);
     }
   });
 

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quanto rende abastecer · Milhas da Vez</title>
+  <meta name="description" content="Veja quantos pontos você ganha ao abastecer em cada rede de postos, com o programa do posto e o seu cartão.">
+  <meta name="theme-color" content="#1f6b3a">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <link rel="icon" href="../img/icones/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../img/icones/apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/estilo.css">
+  <script type="module" src="../js/abastecer.js"></script>
+</head>
+<body>
+  <a class="pular-para-conteudo" href="#conteudo">Pular para o conteúdo</a>
+
+  <header class="topo">
+    <div class="container topo__linha">
+      <a class="topo__marca" href="../">Milhas da Vez</a>
+      <nav class="topo__menu" aria-label="Principal">
+        <a class="topo__link" href="../">Comparar</a>
+        <a class="topo__link" href="./" aria-current="page">Abastecer</a>
+        <a class="topo__link" href="../ofertas/">Ofertas</a>
+        <a class="topo__link" href="../#/perfil">Meu perfil</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="conteudo" class="container">
+   <div class="pilha--lg">
+    <section class="pilha--sm">
+      <h1>Quanto rende abastecer</h1>
+      <p class="texto-suave">Diga o combustível e quanto vai abastecer. A gente mostra quantos pontos cada rede de postos dá, somando o programa do posto e o seu cartão.</p>
+    </section>
+
+    <form id="abastecer-formulario" class="card pilha" novalidate autocomplete="off">
+      <div class="campo">
+        <label class="campo__rotulo" for="abastecer-rede">Em qual rede de postos?</label>
+        <select class="campo__entrada" id="abastecer-rede" disabled>
+          <option value="">Comparar todas as redes</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label class="campo__rotulo" for="abastecer-combustivel">Qual combustível?</label>
+        <select class="campo__entrada" id="abastecer-combustivel"></select>
+      </div>
+
+      <fieldset class="grupo pilha--sm">
+        <legend class="campo__rotulo">Você vai abastecer por</legend>
+        <label class="opcao"><input type="radio" name="abastecer-medida" value="litros" checked> Litros</label>
+        <label class="opcao"><input type="radio" name="abastecer-medida" value="reais"> Valor em reais</label>
+      </fieldset>
+
+      <div class="campo" id="campo-litros">
+        <label class="campo__rotulo" for="abastecer-litros">Quantos litros?</label>
+        <input class="campo__entrada" id="abastecer-litros" type="text" inputmode="decimal" autocomplete="off"
+          enterkeyhint="go" placeholder="Ex.: 40" aria-describedby="abastecer-litros-erro">
+        <span class="campo__erro" id="abastecer-litros-erro"></span>
+      </div>
+
+      <div class="campo" id="campo-reais" hidden>
+        <label class="campo__rotulo" for="abastecer-reais">Quanto vai pagar?</label>
+        <div class="campo__moeda">
+          <input class="campo__entrada campo__entrada--valor" id="abastecer-reais" type="text" inputmode="numeric"
+            autocomplete="off" enterkeyhint="go" placeholder="0,00" aria-describedby="abastecer-reais-ajuda abastecer-reais-erro">
+        </div>
+        <span class="campo__ajuda" id="abastecer-reais-ajuda">Só números. Os centavos entram sozinhos: para R$ 200,00, digite 20000.</span>
+        <span class="campo__erro" id="abastecer-reais-erro"></span>
+      </div>
+
+      <div class="campo">
+        <label class="campo__rotulo" for="abastecer-preco">Preço do litro na bomba (opcional)</label>
+        <div class="campo__moeda">
+          <input class="campo__entrada" id="abastecer-preco" type="text" inputmode="numeric"
+            autocomplete="off" enterkeyhint="go" placeholder="0,000" aria-describedby="abastecer-preco-ajuda">
+        </div>
+        <span class="campo__ajuda" id="abastecer-preco-ajuda">Com três casas, como na bomba: para R$ 6,299, digite 6299. Serve para converter litros em reais. Não guardamos esse preço.</span>
+      </div>
+
+      <button class="botao botao--bloco" id="abastecer-ver" type="submit" disabled>Ver quanto rende</button>
+    </form>
+
+    <section id="abastecer-passo-resultado" class="pilha" aria-labelledby="abastecer-titulo" hidden>
+      <h2 id="abastecer-titulo" tabindex="-1">Resultado</h2>
+      <div id="abastecer-resultado"></div>
+    </section>
+
+    <p id="abastecer-anuncio" class="visualmente-oculto" role="status"></p>
+
+    <section class="pilha--sm texto-pequeno texto-suave">
+      <h2 class="resultado__subtitulo">De onde vêm os números</h2>
+      <p>Só usamos as regras gerais de cada rede e programa, tiradas do regulamento oficial. Não cadastramos posto por posto nem preço de combustível, que muda toda hora. Promoções de um posto só ficam de fora: confira no app antes de abastecer.</p>
+    </section>
+   </div>
+  </main>
+
+  <footer class="container rodape">
+    <nav aria-label="Sobre o site">
+      <ul class="rodape__links">
+        <li><a href="../como-funciona/">Como funciona</a></li>
+        <li><a href="../sobre-os-dados/">Sobre os dados</a></li>
+        <li><a href="../privacidade/">Privacidade</a></li>
+        <li><a href="../termos/">Termos de uso</a></li>
+        <li><a href="../contato/">Contato</a></li>
+      </ul>
+    </nav>
+    <p class="texto-suave texto-pequeno">Não pedimos número de cartão nem CPF. O que você marca fica só neste aparelho. Os números são estimativas a partir das regras publicadas pelas redes e programas: confira sempre antes de abastecer.</p>
+  </footer>
+</body>
+</html>

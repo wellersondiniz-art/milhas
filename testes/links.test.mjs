@@ -18,6 +18,7 @@ import { validarDados } from '../scripts/validar-dados.js';
 
 const RAIZ = new URL('../', import.meta.url);
 const DADOS = new URL('dados/', RAIZ);
+const HOJE_DOS_DADOS = '2026-11-26';
 const HOJE = '2026-11-22';
 
 const LOJAS = [
@@ -240,11 +241,13 @@ test('dados reais de hoje: nenhum link é de afiliado (o texto "não recebemos n
 async function validarLinks(alterar) {
   const pasta = await mkdtemp(join(tmpdir(), 'links-'));
   try {
-    await cp(new URL('schemas/', DADOS), join(pasta, 'schemas'), { recursive: true });
+    // Copia a pasta dados/ inteira (outros PRs acrescentam arquivos) e regrava só o que mudou.
+    await cp(DADOS, `${pasta}/`, { recursive: true });
     const dados = await lerDados(DADOS);
     alterar(dados.links);
     for (const [nome, registros] of Object.entries(dados)) await writeFile(join(pasta, `${nome}.json`), JSON.stringify(registros));
-    return (await validarDados(pathToFileURL(`${pasta}/`), { hoje: HOJE })).erros;
+    // Dados reais: "hoje" precisa ser depois da última verificação de qualquer arquivo.
+    return (await validarDados(pathToFileURL(`${pasta}/`), { hoje: HOJE_DOS_DADOS })).erros;
   } finally {
     await rm(pasta, { recursive: true, force: true });
   }

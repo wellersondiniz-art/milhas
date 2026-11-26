@@ -98,5 +98,32 @@
     "url": "https://banking.btgpactual.com/beneficios/programa-de-fidelidade",
     "fonte_url": "https://banking.btgpactual.com/cartao-de-credito",
     "verificado_em": "2026-11-22"
+  },
+  {
+    "id": "km-de-vantagens",
+    "nome": "Km de Vantagens (KMV)",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://www.ipiranga.com.br/wps/portal/pt-br/ipiranga/km-de-vantagens",
+    "fonte_url": "https://www.ipiranga.com.br/wps/portal/pt-br/ipiranga/km-de-vantagens",
+    "verificado_em": "2026-11-23"
+  },
+  {
+    "id": "petrobras-premmia",
+    "nome": "Petrobras Premmia",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://www.postospetrobras.com.br/ganhe-mais-com/premmia",
+    "fonte_url": "https://www.postospetrobras.com.br/ganhe-mais-com/premmia",
+    "verificado_em": "2026-11-23"
+  },
+  {
+    "id": "stix",
+    "nome": "Stix (Shell Box Clube)",
+    "tipo": "pontos",
+    "valor_milheiro_brl": "A_CONFIRMAR",
+    "url": "https://www.soustix.com.br",
+    "fonte_url": "https://www.shell.com.br/motoristas/app-shell-box/regulamento-shell-box-clube.html",
+    "verificado_em": "2026-11-23"
   }
 ]
