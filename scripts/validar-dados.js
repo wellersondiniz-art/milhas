@@ -20,7 +20,7 @@ const PASTA_DADOS = new URL('../dados/', import.meta.url);
 const PALAVRAS_CONHECIDAS = new Set([
   '$schema', '$id', '$defs', '$ref', 'title', 'description',
   'type', 'properties', 'required', 'additionalProperties', 'items',
-  'enum', 'const', 'anyOf', 'minimum', 'minLength', 'minItems', 'pattern', 'format',
+  'enum', 'const', 'anyOf', 'minimum', 'minLength', 'maxLength', 'minItems', 'pattern', 'format',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -131,6 +131,9 @@ export function validarSchema(valor, schema, raiz = schema, caminho = []) {
     if (schema.minLength !== undefined && valor.length < schema.minLength) {
       erro(schema.minLength === 1 ? 'não pode ficar vazio' : `deve ter ao menos ${schema.minLength} caracteres`);
     }
+    if (schema.maxLength !== undefined && valor.length > schema.maxLength) {
+      erro(`deve ter no máximo ${schema.maxLength} caracteres (recebido: ${valor.length})`);
+    }
     if (schema.pattern && !new RegExp(schema.pattern, 'u').test(valor)) {
       erro(`formato inválido: ${JSON.stringify(valor)} (esperado: ${schema.description ?? schema.pattern})`);
     }
@@ -170,6 +173,27 @@ export function validarSchema(valor, schema, raiz = schema, caminho = []) {
 
 // ---------------------------------------------------------------------------
 // Regras entre arquivos e regras de negócio
+
+/** Domínios onde um link de produto em campanha pode apontar: o da loja e o do programa. */
+function dominiosDaOferta(dados, oferta) {
+  const loja = (dados.lojas ?? []).find((l) => l.id === oferta.loja_id);
+  const programa = (dados.programas ?? []).find((p) => p.id === oferta.programa_id);
+  const lista = [];
+  if (typeof loja?.dominio === 'string' && loja.dominio !== A_CONFIRMAR) lista.push(loja.dominio.toLowerCase());
+  try {
+    if (programa?.url) lista.push(new URL(programa.url).hostname.toLowerCase().replace(/^www\./, ''));
+  } catch { /* url inválida já é erro do schema */ }
+  return lista;
+}
+
+/** https, sem usuário nem porta, no domínio (ou subdomínio) de um dos permitidos. */
+export function linkNoDominio(link, dominios) {
+  let url;
+  try { url = new URL(link); } catch { return false; }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port) return false;
+  const host = url.hostname.toLowerCase();
+  return dominios.some((d) => host === d || host.endsWith(`.${d}`));
+}
 
 function regrasExtras(dados, hoje) {
   const erros = [];
@@ -249,6 +273,12 @@ function regrasExtras(dados, hoje) {
     if (o.exige_cupom === true && !o.cupom) {
       e(['cupom'], 'obrigatório quando exige_cupom é true');
     }
+    (o.produtos_em_campanha ?? []).forEach((produto, j) => {
+      const permitidos = dominiosDaOferta(dados, o);
+      if (!linkNoDominio(produto?.link, permitidos)) {
+        e(['produtos_em_campanha', j, 'link'], `link precisa ser https no site da loja ou do programa (${permitidos.join(' ou ') || 'domínio não cadastrado'})`);
+      }
+    });
 
     const nome = `oferta ${JSON.stringify(o.id)}`;
     if (dataValida(o.fim) && o.fim < hoje) avisos.push(`${nome}: já terminou (fim ${o.fim}, hoje ${hoje})`);

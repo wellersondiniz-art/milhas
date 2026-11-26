@@ -10,7 +10,7 @@
 //      a pessoa toca em "Atualizar agora" (nunca à força).
 //   2. Dados (dados/*.json): cache primeiro, atualiza em segundo plano.
 //      Cada cópia guarda a hora em que foi salva (cabeçalho X-Salvo-Em).
-//   3. Páginas por loja e de ofertas (loja/..., ofertas/): rede primeiro,
+//   3. Páginas por loja e de ofertas (loja/..., ofertas/, onde-rende-mais/): rede primeiro,
 //      cópia guardada só para quando estiver sem internet.
 //
 // Privacidade: o perfil da pessoa mora no localStorage, que um service worker
@@ -58,7 +58,7 @@ function classificar(metodo, enderecoTexto, modo) {
   if (caminho === 'sw.js') return 'ignorar';
   if (/^dados\/[a-z0-9-]+\.json$/.test(caminho)) return url.search ? 'ignorar' : 'dados';
   if (caminho === '' || caminho === 'index.html') return 'app';
-  if (modo === 'navigate' && /^(loja\/[a-z0-9-]+\/|ofertas\/|abastecer\/)(index\.html)?$/.test(caminho)) return 'pagina';
+  if (modo === 'navigate' && /^(loja\/[a-z0-9-]+\/|ofertas\/|abastecer\/|onde-rende-mais\/)(index\.html)?$/.test(caminho)) return 'pagina';
   return 'ignorar';
 }
 

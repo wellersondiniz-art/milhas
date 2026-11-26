@@ -24,6 +24,12 @@
 
 .pagina__lista > li + li { margin-top: var(--espaco-2); }
 
+.lista-oportunidades {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .pagina__lojas {
   margin: 0;
   padding: 0;

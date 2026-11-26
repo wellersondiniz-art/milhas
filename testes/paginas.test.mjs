@@ -138,6 +138,7 @@ test('gera uma página por loja, a de ofertas e o robots.txt', async () => {
   const caminhos = arquivos.map((a) => a.caminho);
   for (const loja of dados.lojas) assert.ok(caminhos.includes(`loja/${loja.id}/index.html`), loja.id);
   assert.ok(caminhos.includes('ofertas/index.html'));
+  assert.ok(caminhos.includes('onde-rende-mais/index.html'));
   assert.ok(caminhos.includes('sitemap.xml'));
   assert.ok(caminhos.includes('robots.txt'));
 });
@@ -280,6 +281,127 @@ test('ofertas de hoje sem nenhuma ativa: diz isso com clareza', async () => {
   assert.match(texto, /não há nenhuma oferta de pontos ativa que a gente conheça/);
 });
 
+// ---------------------------------------------------------------------------
+// Onde rende mais hoje
+
+/** Dados de teste + duas ofertas por categoria na Casas Bahia, uma com produtos citados. */
+async function dadosComCategorias() {
+  const dados = await dadosDeTeste();
+  const base = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  dados.ofertas.push(
+    {
+      ...base,
+      id: 'esfera-casas-bahia-eletro',
+      loja_id: 'casas-bahia',
+      programa_id: 'esfera',
+      regras: [{ condicao: {}, pontos_por_real: 10 }, { condicao: { clube_ativo: true }, pontos_por_real: 12 }],
+      escopo: 'categorias_selecionadas',
+      categorias_incluidas: ['Eletrônicos', 'Celulares'],
+      pontos_fora_do_escopo_por_real: 2,
+      produtos_em_campanha: [
+        { nome: 'Smartphone Exemplo 128 GB', link: 'https://www.casasbahia.com.br/smartphone-exemplo' },
+        { nome: MALICIOSO, link: 'https://www.casasbahia.com.br/outro' },
+      ],
+      fim: '2026-11-23',
+    },
+    {
+      ...base,
+      id: 'esfera-casas-bahia-resto',
+      loja_id: 'casas-bahia',
+      programa_id: 'esfera',
+      regras: [{ condicao: {}, pontos_por_real: 3 }],
+      escopo: 'todos_os_produtos',
+      categorias_excluidas: ['Eletrônicos', 'Celulares'],
+    },
+  );
+  return dados;
+}
+
+test('onde rende mais: categoria em campanha no topo, com números do motor, produtos e fonte', async () => {
+  const p = porCaminho(gerarPaginas(await dadosComCategorias(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  const pagina = p['onde-rende-mais/index.html'];
+  const texto = textoVisivel(pagina);
+  assert.match(texto, /Hoje, 22\/11\/2026, o que mais rende para qualquer pessoa é Eletrônicos e Celulares nas Casas Bahia pelo Esfera: 10 pontos por real\./);
+  // Ordem: Casas Bahia eletro (10), Amazon (5, até 8), Casas Bahia resto (3).
+  const titulos = [...pagina.matchAll(/<h2 id="oportunidade-\d+"[^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]);
+  assert.deepEqual(titulos, ['1. Casas Bahia · Esfera', '2. Amazon · Livelo', '3. Casas Bahia · Esfera']);
+  // 1.000 pontos a cada R$ 100 × milheiro R$ 17,00 = R$ 17,00.
+  assert.match(texto, /A cada R\$ 100 1\.000 pontos, que valem cerca de R\$\s17,00/);
+  assert.match(texto, /Até 12 pontos por real, com o clube Esfera ativo\./);
+  assert.match(texto, /Até 8 pontos por real, com o clube Livelo ativo\./);
+  assert.match(texto, /O que entra Só estas categorias: Eletrônicos, Celulares\./);
+  assert.match(texto, /Vale para qualquer produto, menos Eletrônicos e Celulares\./);
+  assert.match(texto, /Fora da oferta 2 pontos por real\./);
+  assert.match(texto, /Todos os produtos\. Fora: Eletrônicos, Celulares\. Fora da oferta Não confirmado\./);
+  assert.match(texto, /Até 23\/11\/2026 \(vence amanhã\)/);
+  assert.match(texto, /Até 30\/11\/2026 \(faltam 8 dias\)/);
+  assert.match(pagina, /href="https:\/\/www\.casasbahia\.com\.br\/smartphone-exemplo" rel="noopener noreferrer nofollow"[^>]*>Smartphone Exemplo 128 GB</);
+  assert.match(pagina, new RegExp(`href="${FONTE}"`));
+  assert.match(pagina, /href="\.\.\/loja\/casas-bahia\/"[^>]*>Ver todas as regras nas Casas Bahia</);
+  assert.match(pagina, /href="\.\.\/"[^>]*>Calcular com os meus cartões e clubes</);
+  // Sem preço, e explica as palavras.
+  assert.doesNotMatch(texto, /preço do produto|R\$\s\d+\.\d{3},\d{2}/);
+  assert.match(texto, /O que é milheiro\?/);
+  assert.match(texto, /O que é clube\?/);
+  // Dado malicioso escapado; página passa na conferência.
+  assert.doesNotMatch(pagina, /<script>alert/);
+  assert.equal(conferirHtml(pagina).length, 0);
+  // Sitemap e link a partir de /ofertas/.
+  assert.match(p['sitemap.xml'], /https:\/\/exemplo\.com\.br\/onde-rende-mais\//);
+  assert.match(p['ofertas/index.html'], /href="\.\.\/onde-rende-mais\/"/);
+});
+
+test('onde rende mais: valor sem milheiro, oferta só com clube, fim não confirmado e vence hoje', async () => {
+  const dados = await dadosComCategorias();
+  dados.programas = dados.programas.map((pr) => (pr.id === 'esfera' ? { ...pr, valor_milheiro_brl: 'A_CONFIRMAR' } : pr));
+  const amazon = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  amazon.regras = [{ condicao: { clube_ativo: true, cartao_id: 'ourocard-visa-infinite' }, pontos_por_real: 20 }];
+  amazon.fim = 'A_CONFIRMAR';
+  dados.ofertas.find((o) => o.id === 'esfera-casas-bahia-resto').fim = HOJE;
+  const texto = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
+  assert.match(texto, /falta o valor do milheiro do Esfera/);
+  assert.match(texto, /Para qualquer pessoa Nenhum ponto extra sem clube ou cartão específico\./);
+  assert.match(texto, /Até 20 pontos por real, com o clube Livelo ativo e o cartão Ourocard Visa Infinite\./);
+  assert.match(texto, /Fim não confirmado: confira antes de comprar\./);
+  assert.match(texto, /\(vence hoje\)/);
+});
+
+test('onde rende mais: só ofertas com clube, e nenhuma oferta ativa', async () => {
+  const dados = await dadosDeTeste();
+  dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa').regras = [{ condicao: { clube_ativo: true }, pontos_por_real: 8 }];
+  const soClube = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
+  assert.match(soClube, /as ofertas ativas só rendem pontos extras com clube ou cartão específico/);
+  assert.doesNotMatch(soClube, /A cada R\$ 100/);
+
+  const vazio = textoVisivel(porCaminho(gerarPaginas(await lerDados(new URL('dados/', RAIZ)), { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
+  assert.match(vazio, /não há nenhuma oferta de pontos ativa que a gente conheça/);
+});
+
+test('página da loja: bloco "O que mais rende aqui" e produtos citados na oferta', async () => {
+  const p = porCaminho(gerarPaginas(await dadosComCategorias(), { hoje: HOJE, urlBase: BASE }).arquivos);
+  const loja = p['loja/casas-bahia/index.html'];
+  const texto = textoVisivel(loja);
+  assert.match(texto, /O que mais rende aqui/);
+  assert.match(texto, /Eletrônicos e Celulares, pelo Esfera: 10 pontos por real \(até 12 pontos por real\)\. Produtos citados na campanha: Smartphone Exemplo 128 GB/);
+  assert.match(texto, /Qualquer produto, menos Eletrônicos e Celulares, pelo Esfera: 3 pontos por real\./);
+  assert.match(loja, /href="\.\.\/\.\.\/onde-rende-mais\/"/);
+  assert.match(texto, /Produtos citados na campanha Smartphone Exemplo 128 GB/);
+  assert.doesNotMatch(loja, /<script>alert/);
+  assert.equal(conferirHtml(loja).length, 0);
+  // Uma oferta só, sem produtos: sem o bloco (as regras já dizem tudo).
+  assert.doesNotMatch(textoVisivel(p['loja/amazon/index.html']), /O que mais rende aqui/);
+});
+
+test('página da loja: uma oferta só, mas com produtos, mostra o bloco; só clube diz isso', async () => {
+  const dados = await dadosDeTeste();
+  const amazon = dados.ofertas.find((o) => o.id === 'livelo-amazon-ativa');
+  amazon.regras = [{ condicao: { clube_ativo: true }, pontos_por_real: 8 }];
+  amazon.escopo = 'vendido_e_entregue_pela_loja';
+  amazon.produtos_em_campanha = [{ nome: 'Fone Exemplo', link: 'https://www.amazon.com.br/fone' }];
+  const texto = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['loja/amazon/index.html']);
+  assert.match(texto, /Produtos vendidos e entregues pela própria loja, pelo Livelo: nada extra sem clube ou cartão \(até 8 pontos por real\)\./);
+});
+
 test('dado malicioso sai escapado no HTML e no JSON-LD', async () => {
   const p = porCaminho(gerarPaginas(await dadosDeTeste(), { hoje: HOJE, urlBase: BASE }).arquivos);
   for (const pagina of [p['loja/loja-maliciosa/index.html'], p['ofertas/index.html']]) {
@@ -349,7 +471,7 @@ test('gerar no disco: grava os arquivos e todo link interno leva a um arquivo', 
   const lojas = await readdir(new URL('loja/', saida));
   const dados = await lerDados(new URL('dados/', RAIZ));
   assert.deepEqual(lojas.sort(), dados.lojas.map((l) => l.id).sort());
-  assert.equal(arquivos.length, dados.lojas.length + 3 + 5);
+  assert.equal(arquivos.length, dados.lojas.length + 4 + 5);
   assert.match(await readFile(new URL('robots.txt', saida), 'utf8'), /Sitemap:/);
 });
 

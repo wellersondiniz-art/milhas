@@ -10,3 +10,4 @@ export {
 export {
   COMBUSTIVEIS, LITROS_MAXIMOS_ML, PRECO_MAXIMO_MILESIMOS, calcularAbastecimento, formatarLitros, formatarPrecoLitro,
 } from './combustivel.js';
+export { rankearOportunidades } from './oportunidades.js';

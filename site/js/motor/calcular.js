@@ -142,12 +142,21 @@ export function contextoBase(perfil, dados, hoje, valorCentavos) {
 // ---------------------------------------------------------------------------
 // Oferta
 
+/**
+ * A oferta entra no ranking hoje? Mesma regra da calculadora (ativa ou
+ * vencendo logo, e conferida há no máximo 30 dias; ver ciclo.js). Usada
+ * também por "Onde rende mais" (oportunidades.js).
+ */
+export function ofertaValeHoje(oferta, dataHoje) {
+  return situacaoDaOferta(oferta, dataHoje).no_ranking;
+}
+
 /** Ofertas da loja que entram no ranking hoje (ativas ou vencendo logo; ver ciclo.js). */
 function ofertasQueValem(ctx) {
   return ctx.ofertas
     .filter((o) => o.loja_id === ctx.compra.loja_id)
     .filter((o) => ctx.programasDoPerfil.has(o.programa_id))
-    .filter((o) => situacaoDaOferta(o, ctx.dataHoje).no_ranking);
+    .filter((o) => ofertaValeHoje(o, ctx.dataHoje));
 }
 
 /** O produto está no escopo da oferta? Se não, diz por quê. */
@@ -169,7 +178,7 @@ function avaliarEscopo(oferta, compra) {
 }
 
 /** O clube do programa conta para esta oferta? */
-function avaliarClube(oferta, doPerfil, hoje) {
+export function avaliarClube(oferta, doPerfil, hoje) {
   const exigidas = oferta.clube_ativo_ha_horas;
   if (!doPerfil || doPerfil.clube_ativo !== true) return { cumpre: false, falta: 'assinar', exigidas };
   if (exigidas === A_CONFIRMAR) return { cumpre: true, horasAConfirmar: true };
@@ -199,7 +208,7 @@ function especificidade(regra) {
 }
 
 /** A regra mais específica que vale; empate → mais pontos; empate → a primeira da lista. */
-function escolherRegra(regras, clubeCumpre, cartaoId) {
+export function escolherRegra(regras, clubeCumpre, cartaoId) {
   let melhor = null;
   for (const regra of regras) {
     if (!regraVale(regra, clubeCumpre, cartaoId)) continue;
