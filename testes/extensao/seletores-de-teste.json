@@ -1,0 +1,48 @@
+{
+  "versao": 1,
+  "leia_antes": "Seletores falsos para os testes da extensão (lojas de dados-de-teste, páginas em testes/extensao/paginas/).",
+  "lojas": [
+    {
+      "loja_id": "outra-loja",
+      "status": "verificado",
+      "hosts": [
+        "www.outra-loja.invalid"
+      ],
+      "caminho_produto": "^/p/",
+      "seletores_preco": [
+        {
+          "css": "#preco",
+          "formato": "texto"
+        },
+        {
+          "css": "[data-testid=\"price-installment\"] > span[aria-hidden=\"true\"]",
+          "formato": "texto",
+          "extrair": "^[Oo]u (?:R\\$ ?([\\d.]+,\\d{2}) em \\d+x|1x de R\\$ ?([\\d.]+,\\d{2}))"
+        }
+      ],
+      "fonte_url": "https://exemplo.invalid/dados-de-teste",
+      "verificado_em": "2026-11-05"
+    },
+    {
+      "loja_id": "loja-teste",
+      "status": "verificado",
+      "hosts": [
+        "www.loja-teste.invalid"
+      ],
+      "caminho_produto": "^/produto/",
+      "seletores_preco": [
+        {
+          "css": "[[seletor-quebrado",
+          "formato": "texto"
+        },
+        {
+          "css": ".preco-principal meta[itemprop=\"price\"]",
+          "atributo": "content",
+          "formato": "decimal"
+        }
+      ],
+      "fonte_url": "https://exemplo.invalid/dados-de-teste",
+      "verificado_em": "2026-11-05"
+    }
+  ]
+}

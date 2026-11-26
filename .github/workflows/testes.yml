@@ -60,6 +60,9 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Ponta a ponta e fotos (celular e computador)
         run: npx playwright test
+      - name: Extensão de navegador (páginas de exemplo locais)
+        if: ${{ !cancelled() }}
+        run: npx playwright test -c playwright.extensao.config.mjs
       - name: Guardar o relatório
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -68,4 +71,6 @@ jobs:
           path: |
             testes/navegador/relatorio/
             testes/navegador/resultados/
+            testes/extensao/relatorio/
+            testes/extensao/resultados/
           retention-days: 14

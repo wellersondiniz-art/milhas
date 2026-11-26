@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Preço no Pix e no cartão (página de exemplo)</title>
+</head>
+<body>
+  <!-- Imita a Magalu: preço em destaque é o do Pix; o do cartão fica na linha das parcelas. -->
+  <h1>Geladeira Duplex 476 L (exemplo)</h1>
+  <div data-testid="price-default">
+    <p data-testid="price-original">R$ 5.099,00</p>
+    <p data-testid="price-value"><span>Preço R$&nbsp;3.329,10</span><span aria-hidden="true">R$ 3.329,10</span></p>
+    <span data-testid="price-method">no Pix</span>
+    <span data-testid="price-installment"><span>Ou R$&nbsp;3.699,00 em 10x de R$&nbsp;369,90 sem juros</span><span aria-hidden="true">ou<!-- --> R$&nbsp;3.699,00<!-- --> em <!-- -->10<!-- -->x<span> de </span>R$&nbsp;369,90 sem juros</span></span>
+  </div>
+  <script>document.body.dataset.paginaOk = 'sim';</script>
+</body>
+</html>

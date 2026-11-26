@@ -76,7 +76,7 @@ Vamos preenchendo conforme o projeto cresce.
 
 | Para quê | Comando |
 | --- | --- |
-| Rodar testes | `npm test` (unitários, dados e navegador) |
+| Rodar testes | `npm test` (unitários, dados, navegador e extensão) |
 | Validar dados | `npm run validar` |
 | Montar o que vai para o ar | `npm run build` (gera `dist/`, a pasta publicada na Cloudflare Pages) |
 | Servir localmente | `npm run servir` (serve `dist/`) |
@@ -85,3 +85,5 @@ Vamos preenchendo conforme o projeto cresce.
 | Atualizar ofertas (semanal) | `npm run coletar`, `npm run extrair`, `npm run propor` e, depois de revisar, `npm run aprovar -- --data AAAA-MM-DD --codigo <código>` |
 | O que reconferir esta semana | `npm run reconferir` (ou `-- --hoje AAAA-MM-DD`; ordem pela `prioridade` de `dados/lojas.json`) |
 | Painel semanal das métricas | `PLAUSIBLE_API_KEY=... npm run painel` (grava `painel/painel-AAAA-MM-DD.md`; `-- --exemplo` mostra sem chave) |
+| Montar a extensão de navegador | `npm run extensao` (gera `extensao/pacote/`; seletores em `extensao/seletores.json`) |
+| Testar a extensão | `npm run test:extensao` (Playwright, páginas de exemplo locais) |

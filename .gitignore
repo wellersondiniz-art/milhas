@@ -79,3 +79,8 @@ coleta/
 
 # Painel semanal das métricas (npm run painel): fica só no seu computador.
 /painel/
+# Extensão montada por npm run extensao (scripts/extensao/montar.js)
+extensao/pacote/
+testes/extensao/pacote/
+testes/extensao/resultados/
+testes/extensao/relatorio/

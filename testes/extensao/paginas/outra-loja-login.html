@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Entrar para comprar (página de exemplo)</title>
+</head>
+<body>
+  <!-- O seletor aponta para dentro de um formulário com senha: nada é lido. -->
+  <h1>Entre para finalizar (exemplo)</h1>
+  <form id="entrar">
+    <span id="preco">R$ 1.299,00</span>
+    <label>E-mail <input type="email" name="email" value="pessoa@exemplo.invalid"></label>
+    <label>Senha <input type="password" name="senha" value="segredo-de-teste"></label>
+    <button type="button">Entrar</button>
+  </form>
+  <script>document.body.dataset.paginaOk = 'sim';</script>
+</body>
+</html>
