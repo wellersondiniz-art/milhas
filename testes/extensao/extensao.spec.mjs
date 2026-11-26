@@ -107,9 +107,24 @@ async function semSelo(pagina) {
   await expect(pagina.locator('body')).toHaveAttribute('data-pagina-ok', 'sim');
 }
 
-async function escolherNoPerfil(contexto, id, nomes) {
+/**
+ * Página de opções. Ao ser instalada, a extensão abre uma sozinha, às vezes
+ * na própria aba vazia do teste. Espera isso acontecer antes de abrir a nossa:
+ * as duas ao mesmo tempo faziam o Chrome interromper a nossa navegação.
+ */
+async function paginaDeOpcoes(contexto, id) {
+  const url = `chrome-extension://${id}/opcoes.html`;
+  const limite = Date.now() + 5000;
+  while (!contexto.pages().some((p) => p.url() === url) && Date.now() < limite) {
+    await new Promise((r) => { setTimeout(r, 100); });
+  }
   const opcoes = await contexto.newPage();
-  await opcoes.goto(`chrome-extension://${id}/opcoes.html`);
+  await opcoes.goto(url);
+  return opcoes;
+}
+
+async function escolherNoPerfil(contexto, id, nomes) {
+  const opcoes = await paginaDeOpcoes(contexto, id);
   for (const nome of nomes) await opcoes.getByLabel(nome, { exact: true }).check();
   await opcoes.getByRole('button', { name: 'Salvar' }).click();
   await expect(opcoes.getByRole('status')).toHaveText('Pronto, salvo neste navegador.');
@@ -188,8 +203,7 @@ test('fora da página de produto não faz nada', async ({ pagina }) => {
 });
 
 test('opções: traz o perfil exportado pelo site e recusa arquivo fora do formato', async ({ contexto, idDaExtensao, pagina }) => {
-  const opcoes = await contexto.newPage();
-  await opcoes.goto(`chrome-extension://${idDaExtensao}/opcoes.html`);
+  const opcoes = await paginaDeOpcoes(contexto, idDaExtensao);
   const arquivo = (nome, conteudo) => ({ name: nome, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(conteudo)) });
 
   await opcoes.getByLabel('Escolher arquivo do perfil (.json)').setInputFiles(arquivo('ruim.json', { app: 'outro', versao: 2, programas: [], cartoes: [], extra: '<b>x</b>' }));
