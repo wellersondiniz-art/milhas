@@ -20,12 +20,8 @@ const MALICIOSO = '<script>alert("x")</script> & \'Loja\'';
 /** Dados reais do repositório + ofertas de teste em várias situações. */
 async function dadosDeTeste() {
   const dados = await lerDados(new URL('dados/', RAIZ));
-  // A oferta de exemplo (Azul na Magalu, terminou em 12/11) saiu da base de
-  // produção e ficou só em testes/exemplos/.
-  dados.ofertas = [
-    ...JSON.parse(await readFile(new URL('testes/exemplos/ofertas-exemplo.json', RAIZ), 'utf8')),
-    ...dados.ofertas,
-  ];
+  // Só as ofertas de teste abaixo: as reais mudam toda semana.
+  dados.ofertas = [];
   const oferta = (extra) => ({
     regras: [{ condicao: {}, pontos_por_real: 5 }, { condicao: { clube_ativo: true }, pontos_por_real: 8 }],
     escopo: 'todos_os_produtos',
@@ -47,6 +43,10 @@ async function dadosDeTeste() {
     oferta({ id: 'livelo-amazon-ativa', loja_id: 'amazon', programa_id: 'livelo' }),
     oferta({ id: 'smiles-kabum-conferindo', loja_id: 'kabum', programa_id: 'smiles', status: 'A_CONFIRMAR' }),
     oferta({ id: 'esfera-nike-futura', loja_id: 'nike', programa_id: 'esfera', inicio: '2026-12-01', fim: '2026-12-31' }),
+    oferta({
+      id: 'azul-magalu-acabou', loja_id: 'magalu', programa_id: 'azul-fidelidade', fim: '2026-11-12',
+      regras: [{ condicao: { clube_ativo: true }, pontos_por_real: 15 }, { condicao: {}, pontos_por_real: 13 }],
+    }),
   );
   dados.lojas.push({
     id: 'loja-maliciosa',
@@ -277,6 +277,7 @@ test('ciclo: no dia seguinte ao último, a oferta sai da lista e entra no histó
 
 test('ofertas de hoje sem nenhuma ativa: diz isso com clareza', async () => {
   const dados = await lerDados(new URL('dados/', RAIZ));
+  dados.ofertas = [];
   const texto = textoVisivel(porCaminho(gerarPaginas(dados, { hoje: HOJE, urlBase: null }).arquivos)['ofertas/index.html']);
   assert.match(texto, /não há nenhuma oferta de pontos ativa que a gente conheça/);
 });
@@ -373,7 +374,9 @@ test('onde rende mais: só ofertas com clube, e nenhuma oferta ativa', async () 
   assert.match(soClube, /as ofertas ativas só rendem pontos extras com clube ou cartão específico/);
   assert.doesNotMatch(soClube, /A cada R\$ 100/);
 
-  const vazio = textoVisivel(porCaminho(gerarPaginas(await lerDados(new URL('dados/', RAIZ)), { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
+  // Dados reais sem nenhuma oferta (as reais mudam toda semana).
+  const semOfertas = { ...(await lerDados(new URL('dados/', RAIZ))), ofertas: [] };
+  const vazio = textoVisivel(porCaminho(gerarPaginas(semOfertas, { hoje: HOJE, urlBase: null }).arquivos)['onde-rende-mais/index.html']);
   assert.match(vazio, /não há nenhuma oferta de pontos ativa que a gente conheça/);
 });
 
@@ -457,6 +460,23 @@ test('id de loja que não serve de pasta é recusado', async () => {
   assert.throws(() => gerarPaginas(dados, { hoje: HOJE }), /id de loja inválido/);
 });
 
+test('dados reais de 25/11/2026: ofertas da Livelo e da Esfera, com data e fonte à vista', async () => {
+  const dados = await lerDados(new URL('dados/', RAIZ));
+  const p = porCaminho(gerarPaginas(dados, { hoje: '2026-11-25', urlBase: null }).arquivos);
+  const ofertas = textoVisivel(p['ofertas/index.html']);
+  assert.match(ofertas, /Hoje, 25\/11\/2026, há \d+ ofertas de pontos ativas em \d+ lojas\./);
+  assert.match(ofertas, /fonte: livelo\.com\.br/);
+  assert.match(ofertas, /regra de sempre, sem data de fim/);
+  const magalu = textoVisivel(p['loja/magalu/index.html']);
+  assert.match(magalu, /Oferta Livelo (Vence amanhã )?✓ Regras conferidas em 25\/11\/2026 · Fonte: livelo\.com\.br/);
+  assert.match(magalu, /Rende mais Eletrodomésticos vendidos e entregues pela Magalu: 3 pontos por real até 26\/11\/2026\./);
+  const ml = textoVisivel(p['loja/mercado-livre/index.html']);
+  assert.match(ml, /No Mercado Livre, o melhor jeito hoje rende/);
+  const amazon = textoVisivel(p['loja/amazon/index.html']);
+  assert.match(amazon, /Programas que conferimos e não dão pontos aqui/);
+  assert.match(amazon, /Livelo: A Livelo diz que a parceria para juntar pontos na Amazon está inativa\. Conferido em 25\/11\/2026\. Fonte \(livelo\.com\.br\)/);
+});
+
 test('preposição da loja: na, no, nas', () => {
   assert.equal(naLoja({ nome: 'Magalu' }), 'na Magalu');
   assert.equal(naLoja({ nome: 'Mercado Livre', artigo: 'o' }), 'no Mercado Livre');
@@ -467,7 +487,7 @@ test('gerar no disco: grava os arquivos e todo link interno leva a um arquivo', 
   const pasta = await mkdtemp(join(tmpdir(), 'paginas-'));
   const saida = pathToFileURL(`${pasta}/site/`);
   await cp(new URL('site/', RAIZ), saida, { recursive: true });
-  const { arquivos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje: '2026-11-23', urlBase: BASE });
+  const { arquivos } = await gerarNoDisco({ pastaDados: new URL('dados/', RAIZ), saida, hoje: '2026-11-25', urlBase: BASE });
   const lojas = await readdir(new URL('loja/', saida));
   const dados = await lerDados(new URL('dados/', RAIZ));
   assert.deepEqual(lojas.sort(), dados.lojas.map((l) => l.id).sort());

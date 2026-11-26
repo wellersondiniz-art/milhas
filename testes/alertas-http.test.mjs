@@ -406,7 +406,7 @@ test('enviar.js --simular: lê os dados do repositório, avalia e não envia', a
   const log = t.mock.method(console, 'log', () => {});
   const { buscar, chamadas } = fetchFalso([{ status: 200, corpo: [] }, { status: 200, corpo: [] }]);
   const codigo = await principal({
-    env: { SUPABASE_URL: 'https://abc.supabase.co', SUPABASE_SECRET_KEY: 'sb_secret_x' }, argv: ['--simular'], agora: new Date('2026-11-23T12:00:00Z'), fetch: buscar,
+    env: { SUPABASE_URL: 'https://abc.supabase.co', SUPABASE_SECRET_KEY: 'sb_secret_x' }, argv: ['--simular'], agora: new Date('2026-11-25T15:00:00Z'), fetch: buscar,
   });
   assert.equal(codigo, 0);
   // Lê quem tem o plano pago e as inscrições; não apaga nem grava nada.

@@ -43,6 +43,22 @@
         "anyOf": [{ "type": "boolean" }, { "$ref": "#/$defs/a_confirmar" }]
       },
       "observacoes": { "type": "string" },
+      "sem_parceria": {
+        "description": "Opcional. Programas que conferimos e que NÃO dão pontos em compras nesta loja hoje, com a fonte.",
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["programa_id", "motivo", "fonte_url", "verificado_em"],
+          "properties": {
+            "programa_id": { "description": "id de um registro de programas.json.", "$ref": "#/$defs/id" },
+            "motivo": { "type": "string", "minLength": 1 },
+            "fonte_url": { "$ref": "#/$defs/url" },
+            "verificado_em": { "$ref": "#/$defs/data" }
+          }
+        }
+      },
       "fonte_url": { "$ref": "#/$defs/url" },
       "verificado_em": { "$ref": "#/$defs/data" }
     }

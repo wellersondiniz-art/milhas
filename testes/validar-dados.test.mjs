@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { ARQUIVOS, dataValida, linkNoDominio, validarDados, validarSchema } from '../scripts/validar-dados.js';
 
 const DADOS = new URL('../dados/', import.meta.url);
-const HOJE = '2026-11-23';
+const HOJE = '2026-11-25';
 
 async function lerReais() {
   const dados = {};
@@ -51,6 +51,36 @@ test('a base de produção não tem oferta marcada como exemplo de teste', async
   assert.ok(!ofertas.some((o) => /exemplo|teste/i.test(o.observacoes ?? '')));
 });
 
+test('avisa quando uma campanha já terminou', async () => {
+  const { avisos } = await validarDados(DADOS, { hoje: '2026-11-27' });
+  assert.ok(avisos.some((a) => a.includes('"livelo-magalu-2026-11-24": já terminou')));
+});
+
+test('regra padrão: sem data de fim e sem aviso de início/fim A_CONFIRMAR', async () => {
+  const { avisos } = await validarDados(DADOS, { hoje: HOJE });
+  assert.ok(!avisos.some((a) => a.includes('"livelo-casas-bahia-padrao": inicio')));
+  assert.ok(!avisos.some((a) => a.includes('"livelo-casas-bahia-padrao": fim')));
+  const { erros } = await validarCom((d) => {
+    const o = d.ofertas.find((x) => x.id === 'livelo-casas-bahia-padrao');
+    o.fim = '2026-12-31';
+  });
+  assert.equal(erros.length, 1);
+  assert.match(erros[0], /livelo-casas-bahia-padrao.*campo fim: regra padrão não tem data de fim/);
+});
+
+test('sem_parceria: programa precisa existir, data não pode ser futura e não pode ter regra padrão junto', async () => {
+  const { erros } = await validarCom((d) => {
+    const amazon = d.lojas.find((l) => l.id === 'amazon');
+    amazon.sem_parceria[0].programa_id = 'programa-que-nao-existe';
+    amazon.sem_parceria[1].verificado_em = '2026-12-01';
+    const cb = d.ofertas.find((x) => x.id === 'livelo-casas-bahia-padrao');
+    d.lojas.find((l) => l.id === 'casas-bahia').sem_parceria.push({ ...d.lojas.find((l) => l.id === 'casas-bahia').sem_parceria[0], programa_id: cb.programa_id });
+  });
+  assert.ok(erros.some((e) => e.includes('sem_parceria[0].programa_id') && e.includes('não existe em programas.json')));
+  assert.ok(erros.some((e) => e.includes('sem_parceria[1].verificado_em: data no futuro')));
+  assert.ok(erros.some((e) => e.includes('livelo-casas-bahia-padrao') && e.includes('sem_parceria')));
+});
+
 test('dataValida aceita só datas que existem', () => {
   assert.equal(dataValida('2026-11-12'), true);
   assert.equal(dataValida('2028-02-29'), true);
@@ -60,9 +90,9 @@ test('dataValida aceita só datas que existem', () => {
 });
 
 test('mensagem aponta arquivo, registro e campo', async () => {
-  const { erros } = await validarCom((d) => { d.ofertas[0].regras[1].pontos_por_real = -1; });
+  const { erros } = await validarCom((d) => { d.ofertas[0].regras[0].pontos_por_real = -1; });
   assert.deepEqual(erros, [
-    'ofertas.json › registro 0 (id "azul-fidelidade-magalu-2026-11") › campo regras[1].pontos_por_real: deve ser maior ou igual a 0 (recebido: -1)',
+    'ofertas.json › registro 0 (id "azul-fidelidade-magalu-2026-11") › campo regras[0].pontos_por_real: deve ser maior ou igual a 0 (recebido: -1)',
   ]);
 });
 
@@ -73,9 +103,9 @@ test('reprova data que não existe', async () => {
 });
 
 test('reprova fim antes do início', async () => {
-  const { erros } = await validarCom((d) => { d.ofertas[0].inicio = '2026-11-20'; });
+  const { erros } = await validarCom((d) => { d.ofertas[0].inicio = '2026-11-27'; });
   assert.equal(erros.length, 1);
-  assert.match(erros[0], /campo fim: fim \(2026-11-12\) é anterior ao início \(2026-11-20\)/);
+  assert.match(erros[0], /campo fim: fim \(2026-11-12\) é anterior ao início \(2026-11-27\)/);
 });
 
 test('reprova id que não existe em outra tabela', async () => {
@@ -244,8 +274,8 @@ test('reprova origem do milheiro fora da lista', async () => {
 });
 
 test('cotação do dólar: aceita inteiro (reais × 10.000) e avisa quando está A_CONFIRMAR', async () => {
-  const { avisos } = await validarDados(DADOS, { hoje: HOJE });
-  assert.ok(avisos.some((a) => a.includes('câmbio "usd-brl"') && a.includes('A_CONFIRMAR')));
+  const pendente = await validarCom((d) => { d.cambio[0].reais_por_dolar = 'A_CONFIRMAR'; });
+  assert.ok(pendente.avisos.some((a) => a.includes('câmbio "usd-brl"') && a.includes('A_CONFIRMAR')));
   const ok = await validarCom((d) => {
     d.cambio[0].reais_por_dolar = 53456;
     d.cambio[0].data_referencia = '2026-11-21';
@@ -324,7 +354,7 @@ test('regra de posto: avisa o que está A_CONFIRMAR e o que já terminou', async
   const { avisos } = await validarDados(DADOS, { hoje: HOJE });
   assert.ok(avisos.includes('regra de posto "ipiranga-km-de-vantagens": pontos_por_unidade está "A_CONFIRMAR"'));
   const comFim = await validarCom((d) => { Object.assign(d['regras-postos'][1], { inicio: '2026-11-01', fim: '2026-11-10' }); });
-  assert.ok(comFim.avisos.includes('regra de posto "petrobras-premmia": já terminou (fim 2026-11-10, hoje 2026-11-23)'));
+  assert.ok(comFim.avisos.includes('regra de posto "petrobras-premmia": já terminou (fim 2026-11-10, hoje 2026-11-25)'));
 });
 
 test('regras de posto do repositório: todo registro tem fonte oficial https e nenhum guarda preço', async () => {

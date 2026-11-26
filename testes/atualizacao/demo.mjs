@@ -20,7 +20,7 @@ import { aprovar } from '../../scripts/aprovar-mudancas.js';
 
 const AQUI = new URL('./', import.meta.url);
 const RAIZ_REAL = new URL('../../', import.meta.url);
-export const DATA = '2026-11-23'; // dia da última conferência de dados/ (o validador recusa data no futuro)
+export const DATA = '2026-11-25'; // dia da última conferência de dados/ (o validador recusa data no futuro)
 export const OFERTAS_EXEMPLO = new URL('../exemplos/ofertas-exemplo.json', import.meta.url);
 
 export const FONTES = [

@@ -210,6 +210,45 @@ main {
 
 .resultado__card .card__bloco p { overflow-wrap: anywhere; }
 
+/* Selo "Conferido hoje · Fonte: livelo.com.br", logo abaixo do número. */
+.fonte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-1);
+  margin: var(--espaco-2) 0 0;
+  padding: var(--espaco-1) var(--espaco-3);
+  border-radius: var(--raio-md);
+  background: var(--cor-sucesso-fundo);
+  color: var(--cor-sucesso-texto);
+  font-size: var(--texto-sm);
+  font-weight: var(--peso-forte);
+  overflow-wrap: anywhere;
+}
+
+.fonte--antiga {
+  background: var(--cor-aviso-fundo);
+  color: var(--cor-aviso-texto);
+}
+
+.fonte__icone { font-weight: var(--peso-forte); }
+
+.fonte__link,
+.resultado__conferido a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  display: inline-block;
+  min-height: 24px;
+}
+
+.resultado__destaques {
+  margin-top: var(--espaco-4);
+  padding: var(--espaco-3) var(--espaco-4);
+  border-radius: var(--raio-md);
+  background: var(--cor-superficie-2);
+}
+
 .resultado__avisos {
   margin-top: var(--espaco-4);
   padding: var(--espaco-3) var(--espaco-4);
@@ -413,6 +452,57 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 .confirmar .botao--fantasma:hover { background: transparent; color: var(--cor-perigo-texto); }
 
 .convite .linha { margin-top: var(--espaco-3); }
+
+/* Exemplos de um toque --------------------------------------------------- */
+
+.exemplos { min-height: 5.5rem; }
+.exemplos__titulo { margin: 0 0 var(--espaco-2); font-size: var(--texto-sm); }
+.exemplos__lista { display: flex; flex-wrap: wrap; gap: var(--espaco-2); }
+.exemplos__botao { min-height: var(--altura-toque); font-variant-numeric: tabular-nums; }
+
+/* O que a conta supôs ------------------------------------------------------ */
+
+.ajuste__premissas { margin: 0; padding-left: var(--espaco-5); }
+.ajuste__premissas > li + li { margin-top: var(--espaco-2); }
+.ajuste__falta { color: var(--cor-aviso-texto); font-weight: var(--peso-medio); }
+.ajuste__status:empty { display: none; }
+.ajuste__status { margin: 0; color: var(--cor-sucesso-texto); font-weight: var(--peso-medio); }
+
+/* Vale a pena? ------------------------------------------------------------- */
+
+.vale__bloco + .vale__bloco {
+  border-top: 1px solid var(--cor-borda);
+  padding-top: var(--espaco-5);
+}
+.vale__titulo { margin: 0; font-size: var(--texto-lg); }
+.vale__campos { display: grid; gap: var(--espaco-3); }
+.linha--justa { flex-wrap: nowrap; gap: var(--espaco-2); }
+.linha--justa > input { flex: 1 1 6rem; min-width: 0; }
+.linha--justa > select { flex: 0 1 10rem; width: auto; }
+.vale__saida:empty { display: none; }
+.vale__saida {
+  background: var(--cor-superficie-2);
+  border-radius: var(--raio-md);
+  padding: var(--espaco-4);
+}
+.vale__saida > * + * { margin-top: var(--espaco-3); }
+.vale__opcoes { list-style: none; margin: 0; padding: 0; }
+.vale__opcoes > li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-3);
+  padding-block: var(--espaco-1);
+}
+.vale__vencedor { font-weight: var(--peso-forte); }
+.vale__vencedor > span::before { content: "★ "; }
+.vale__veredito { margin: 0; font-weight: var(--peso-medio); }
+.vale__veredito--compensa { color: var(--cor-sucesso-texto); }
+.vale__veredito--nao_compensa { color: var(--cor-aviso-texto); }
+.resultado__sem-pontos { margin: 0; }
+
+@media (min-width: 40rem) {
+  .vale__campos { grid-template-columns: 1fr 1fr; }
+}
 
 /* Telas maiores ---------------------------------------------------------- */
 

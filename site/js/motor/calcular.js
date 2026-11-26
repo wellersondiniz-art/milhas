@@ -303,7 +303,8 @@ export function avisarDadoAntigo(ctx, registro, rotulo, avisos) {
   const dias = diasEntre(registro.verificado_em, ctx.dataHoje);
   const antigo = dias > DIAS_DADO_ANTIGO;
   if (!avisos.conferidos.some((c) => c.rotulo === rotulo)) {
-    avisos.conferidos.push({ rotulo, verificado_em: registro.verificado_em, dias, antigo });
+    const fonte = typeof registro.fonte_url === 'string' && registro.fonte_url.startsWith('https://') ? registro.fonte_url : null;
+    avisos.conferidos.push({ rotulo, verificado_em: registro.verificado_em, dias, antigo, fonte_url: fonte });
   }
   if (antigo) avisos.push(`Dado verificado há mais de ${DIAS_DADO_ANTIGO} dias (${dias} dias): ${rotulo}.`);
 }
@@ -337,7 +338,7 @@ export function pontosDoCartao(ctx, cartao, avisos, passos, condicoes) {
 function pontosDoCartaoEmDolar(ctx, cartao, ppdEsc, avisos, passos) {
   const cot = ctx.cotacao();
   if (!cot) {
-    avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe em "Meu perfil".`);
+    avisos.push(`O cartão ${cartao.nome} rende pontos por dólar, e falta a cotação do dólar; informe quanto está o dólar em "O que a conta supôs" ou em "Meu perfil".`);
     passos.push(`Pontos do cartão ${cartao.nome}: falta a cotação do dólar, contamos 0.`);
     return { esc: 0n, programaId: cartao.programa_id, faltaCotacao: true };
   }
@@ -378,7 +379,8 @@ export function estimarValor(ctx, partes, avisos, passos) {
       faltando.push(nome);
       continue;
     }
-    avisarDadoAntigo(ctx, m.doPerfil ? null : ctx.programas.get(programaId), `valor do milheiro ${nome}`, avisos);
+    const prog = m.doPerfil ? null : ctx.programas.get(programaId);
+    avisarDadoAntigo(ctx, prog ? { ...prog, fonte_url: prog.valor_milheiro_fonte_url ?? prog.fonte_url } : null, `valor do milheiro ${nome}`, avisos);
     const v = esc * BigInt(m.centavos);
     total += v;
     linhas.push(
@@ -412,9 +414,15 @@ function valorConhecido(ctx, partes) {
   return total;
 }
 
+/** "na Magalu", "no Mercado Livre", "nas Casas Bahia" (campo opcional `artigo` da loja). */
+export function naLoja(loja) {
+  const artigo = { a: 'na', o: 'no', as: 'nas', os: 'nos' }[loja?.artigo] ?? 'na';
+  return `${artigo} ${loja?.nome ?? loja}`;
+}
+
 function descreverCompra(ctx) {
   const quem = ctx.compra.tipo_vendedor === 'loja' ? 'vendida e entregue pela própria loja' : 'de um vendedor parceiro';
-  return `Compra de ${formatarCentavos(ctx.valor)} na ${ctx.loja.nome}, ${quem}.`;
+  return `Compra de ${formatarCentavos(ctx.valor)} ${naLoja(ctx.loja)}, ${quem}.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -429,15 +437,18 @@ function jeitoComOferta(ctx, oferta, cartao) {
   const clube = avaliarClube(oferta, ctx.programasDoPerfil.get(oferta.programa_id), ctx.hoje);
   const temRegraDeClube = oferta.regras.some(exigeClube);
 
-  // 1. Validade
-  if (oferta.inicio === A_CONFIRMAR) avisos.push('A data de início da oferta não está confirmada.');
-  if (oferta.fim === A_CONFIRMAR) {
+  // 1. Validade. Regra padrão (a de sempre do programa) não tem data de fim.
+  const regraPadrao = oferta.vigencia === 'regra_padrao';
+  if (oferta.inicio === A_CONFIRMAR && !regraPadrao) avisos.push('A data de início da oferta não está confirmada.');
+  if (regraPadrao) {
+    // nada a avisar: vale até o programa mudar a regra, e a gente reconfere toda semana.
+  } else if (oferta.fim === A_CONFIRMAR) {
     avisos.push('A data de fim da oferta não está confirmada; confira antes de comprar.');
   } else {
     const dias = diasEntre(ctx.dataHoje, oferta.fim);
     if (dias <= DIAS_ALERTA_VENCIMENTO) avisos.push(`A oferta vence ${quandoVence(dias)} (${formatarData(oferta.fim)}).`);
   }
-  avisarDadoAntigo(ctx, oferta, `oferta ${nomeProg} na ${ctx.loja.nome}`, avisos);
+  avisarDadoAntigo(ctx, oferta, `oferta ${nomeProg} ${naLoja(ctx.loja)}`, avisos);
 
   // 2. Pontos do programa
   let regra = null;
@@ -448,8 +459,8 @@ function jeitoComOferta(ctx, oferta, cartao) {
     ppr = regra ? regra.pontos_por_real : 0;
     passos.push(
       regra
-        ? `Oferta ${nomeProg} na ${ctx.loja.nome}: vale a faixa "${descreverCondicao(regra, ctx, nomeProg)}", com ${pontosPorReal(ppr)}.`
-        : `Oferta ${nomeProg} na ${ctx.loja.nome}: nenhuma faixa vale para você agora, então 0 ponto por real.`,
+        ? `Oferta ${nomeProg} ${naLoja(ctx.loja)}: vale a faixa "${descreverCondicao(regra, ctx, nomeProg)}", com ${pontosPorReal(ppr)}.`
+        : `Oferta ${nomeProg} ${naLoja(ctx.loja)}: nenhuma faixa vale para você agora, então 0 ponto por real.`,
     );
     if (regra && exigeClube(regra)) condicoes.push(`Estar com o clube ${nomeProg} ativo na hora da compra.`);
     if (oferta.escopo === 'vendido_e_entregue_pela_loja') {
@@ -491,7 +502,7 @@ function jeitoComOferta(ctx, oferta, cartao) {
         `Como não sabemos a categoria do seu produto, contamos só os pontos de fora da oferta. Se ele for de uma delas, a oferta dá até ${pontosPorReal(melhorFaixa)}; confira na loja.`,
       );
     }
-    passos.push(`Oferta ${nomeProg} na ${ctx.loja.nome}: este produto fica fora da oferta, então vale ${pontosPorReal(ppr)}.`);
+    passos.push(`Oferta ${nomeProg} ${naLoja(ctx.loja)}: este produto fica fora da oferta, então vale ${pontosPorReal(ppr)}.`);
   }
   let progEsc = pprEscalado(ppr) * ctx.valor;
   passos.push(`Pontos do programa: ${formatarCentavos(ctx.valor)} × ${formatarNumero(ppr)} = ${formatarPontos(progEsc)} pontos.`);
@@ -554,10 +565,15 @@ function jeitoComOferta(ctx, oferta, cartao) {
     validade: {
       inicio: oferta.inicio,
       fim: oferta.fim,
-      texto:
-        (oferta.inicio === A_CONFIRMAR ? 'Início não confirmado' : `De ${formatarData(oferta.inicio)}`) +
-        (oferta.fim === A_CONFIRMAR ? ', fim não confirmado.' : ` até ${formatarData(oferta.fim)}.`),
+      regra_padrao: regraPadrao,
+      texto: regraPadrao
+        ? (oferta.inicio === A_CONFIRMAR
+          ? 'Regra de sempre do programa, sem data de fim publicada.'
+          : `Regra de sempre do programa, a partir de ${formatarData(oferta.inicio)}, sem data de fim publicada.`)
+        : (oferta.inicio === A_CONFIRMAR ? 'Início não confirmado' : `De ${formatarData(oferta.inicio)}`) +
+          (oferta.fim === A_CONFIRMAR ? ', fim não confirmado.' : ` até ${formatarData(oferta.fim)}.`),
     },
+    destaques: Array.isArray(oferta.destaques) ? [...oferta.destaques] : [],
     prazo: Number.isInteger(prazo)
       ? { dias: prazo, texto: `Os pontos da oferta caem em até ${prazo} dias, segundo a oferta.` }
       : { dias: null, texto: 'Prazo de crédito dos pontos da oferta não confirmado.' },
@@ -589,6 +605,7 @@ function jeitoSemOferta(ctx, cartao) {
     avisos,
     passos,
     validade: null,
+    destaques: [],
     prazo: cartao ? { dias: null, texto: 'Prazo de crédito do cartão não informado nos dados.' } : null,
     hipoteses: [],
   };
@@ -639,6 +656,7 @@ function paraSaida(ctx, j) {
     condicoes_a_cumprir: j.condicoes,
     validade_da_oferta: j.validade,
     situacao_da_oferta: j.situacao ?? null,
+    destaques_da_oferta: j.destaques,
     prazo_de_credito: j.prazo,
     avisos: [...new Set(j.avisos)],
     conferido_em: j.avisos.conferidos,

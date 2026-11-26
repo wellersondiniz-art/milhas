@@ -143,10 +143,31 @@ test.describe('com os dados reais do repositório', () => {
     await abrirInicio(page, '/?loja=magalu');
     await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('50000');
     await page.getByRole('button', { name: 'Ver o resultado' }).click();
-    await expect(page.getByText('Ainda não dá para calcular os pontos dos cartões')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Informar a cotação' })).toHaveAttribute('href', '#/perfil');
+    // Desde a primeira tela sem cadastro (PR 38), o pedido do dólar vem com o campo ali mesmo.
+    await expect(page.getByText('Falta só a cotação do dólar')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Informar o dólar' })).toBeVisible();
     await expect(cartoesDoResultado(page)).toHaveCount(0);
     await expect(page.locator('#resultado')).not.toContainText('Melhor jeito');
+  });
+
+  test('Magalu sem perfil: oferta real com selo de data e fonte, e destaque da campanha', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-25T15:00:00-03:00'));
+    await abrirInicio(page, '/?loja=magalu');
+    await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('100000');
+    await page.getByRole('button', { name: 'Ver o resultado' }).click();
+    const melhor = cartoesDoResultado(page).first();
+    await expect(melhor).toContainText('Conferido hoje (25/11/2026)');
+    await expect(melhor.getByRole('link', { name: 'livelo.com.br', exact: true })).toHaveAttribute('href', /^https:\/\/www\.livelo\.com\.br\//);
+    await expect(melhor).toContainText('Rende mais nesta oferta');
+  });
+
+  test('Amazon: diz o que conferimos e por que não há oferta, com fonte', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-25T15:00:00-03:00'));
+    await abrirInicio(page, '/?loja=amazon');
+    await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('10000');
+    await page.getByRole('button', { name: 'Ver o resultado' }).click();
+    await expect(page.getByText('A Amazon não tem oferta de pontos valendo hoje')).toBeVisible();
+    await expect(page.getByText(/A Livelo diz que a parceria para juntar pontos na Amazon está inativa\. Conferido hoje/)).toBeVisible();
   });
 
   test('toda loja calcula sem erro', async ({ page }) => {
@@ -155,10 +176,11 @@ test.describe('com os dados reais do repositório', () => {
       await abrirInicio(page, `/?loja=${loja.id}`);
       await page.getByRole('textbox', { name: 'Quanto vai custar?' }).fill('129900');
       await page.getByRole('button', { name: 'Ver o resultado' }).click();
-      await expect(page.getByRole('heading', { level: 2, name: `R$ 1.299,00 na ${loja.nome}` })).toBeVisible();
-      // Com os dados reais: ou aparece o melhor jeito, ou (sem a cotação do dólar
-      // e sem oferta) uma mensagem só, sem lista de "Nenhum ponto".
-      await expect(page.locator('#resultado')).toContainText(/Melhor jeito|Ainda não dá para calcular os pontos dos cartões/);
+      const na = { o: 'no', as: 'nas', os: 'nos' }[loja.artigo] ?? 'na';
+      await expect(page.getByRole('heading', { level: 2, name: `R$ 1.299,00 ${na} ${loja.nome}` })).toBeVisible();
+      await expect(cartoesDoResultado(page).first()).toContainText('Melhor jeito');
+      // Todo card mostra quando o dado foi conferido.
+      await expect(cartoesDoResultado(page).first()).toContainText('Conferido');
       await expect(page.getByText('Não deu para calcular')).toHaveCount(0);
     }
   });

@@ -437,7 +437,7 @@ test('dados reais: 40 L de gasolina comum a R$ 6,299 nas regras cadastradas', as
     programas: await ler('programas'), cartoes: await ler('cartoes'), cambio: await ler('cambio'),
     redes_postos: await ler('redes-postos'), regras_postos: await ler('regras-postos'),
   };
-  assert.deepEqual((await validarDados(pasta, { hoje: '2026-11-23' })).erros, []);
+  assert.deepEqual((await validarDados(pasta, { hoje: '2026-11-25' })).erros, []);
   const perfil = { programas: dados.programas.map((p) => ({ programa_id: p.id, clube_ativo: false })), cartoes: [] };
   const r = abastecer(perfil, { combustivel: 'gasolina_comum', litros_ml: 40_000, preco_litro_milesimos: 6299 }, dados, '2026-11-23');
   // Premmia: R$ 251,96 → 251 reais inteiros × 1 = 251; Shell Box Clube: 50 blocos de R$ 5 × 1 stix = 50.

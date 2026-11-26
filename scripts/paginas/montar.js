@@ -9,7 +9,7 @@ import {
   calcularJeitosDeComprar, DIAS_DADO_ANTIGO, ESTADOS, formatarData, quandoVence, situacaoDaOferta,
 } from '../../site/js/motor/index.js';
 import { formatarNumero, pontosPorReal } from '../../site/js/motor/formatar.js';
-import { fraseDoJeito } from '../../site/js/tela/textos.js';
+import { fraseDoJeito, siteDaFonte } from '../../site/js/tela/textos.js';
 import { ALERTAS_LIGADO, NOME_DO_SITE } from './config.js';
 import { escaparXml, h, juntar, linkDeSaida, linkExterno } from './html.js';
 import { montarLinkDeSaida, siteTemLinkDeAfiliado, siteUsaAwin } from '../../site/js/saida/links.js';
@@ -165,10 +165,32 @@ function linhaConta(rotulo, ...valor) {
 }
 
 function conferido(registro) {
+  const site = siteDaFonte(registro.fonte_url);
   return juntar(
     `${formatarData(registro.verificado_em)}. `,
-    linkExterno(registro.fonte_url, 'Ver a fonte'),
+    linkExterno(registro.fonte_url, site ? `Ver a fonte (${site})` : 'Ver a fonte'),
   );
+}
+
+/** Selo bem à vista: "Regras conferidas em 25/11/2026 · Fonte: livelo.com.br". */
+function seloDaFonte(registro, rotulo = 'Regras conferidas em') {
+  const site = siteDaFonte(registro.fonte_url);
+  return h('p', { class: 'fonte' },
+    h('span', { class: 'fonte__icone', 'aria-hidden': 'true' }, '✓'),
+    h('span', {}, `${rotulo} ${formatarData(registro.verificado_em)}`),
+    site ? h('span', {}, ' · Fonte: ', linkExterno(registro.fonte_url, site)) : null);
+}
+
+/** Programas que conferimos e que não dão pontos nesta loja. */
+function secaoSemParceria(loja, dados) {
+  const lista = loja.sem_parceria ?? [];
+  if (!lista.length) return null;
+  const nomeProg = (id) => dados.programas.find((p) => p.id === id)?.nome ?? id;
+  return h('section', { class: 'pilha--sm', 'aria-labelledby': 'sem-parceria-titulo' },
+    h('h2', { id: 'sem-parceria-titulo', class: 'pagina__subtitulo' }, 'Programas que conferimos e não dão pontos aqui'),
+    h('ul', { class: 'pagina__lista' }, lista.map((s) => h('li', {},
+      `${nomeProg(s.programa_id)}: ${s.motivo} Conferido em ${formatarData(s.verificado_em)}. `,
+      linkExterno(s.fonte_url, `Fonte (${siteDaFonte(s.fonte_url)})`)))));
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +246,7 @@ function secaoDaOferta(ativa, dados, indice, hoje) {
   return h('section', { class: 'card pilha', 'aria-labelledby': idTitulo },
     h('h3', { id: idTitulo, class: 'card__titulo' }, `Oferta ${nomePrograma}`),
     selos.length ? h('div', { class: 'card__topo' }, selos) : null,
+    seloDaFonte(oferta),
     h('table', { class: 'tabela' },
       h('caption', {}, 'Pontos por real em cada caso'),
       h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Quem compra'), h('th', { scope: 'col', class: 'numero' }, 'Pontos por real'))),
@@ -233,6 +256,7 @@ function secaoDaOferta(ativa, dados, indice, hoje) {
     h('dl', { class: 'lista-conta' },
       linhaConta('Validade', porReal.validade_da_oferta?.texto ?? 'Não confirmada.'),
       linhaConta('Vale para', textoEscopo(oferta)),
+      oferta.destaques?.length ? linhaConta('Rende mais', ...oferta.destaques.map((t, i) => (i ? ` ${t}` : t))) : null,
       oferta.produtos_em_campanha?.length
         ? linhaConta('Produtos citados na campanha', h('ul', { class: 'pagina__lista' },
           oferta.produtos_em_campanha.map((p) => h('li', {}, linkExterno(p.link, p.nome)))))
@@ -285,7 +309,7 @@ function cartaoDaResposta(dados, loja, melhor, resposta, raiz) {
   const valor = cem?.valor_estimado_em_reais;
   const avisos = j.avisos ?? [];
   return h('section', { class: 'card card--destaque pilha', 'aria-label': 'Resposta' },
-    h('p', { class: 'resposta' }, resposta.frase, ' ', fraseDoJeito(j, loja.nome).replace(` na ${loja.nome}`, ` ${naLoja(loja)}`)),
+    h('p', { class: 'resposta' }, resposta.frase, ' ', fraseDoJeito(j, loja)),
     valor
       ? juntar(
         h('p', { class: 'card__valor' }, valor.texto),
@@ -339,6 +363,7 @@ export function paginaDaLoja(dados, loja, { hoje, urlBase, alertas = ALERTAS_LIG
           `Oferta ${nomeProg(o.programa_id)}: ${motivoFora(o, hoje)}. `,
           linkExterno(o.fonte_url, 'Fonte')))))
       : null,
+    secaoSemParceria(loja, dados),
     historico.length
       ? h('section', { class: 'pilha--sm', 'aria-labelledby': 'historico-titulo' },
         h('h2', { id: 'historico-titulo', class: 'pagina__subtitulo' }, 'Histórico: ofertas que já acabaram'),
@@ -430,11 +455,11 @@ export function paginaDeOfertas(dados, { hoje, urlBase }) {
           h('td', { 'data-rotulo': 'Loja' }, h('a', { class: 'alvo-toque', href: `${raiz}loja/${loja.id}/` }, loja.nome)),
           h('td', { 'data-rotulo': 'Programa' }, porReal.programa?.nome ?? oferta.programa_id),
           h('td', { 'data-rotulo': 'Até (pontos por real)', class: 'numero' }, porReal.total_pontos_texto),
-          h('td', { 'data-rotulo': 'Validade' }, confirmado(oferta.fim) ? `até ${formatarData(oferta.fim)}` : 'fim não confirmado',
+          h('td', { 'data-rotulo': 'Validade' }, confirmado(oferta.fim) ? `até ${formatarData(oferta.fim)}` : (oferta.vigencia === 'regra_padrao' ? 'regra de sempre, sem data de fim' : 'fim não confirmado'),
             ...selosDaOferta(oferta, hoje).slice(0, 1).map((selo) => juntar(' ', selo))),
           h('td', { 'data-rotulo': 'Conferido' }, formatarData(oferta.verificado_em),
             situacaoDaOferta(oferta, hoje).dado_antigo ? juntar(' ', h('span', { class: 'selo selo--aviso' }, 'dado antigo')) : null,
-            ' · ', linkExterno(oferta.fonte_url, 'fonte', h('span', { class: 'visualmente-oculto' }, ` da oferta ${naLoja(loja)}`)))))))
+            ' · ', linkExterno(oferta.fonte_url, `fonte: ${siteDaFonte(oferta.fonte_url) ?? 'link'}`, h('span', { class: 'visualmente-oculto' }, ` da oferta ${naLoja(loja)}`)))))))
       : null,
     listaForaDoRanking(dados, hoje, raiz),
     h('section', { class: 'pilha--sm', 'aria-labelledby': 'lojas-titulo' },

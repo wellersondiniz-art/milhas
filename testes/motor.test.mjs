@@ -96,7 +96,8 @@ test('degrau 15: clube ativo + cartão Azul Itaú', () => {
     'A oferta soma com os pontos do cartão: 1.500 + 200 = 1.700 pontos.',
     'Valor estimado (milheiro é quanto valem 1.000 pontos): 1.700 pontos Azul Fidelidade × R$ 20,00 por milheiro ÷ 1.000 = R$ 34,00.',
   ]);
-  assert.deepEqual(melhor.validade_da_oferta, { inicio: '2026-11-01', fim: '2026-11-12', texto: 'De 01/11/2026 até 12/11/2026.' });
+  assert.deepEqual(melhor.validade_da_oferta, { inicio: '2026-11-01', fim: '2026-11-12', regra_padrao: false, texto: 'De 01/11/2026 até 12/11/2026.' });
+  assert.deepEqual(melhor.destaques_da_oferta, []);
   assert.deepEqual(melhor.prazo_de_credito, { dias: 30, texto: 'Os pontos da oferta caem em até 30 dias, segundo a oferta.' });
 });
 
@@ -356,6 +357,56 @@ test('oferta de exemplo (testes/exemplos) com os dados do repositório (vários 
   assert.equal(melhor.prazo_de_credito.dias, 30);
 });
 
+async function dadosReais() {
+  const dados = {};
+  for (const nome of ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio']) {
+    dados[nome] = JSON.parse(await readFile(new URL(`../dados/${nome}.json`, import.meta.url), 'utf8'));
+  }
+  return dados;
+}
+
+test('dados reais (25/11/2026): Livelo na Magalu, campanha de 2 pontos por real com destaque', async () => {
+  const dados = await dadosReais();
+  const livelo = { programa_id: 'livelo', clube_ativo: false };
+  const lista = calcular(perfil([livelo], []), compra(10000), dados, '2026-11-25');
+  const [melhor] = lista;
+  // 100 × 2 = 200 pontos; milheiro Livelo = estimativa de R$ 17,00 → 200 × 1700 ÷ 1000 = 340 centavos
+  assert.equal(melhor.oferta_id, 'livelo-magalu-2026-11-24');
+  assert.equal(melhor.total_pontos, 200);
+  assert.equal(melhor.valor_estimado_em_reais.texto, 'R$ 3,40');
+  assert.ok(melhor.avisos.includes('A oferta vence amanhã (26/11/2026).'));
+  assert.deepEqual(melhor.destaques_da_oferta, ['Eletrodomésticos vendidos e entregues pela Magalu: 3 pontos por real até 26/11/2026.']);
+  const daOferta = melhor.conferido_em.find((c) => c.rotulo === 'oferta Livelo na Magalu');
+  assert.equal(daOferta.fonte_url, 'https://www.livelo.com.br/juntar-pontos/parceiros/magalu/MZL');
+  assert.equal(daOferta.dias, 0);
+  // A regra padrão só começa depois da campanha: não aparece duas vezes.
+  assert.ok(!lista.some((j) => j.oferta_id === 'livelo-magalu-padrao'));
+  const depois = calcular(perfil([livelo], []), compra(10000), dados, '2026-11-27');
+  assert.equal(depois[0].oferta_id, 'livelo-magalu-padrao');
+  assert.equal(depois[0].validade_da_oferta.texto, 'Regra de sempre do programa, a partir de 27/11/2026, sem data de fim publicada.');
+});
+
+test('dados reais: regra padrão não avisa fim não confirmado e usa "nas Casas Bahia"', async () => {
+  const dados = await dadosReais();
+  const livelo = { programa_id: 'livelo', clube_ativo: false };
+  const [melhor] = calcular(perfil([livelo], []), { ...compra(10000), loja_id: 'casas-bahia' }, dados, '2026-11-25');
+  assert.equal(melhor.oferta_id, 'livelo-casas-bahia-padrao');
+  assert.equal(melhor.total_pontos, 100);
+  assert.ok(!melhor.avisos.some((a) => a.includes('fim da oferta') || a.includes('início da oferta')));
+  assert.equal(melhor.validade_da_oferta.texto, 'Regra de sempre do programa, sem data de fim publicada.');
+  assert.ok(melhor.explicacao[0].includes('nas Casas Bahia'));
+});
+
+test('dados reais: Fast Shop pela Esfera exige o cupom ESFERA e parceiro rende 1 ponto', async () => {
+  const dados = await dadosReais();
+  const esfera = { programa_id: 'esfera', clube_ativo: false };
+  const [loja] = calcular(perfil([esfera], []), { ...compra(10000), loja_id: 'fast-shop' }, dados, '2026-11-25');
+  assert.equal(loja.total_pontos, 200);
+  assert.ok(loja.condicoes_a_cumprir.includes('Aplicar o cupom ESFERA na compra.'));
+  const [parceiro] = calcular(perfil([esfera], []), { ...compra(10000), loja_id: 'fast-shop', tipo_vendedor: 'parceiro' }, dados, '2026-11-25');
+  assert.equal(parceiro.total_pontos, 100);
+});
+
 // ---------------------------------------------------------------------------
 // Avisos, cupom e caso base
 
@@ -367,7 +418,7 @@ test('dado verificado há mais de 14 dias gera aviso', () => {
   assert.equal(melhor.tem_dado_antigo, true);
   const daOfertaConferida = melhor.conferido_em.find((c) => c.rotulo === 'oferta Azul Fidelidade na Magalu');
   assert.deepEqual(daOfertaConferida, {
-    rotulo: 'oferta Azul Fidelidade na Magalu', verificado_em: '2026-10-20', dias: 21, antigo: true,
+    rotulo: 'oferta Azul Fidelidade na Magalu', verificado_em: '2026-10-20', dias: 21, antigo: true, fonte_url: FONTE,
   });
 });
 

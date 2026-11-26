@@ -5,7 +5,7 @@
 // Ficar numa página só deixa o perfil vivo na memória quando o navegador
 // não deixa salvar (modo privado): trocar de tela não perde nada.
 
-import { calcularJeitosDeComprar, dataHoraEmSaoPaulo, formatarCentavos } from './motor/index.js';
+import { calcularJeitosDeComprar, dataHoraEmSaoPaulo, formatarCentavos, naLoja } from './motor/index.js';
 import { criarBuscaDeLoja } from './tela/busca-loja.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
 import { abrirArmazem, CHAVE, CHAVE_V1 } from './perfil/armazem.js';
@@ -14,6 +14,8 @@ import { montarTelaPerfil, resumoDoPerfil } from './tela/perfil-tela.js';
 import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
 import { anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
+import { montarAjusteRapido, montarValeAPena } from './tela/decisao-tela.js';
+import { exemplosRapidos, perfilComAjuste, premissasDaConta } from './tela/primeira-visita.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { montarLinkDeSaida } from './saida/links.js';
 import { EXPLICAR_LIGADO } from './explicar/config.js';
@@ -43,6 +45,7 @@ const anuncio = $('resultado-anuncio');
 const convite = $('convite-perfil');
 const telaInicio = $('tela-inicio');
 const telaPerfil = $('tela-perfil');
+const exemplos = $('exemplos');
 
 let dados = null;
 let perfilSalvo = null;
@@ -53,6 +56,9 @@ let lojaDaConta = null;
 // Métricas sem cookie: nunca levam valor, cartões nem programas (ver metricas.js).
 // No app, elas não saem: só mandam no domínio do site (ver metricas/config.js).
 const metricas = criarMetricas();
+// Painel "O que a conta supôs": fica vivo entre uma conta e outra da mesma
+// loja, para quem está mexendo nele não perder o foco.
+let ajuste = null;
 // No app das lojas (Android/iOS), o perfil vai para o cofre do sistema;
 // no navegador, para o localStorage. Ver js/nativo/armazem-seguro.js.
 const ponte = ponteNativa();
@@ -150,23 +156,45 @@ function calcular({ focar = true, contar = true } = {}) {
   const valorTexto = formatarCentavos(centavos);
   passoResultado.hidden = false;
   mostrandoResultado = true;
-  titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} na ${loja.nome}`;
+  titulo.textContent = `${valorTexto.replace('R$ ', 'R$\u00a0')} ${naLoja(loja)}`;
   const { perfil, semPerfil } = perfilDaConta();
   try {
+    // As datas das ofertas são de Brasília: o dia vira à meia-noite de São Paulo.
+    const hoje = dataHoraEmSaoPaulo(new Date());
     const jeitos = calcularJeitosDeComprar(
       perfil,
       { loja_id: loja.id, valor_centavos: centavos, tipo_vendedor: 'loja' },
       dados,
-      // As datas das ofertas são de Brasília: o dia vira à meia-noite de São Paulo.
-      dataHoraEmSaoPaulo(new Date()),
+      hoje,
     );
-    // A ordem já veio do motor. O link de saída só entra depois, sem mexer nela.
-    const saida = montarLinkDeSaida(loja.id, dados);
-    resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil, saida }));
+    if (!ajuste || ajuste.lojaId !== loja.id) {
+      ajuste = {
+        lojaId: loja.id,
+        ...montarAjusteRapido({
+          dados, perfilSalvo, perfilDaConta: perfil, semPerfil, lojaId: loja.id, hoje: hoje.slice(0, 10), aoAjustar: ajustar,
+        }),
+      };
+    }
+    const premissas = premissasDaConta({ dados, perfil, semPerfil, jeitos });
+    ajuste.atualizarPremissas(premissas);
+    const ativo = document.activeElement;
+    resultado.replaceChildren(montarResultado(jeitos, {
+      loja,
+      valorTexto,
+      semPerfil,
+      ajuste: ajuste.elemento,
+      valeAPena: montarValeAPena({ jeitos, valorCentavos: centavos, dados, perfil }),
+      faltaDolar: premissas.some((p) => p.chave === 'dolar' && p.falta),
+      nomePrograma: (id) => dados.programas.find((p) => p.id === id)?.nome ?? id,
+      // A ordem já veio do motor. O link de saída só entra depois, sem mexer nela.
+      saida: montarLinkDeSaida(loja.id, dados),
+    }));
+    // Quem estava mexendo no painel continua onde estava.
+    if (ativo && ajuste.elemento.contains(ativo)) ativo.focus();
     if (EXPLICAR_LIGADO && jeitos.length) {
       resultado.append(montarExplicar({ lojaId: loja.id, centavos, perfil: perfilSalvo, melhor: jeitos[0] }));
     }
-    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
+    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja, valorTexto }));
     lojaDaConta = loja.id;
     if (contar) metricas.registrar('calculo', { loja: loja.id });
   } catch (erro) {
@@ -175,6 +203,35 @@ function calcular({ focar = true, contar = true } = {}) {
     mostrarErro('Não deu para calcular', 'Algo nos dados ou no valor não fechou. Confira o valor e tente de novo. Se continuar, o problema é nosso.', () => calcular());
   }
   if (focar) titulo.focus();
+}
+
+/** Ajuste rápido ("O que a conta supôs"): salva no perfil e refaz a conta sem mexer no foco. */
+function ajustar(mudanca) {
+  perfilSalvo = perfilComAjuste(perfilSalvo, dados, mudanca);
+  const salvou = armazem.salvar(perfilSalvo);
+  mostrarConvite();
+  calcular({ focar: false });
+  ajuste?.avisar(salvou ? 'Pronto: a conta foi refeita e o ajuste ficou salvo neste aparelho.' : 'Pronto: a conta foi refeita. Este navegador não deixa guardar, então o ajuste vale só nesta aba.');
+}
+
+// ---------------------------------------------------------------------------
+// Exemplos de um toque: resultado sem digitar nada.
+
+function mostrarExemplos(lojas, ofertas) {
+  if (!exemplos) return;
+  const lista = exemplosRapidos(lojas, ofertas, hojeLocal());
+  exemplos.replaceChildren(...lista.map((ex) => {
+    const botao = el('button', { type: 'button', class: 'botao botao--secundario exemplos__botao' }, ex.texto);
+    botao.addEventListener('click', () => {
+      busca.escolherPorId(ex.loja.id);
+      passoValor.hidden = false;
+      campoValor.value = aplicarMascara(String(ex.valor_centavos)).texto;
+      marcarErro(campoValor, erroValor, '');
+      calcular();
+    });
+    return botao;
+  }));
+  exemplos.closest('.exemplos').hidden = !lista.length;
 }
 
 formulario.addEventListener('submit', (evento) => {
@@ -196,9 +253,9 @@ function mostrarConvite() {
   convite.hidden = false;
   const vazio = dados ? ehVazio(perfilSalvo) : !armazem.temAlgo();
   if (vazio) {
-    convite.replaceChildren(alerta('info', 'Ainda não sabemos quais cartões você tem',
-      el('p', {}, 'Tudo bem: a conta funciona assim mesmo, com as melhores opções entre todos os cartões e programas que conhecemos. Para ver só o que é seu, cadastre os seus cartões. Leva um minuto.'),
-      el('a', { class: 'botao botao--secundario', href: '#/perfil' }, 'Cadastrar meus cartões')));
+    convite.replaceChildren(el('p', { class: 'texto-suave convite' },
+      'Não precisa cadastrar nada: a conta usa padrões que aparecem junto com o resultado, e você muda ali mesmo. ',
+      el('a', { href: '#/perfil' }, 'Cadastrar meus cartões')));
   } else {
     convite.replaceChildren(el('p', { class: 'texto-suave convite' },
       dados ? `A conta usa o seu perfil: ${resumoDoPerfil(perfilSalvo)}. ` : 'A conta usa o seu perfil. ',
@@ -208,6 +265,7 @@ function mostrarConvite() {
 
 function definirPerfil(novo) {
   perfilSalvo = novo;
+  ajuste = null;
   const salvou = novo === null ? (armazem.apagar(), !armazem.emMemoria) : armazem.salvar(novo);
   mostrarConvite();
   if (mostrandoResultado) calcular({ focar: false, contar: false });
@@ -320,6 +378,7 @@ function aoChegaremOsDados(pedidos) {
     definirPerfil,
   });
   mostrarConvite();
+  mostrarExemplos(dados.lojas, dados.ofertas);
   if (calcularQuandoChegar) {
     calcularQuandoChegar = false;
     calcular();
@@ -345,6 +404,7 @@ async function carregar() {
     return;
   }
   busca.definirLojas(lojas.lista);
+  mostrarExemplos(lojas.lista, null);
   campoLoja.disabled = false;
   botaoVer.disabled = false;
   esconderCarregando();
