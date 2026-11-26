@@ -15,6 +15,7 @@ import { escaparXml, h, juntar, linkDeSaida, linkExterno } from './html.js';
 import { montarLinkDeSaida, siteTemLinkDeAfiliado, siteUsaAwin } from '../../site/js/saida/links.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
 import { paginasInstitucionais } from './institucionais.js';
+import { configDoPlano, paginaDoPlano } from './plano.js';
 
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const ID_SEGURO = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -517,7 +518,7 @@ export function normalizarUrlBase(url) {
  * @param {object} opcoes { hoje: "AAAA-MM-DD", urlBase: string|null }
  * @returns {{ arquivos: {caminho, conteudo}[], resumo: object, avisos: string[] }}
  */
-export function gerarPaginas(dados, { hoje, urlBase = null, alertas = ALERTAS_LIGADO }) {
+export function gerarPaginas(dados, { hoje, urlBase = null, alertas = ALERTAS_LIGADO, plano = configDoPlano() }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(hoje ?? '')) throw new Error(`hoje precisa ser AAAA-MM-DD (recebido: ${hoje})`);
   const base = normalizarUrlBase(urlBase);
   for (const loja of dados.lojas) {
@@ -525,8 +526,9 @@ export function gerarPaginas(dados, { hoje, urlBase = null, alertas = ALERTAS_LI
   }
   const lojas = dados.lojas.map((loja) => paginaDaLoja(dados, loja, { hoje, urlBase: base, alertas }));
   const ofertas = paginaDeOfertas(dados, { hoje, urlBase: base });
-  const institucionais = paginasInstitucionais({ urlBase: base, temAfiliado: siteTemLinkDeAfiliado(dados), usaAwin: siteUsaAwin(dados), alertas });
-  const arquivos = [ofertas, ...lojas, ...institucionais.paginas].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
+  const institucionais = paginasInstitucionais({ urlBase: base, temAfiliado: siteTemLinkDeAfiliado(dados), usaAwin: siteUsaAwin(dados), alertas, plano });
+  const paginaPlano = paginaDoPlano({ urlBase: base, config: plano });
+  const arquivos = [ofertas, ...lojas, ...institucionais.paginas, ...(paginaPlano ? [paginaPlano] : [])].map(({ caminho, conteudo }) => ({ caminho, conteudo }));
   const avisos = [...institucionais.avisos];
   if (base) {
     const caminhos = ['', 'ofertas/', ...dados.lojas.map((l) => `loja/${l.id}/`), ...institucionais.indexaveis];

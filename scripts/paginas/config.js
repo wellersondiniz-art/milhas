@@ -45,3 +45,28 @@ export const EMAIL_DE_CONTATO = 'A_CONFIRMAR';
 // (README, seção "Alertas por e-mail") e de testar com um e-mail seu.
 // Ao trocar, mude também TEXTOS_ATUALIZADOS_EM: a Privacidade muda.
 export const ALERTAS_LIGADO = false;
+
+// ---------------------------------------------------------------------------
+// Plano pago (servidor/plano/, functions/api/plano/, scripts/paginas/plano.js)
+
+// Enquanto for false, a página /plano/ não é gerada e a Privacidade e os
+// Termos não falam de plano. Só troque para true depois de configurar o
+// Stripe, a Cloudflare e o Supabase (README, seção "Plano pago"), de testar
+// os quatro estados no modo de teste e de o advogado revisar os textos.
+// Ao trocar, mude também TEXTOS_ATUALIZADOS_EM: a Privacidade e os Termos mudam.
+export const PLANO_LIGADO = false;
+
+// Preço por mês em centavos inteiros (990 = R$ 9,90), já com tributos.
+export const PLANO_PRECO_CENTAVOS = 'A_CONFIRMAR';
+
+// Link de pagamento do Stripe (Payment Link de assinatura mensal). No modo
+// de teste começa com https://buy.stripe.com/test_
+export const PLANO_LINK_PAGAMENTO = 'A_CONFIRMAR';
+
+// Link de entrada do portal do cliente do Stripe (cancelar, trocar cartão,
+// ver recibos). No modo de teste começa com https://billing.stripe.com/p/login/test_
+export const PLANO_LINK_PORTAL = 'A_CONFIRMAR';
+
+// false = modo de teste: o build recusa links que não sejam de teste. Só o
+// dono do site troca para true, junto com PLANO_MODO_REAL=ligado na Cloudflare.
+export const PLANO_MODO_REAL = false;

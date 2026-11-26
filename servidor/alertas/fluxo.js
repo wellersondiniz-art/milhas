@@ -9,6 +9,7 @@
 // endereço, então ninguém muda o alerta de outra pessoa.
 
 import { LIMITES } from './regras.js';
+import { limitesDeAlertas } from '../plano/regras.js';
 import { podeEnviarConfirmacao, validadeDaConfirmacao } from './limite.js';
 import { assinaturaDeCancelamento, conferirCancelamento, novoToken, resumo, TOKEN, UUID } from './tokens.js';
 import { emailDeConfirmacao } from './emails.js';
@@ -95,9 +96,11 @@ export async function confirmar(token, { repo, agora }) {
   const igual = alertas.find((a) => a.loja_id === pendente.loja_id && (a.programa_id ?? null) === (pendente.programa_id ?? null));
   // O link vale uma vez só, mesmo quando o pedido é recusado.
   const usarToken = { token_hash: null, token_expira_em: null, pendente: null };
-  if (!igual && alertas.length >= LIMITES.alertasPorEmail) {
+  // O plano pago aumenta o limite; o grátis segue em LIMITES.alertasPorEmail.
+  const { alertasPorEmail } = limitesDeAlertas(Boolean(await repo.temPlano?.(inscricao.email, agora)));
+  if (!igual && alertas.length >= alertasPorEmail) {
     await repo.atualizarInscricao(inscricao.id, usarToken);
-    return { resultado: 'limite_de_alertas' };
+    return { resultado: 'limite_de_alertas', limite: alertasPorEmail };
   }
   if (igual) {
     await repo.atualizarAlerta(igual.id, { minimo_centesimos: pendente.minimo_centesimos, ultimo_aviso_chave: null });

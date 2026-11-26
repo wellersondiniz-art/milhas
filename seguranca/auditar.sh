@@ -26,7 +26,7 @@ listar() { cut -d: -f"$1" | sort -u | sed 's/^/           - /'; }
 EXCLUIR=(':!seguranca/auditar.sh' ':!seguranca/CHECKLIST.md')
 
 # Padrões de segredos comuns.
-SEGREDOS='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|sb_secret_[A-Za-z0-9_-]{10,}|\bre_[A-Za-z0-9]{6,}_[A-Za-z0-9_]{10,}|(api[_-]?key|secret|token|senha|password|passwd)["'\'']?[[:space:]]*[:=][[:space:]]*["'\''][^"'\'' ]{8,}["'\'']'
+SEGREDOS='AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{10,}|rk_live_[A-Za-z0-9]{10,}|(sk|rk)_test_[A-Za-z0-9]{20,}|whsec_[A-Za-z0-9]{24,}|xox[abprs]-[A-Za-z0-9-]{10,}|AIza[0-9A-Za-z_-]{35}|eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}|sb_secret_[A-Za-z0-9_-]{10,}|\bre_[A-Za-z0-9]{6,}_[A-Za-z0-9_]{10,}|(api[_-]?key|secret|token|senha|password|passwd)["'\'']?[[:space:]]*[:=][[:space:]]*["'\''][^"'\'' ]{8,}["'\'']'
 
 # Dados pessoais: CPF formatado e número de cartão (16 dígitos).
 PESSOAIS='[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|\b[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}\b'
@@ -154,12 +154,12 @@ if [ -d functions ]; then
     ok "token e repositório de reportes só vêm do ambiente da Cloudflare"
   fi
   # Chaves dos alertas só vêm do ambiente (Cloudflare e GitHub Actions).
-  chave_fixa="$(git grep -nIE '(SUPABASE_SECRET_KEY|RESEND_API_KEY|ALERTAS_SEGREDO|service_role_key)[[:space:]]*[:=][[:space:]]*["'\''`]' -- functions servidor scripts .github 2>/dev/null || true)"
+  chave_fixa="$(git grep -nIE '(SUPABASE_SECRET_KEY|RESEND_API_KEY|ALERTAS_SEGREDO|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET|service_role_key)[[:space:]]*[:=][[:space:]]*["'\''`]' -- functions servidor scripts .github 2>/dev/null || true)"
   if [ -n "$chave_fixa" ]; then
-    falha "chave dos alertas escrita no código (use segredo no ambiente):"
+    falha "chave dos alertas ou do Stripe escrita no código (use segredo no ambiente):"
     printf '%s\n' "$chave_fixa" | listar 1,2
   else
-    ok "chaves do Supabase e do Resend só vêm do ambiente"
+    ok "chaves do Supabase, do Resend e do Stripe só vêm do ambiente"
   fi
 fi
 

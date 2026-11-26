@@ -302,6 +302,45 @@ Comandos:
 - `npm run alertas`: rodada de verdade (o robô do GitHub faz isso sozinho quando `dados/ofertas.json` muda na `main`; também dá para rodar em Actions → alertas → Run workflow).
 - `npm run test:banco`: aplica a migração num Postgres descartável no Docker e prova que `anon` e `authenticated` não leem nem apagam nada, mais os CHECKs e o limite de alertas. Não toca no Supabase.
 
+## Plano pago (assinatura pelo Stripe)
+
+Plano opcional que **só aumenta os limites dos alertas por e-mail** (até 50 alertas e até 7 e-mails por semana, contra 10 e 2 no grátis). A calculadora, as ofertas e a ordem do resultado são iguais para todos. **Está desligado** (`PLANO_LIGADO = false` em `scripts/paginas/config.js`) e em **modo de teste** (`PLANO_MODO_REAL = false`) até o dono aprovar.
+
+Regras de ouro, e onde cada uma está garantida:
+
+- **O número do cartão nunca passa pelo nosso código**: o botão "Assinar" é um link de pagamento do Stripe (`buy.stripe.com`) e o "Cancelar" é o portal do cliente do Stripe (`billing.stripe.com`). A página `/plano/` não tem formulário nem script (`testes/plano-paginas.test.mjs`).
+- **A situação só muda pelo webhook com assinatura verificada**: `POST /api/plano/stripe` confere o `Stripe-Signature` (HMAC-SHA256 do corpo bruto, janela de 5 minutos) antes de qualquer coisa. Não existe rota do navegador que grave `plano_assinaturas` (`servidor/plano/webhook.js`).
+- **Webhook idempotente**: o id de cada evento fica em `plano_eventos`; um aviso repetido responde 200 e não faz nada. Além disso, o webhook não confia no conteúdo do aviso: busca o cliente e as assinaturas na API do Stripe e grava o estado de agora, então avisos atrasados ou fora de ordem dão o mesmo resultado. Se algo falhar, responde 500 e o Stripe reenvia.
+- **Chaves só no servidor**: `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` vivem só nos segredos da Cloudflare. O auditor (`npm run auditar`) procura chaves do Stripe no Git.
+- **Modo de teste até a aprovação**: sem `PLANO_MODO_REAL=ligado` na Cloudflare, o servidor recusa chave de produção (`sk_live_`/`rk_live_`) e eventos reais; com `PLANO_MODO_REAL = false` no `config.js`, o build recusa links de pagamento que não sejam de teste.
+
+Estados (testados em `testes/plano.test.mjs`):
+
+| No Stripe | Aqui | Benefício |
+| --- | --- | --- |
+| `active`, `trialing` | ativa | sim, até o fim do mês pago |
+| `incomplete` | pendente | não |
+| `past_due`, `unpaid`, `incomplete_expired`, `paused` | falhou | não (volta quando pagar) |
+| `canceled` | cancelada | não |
+| reembolso integral (`charge.refunded`) | reembolsada (e a assinatura é cancelada no Stripe) | não |
+| contestação aberta (`charge.dispute.created`) | contestada | não, até ganhar a contestação |
+
+Cancelar com `cancel_at_period_end` mantém o plano até o fim do mês pago.
+
+Para ligar no **modo de teste** (o dono faz o cadastro; nada é cobrado):
+
+1. **Stripe** (painel em modo de teste): crie o produto com preço mensal recorrente em BRL; crie um **Payment Link** para ele (peça o aceite dos Termos com o link de `/termos/`); ative o **portal do cliente** (cancelar no fim do período, trocar cartão, ver faturas) e copie o link de entrada dele.
+2. **Webhook**: em Developers → Webhooks, endpoint `https://<site>/api/plano/stripe` com os eventos de `EVENTOS_TRATADOS` (`servidor/plano/webhook.js`). Copie o segredo de assinatura (`whsec_...`).
+3. **Chave restrita**: Developers → API keys → chave restrita com **Customers: leitura** e **Subscriptions: escrita**.
+4. **Supabase**: aplique `supabase/migrations/20261124000001_plano_pago.sql` (depois das duas dos alertas).
+5. **Cloudflare Pages** → Production: segredos `STRIPE_SECRET_KEY` (a `rk_test_...`) e `STRIPE_WEBHOOK_SECRET`; `SUPABASE_URL` e `SUPABASE_SECRET_KEY` já vêm dos alertas. **Não** defina `PLANO_MODO_REAL`.
+6. Em `scripts/paginas/config.js`: `PLANO_PRECO_CENTAVOS`, `PLANO_LINK_PAGAMENTO` (`https://buy.stripe.com/test_...`), `PLANO_LINK_PORTAL` (`https://billing.stripe.com/p/login/test_...`) e `PLANO_LIGADO = true` (e `TEXTOS_ATUALIZADOS_EM`).
+7. Teste os quatro estados com os [cartões de teste do Stripe](https://docs.stripe.com/testing): pagar com o cartão de teste que termina em 4242; falhar com um cartão recusado ou com o relógio de teste (test clock) na renovação; cancelar pelo portal; reembolsar pelo painel. Confira em `plano_assinaturas`.
+
+Para o **modo real**, só depois do ok do dono e do advogado: trocar a chave e o segredo do webhook pelos de produção, definir `PLANO_MODO_REAL=ligado` na Cloudflare e trocar `PLANO_MODO_REAL`, os links e o preço no `config.js`.
+
+O que cada parte faz: regras e webhook em `servidor/plano/`, rota em `functions/api/plano/stripe.js`, página em `scripts/paginas/plano.js`, banco em `supabase/migrations/20261124000001_plano_pago.sql` (testes SQL em `supabase/testes/plano_pago.sql`, rodam com `npm run test:banco`).
+
 ## Pastas
 
 - `site/`: o código do site, legível (`js/motor/` guarda o cálculo puro, sem interface; `js/tela/` monta a tela inicial e só exibe o que o motor devolve; `_headers` define os cabeçalhos de segurança).

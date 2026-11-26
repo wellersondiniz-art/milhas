@@ -404,13 +404,15 @@ test('enviar.js: sem configuração avisa e sai com 0; diz só o NOME do que fal
 
 test('enviar.js --simular: lê os dados do repositório, avalia e não envia', async (t) => {
   const log = t.mock.method(console, 'log', () => {});
-  const { buscar, chamadas } = fetchFalso([{ status: 200, corpo: [] }]);
+  const { buscar, chamadas } = fetchFalso([{ status: 200, corpo: [] }, { status: 200, corpo: [] }]);
   const codigo = await principal({
     env: { SUPABASE_URL: 'https://abc.supabase.co', SUPABASE_SECRET_KEY: 'sb_secret_x' }, argv: ['--simular'], agora: new Date('2026-11-23T12:00:00Z'), fetch: buscar,
   });
   assert.equal(codigo, 0);
-  assert.equal(chamadas.length, 1, 'simulação não apaga nem grava');
-  assert.equal(chamadas[0].method ?? 'GET', 'GET');
+  // Lê quem tem o plano pago e as inscrições; não apaga nem grava nada.
+  assert.equal(chamadas.length, 2, 'simulação não apaga nem grava');
+  assert.match(chamadas[0].url, /plano_assinaturas/);
+  assert.ok(chamadas.every((c) => (c.method ?? 'GET') === 'GET'));
   assert.match(log.mock.calls.at(-1).arguments[0], /Simulação: nada foi enviado nem gravado/);
 });
 

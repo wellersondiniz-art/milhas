@@ -475,3 +475,33 @@ test('LIMITES: os números que os textos prometem', () => {
   assert.equal(LIMITES.horasParaConfirmar, 48);
   assert.equal(LIMITES.alertasPorEmail, 10);
 });
+
+// ---------------------------------------------------------------------------
+// Plano pago: só muda os limites de alertas (servidor/plano/regras.js)
+
+test('plano pago: quem tem o plano passa de 10 alertas; quem não tem, não', async () => {
+  for (const temPlano of [false, true]) {
+    const amb = ambiente();
+    amb.repo.temPlano = async (email, agora) => temPlano && email === 'p@exemplo.com' && agora === AGORA;
+    await confirmado(amb, 'p@exemplo.com');
+    const [inscricao] = amb.repo.inscricoes.values();
+    for (let i = 0; i < 9; i++) await amb.repo.criarAlerta({ inscricao_id: inscricao.id, loja_id: `loja-${i}`, programa_id: null, minimo_centesimos: 100 });
+    await inscrever(pedidoDe('p@exemplo.com', { programa_id: 'programa-alfa' }), amb);
+    const r = await confirmar(tokenDoEmail(amb.correio.enviados.at(-1)), amb);
+    assert.equal(r.resultado, temPlano ? 'confirmado' : 'limite_de_alertas', `temPlano=${temPlano}`);
+    if (!temPlano) assert.equal(r.limite, 10);
+    assert.equal(amb.repo.alertas.size, temPlano ? 11 : 10);
+  }
+});
+
+test('plano pago: na rodada, quem tem o plano recebe mais de 2 e-mails na semana', async () => {
+  const amb = ambiente();
+  amb.repo.emailsComPlano = async () => new Set(['a@exemplo.com']);
+  await confirmado(amb, 'a@exemplo.com', { pontos_por_real: '15' });
+  const semOferta = { ...dados, ofertas: [] };
+  const dias = ['2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14'];
+  for (const [i, dia] of dias.entries()) {
+    await rodarAlertas({ ...amb, dados: i % 2 ? semOferta : dados, agora: new Date(`${dia}T15:00:00Z`) });
+  }
+  assert.equal(amb.correio.enviados.length, 3, 'o grátis pararia em 2');
+});

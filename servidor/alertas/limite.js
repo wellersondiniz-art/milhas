@@ -22,9 +22,12 @@ function verificar(lista, agora, janelaMs, maximo) {
   };
 }
 
-/** E-mails de alerta: no máximo LIMITES.alertasPorSemana em 7 dias corridos. */
-export function podeEnviarAlerta(enviosRecentes, agora) {
-  return verificar(enviosRecentes, agora, 7 * DIA, LIMITES.alertasPorSemana);
+/**
+ * E-mails de alerta: no máximo `maximo` em 7 dias corridos (LIMITES.alertasPorSemana
+ * no grátis; o plano pago passa o número dele, servidor/plano/regras.js).
+ */
+export function podeEnviarAlerta(enviosRecentes, agora, maximo = LIMITES.alertasPorSemana) {
+  return verificar(enviosRecentes, agora, 7 * DIA, maximo);
 }
 
 /** E-mails de confirmação: no máximo LIMITES.confirmacoesPorDia em 24 horas. */
