@@ -9,8 +9,11 @@
 // Saída: 0 se os dados forem válidos, 1 se houver erro.
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { conferirDestino } from '../site/js/saida/links.js';
 
-export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
+export const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'links'];
+/** Campo que identifica o registro. Em links.json, é a loja (um link por loja). */
+const CHAVE = { links: 'loja_id' };
 export const A_CONFIRMAR = 'A_CONFIRMAR';
 const PASTA_DADOS = new URL('../dados/', import.meta.url);
 
@@ -176,10 +179,11 @@ function regrasExtras(dados, hoje) {
   for (const nome of ARQUIVOS) {
     ids[nome] = new Set();
     (dados[nome] ?? []).forEach((registro, i) => {
-      if (ids[nome].has(registro.id)) {
-        erros.push({ arquivo: nome, indice: i, caminho: ['id'], mensagem: `id repetido: ${JSON.stringify(registro.id)}` });
+      const campo = CHAVE[nome] ?? 'id';
+      if (ids[nome].has(registro[campo])) {
+        erros.push({ arquivo: nome, indice: i, caminho: [campo], mensagem: `${campo} repetido: ${JSON.stringify(registro[campo])}` });
       }
-      ids[nome].add(registro.id);
+      ids[nome].add(registro[campo]);
       if (dataValida(registro.verificado_em) && registro.verificado_em > hoje) {
         erros.push({ arquivo: nome, indice: i, caminho: ['verificado_em'], mensagem: `data no futuro: ${registro.verificado_em} (hoje é ${hoje})` });
       }
@@ -211,6 +215,24 @@ function regrasExtras(dados, hoje) {
   });
 
   (dados.cartoes ?? []).forEach((c, i) => existe('cartoes', i, ['programa_id'], 'programas', c.programa_id));
+
+  // Links de saída: lista de permissão. Só https:// no domínio da própria loja.
+  (dados.links ?? []).forEach((link, i) => {
+    existe('links', i, ['loja_id'], 'lojas', link.loja_id);
+    const loja = (dados.lojas ?? []).find((l) => l.id === link.loja_id);
+    if (!loja) return;
+    const { motivo } = conferirDestino(link.url_base, loja.dominio);
+    if (motivo) erros.push({ arquivo: 'links', indice: i, caminho: ['url_base'], mensagem: motivo });
+    // Awin: só para programa da Awin, e nunca junto com parâmetro na própria loja.
+    if (link.rede_afiliado && typeof link.rede_afiliado === 'object') {
+      if (!/\bawin\b/i.test(typeof link.programa_afiliado === 'string' ? link.programa_afiliado : '')) {
+        erros.push({ arquivo: 'links', indice: i, caminho: ['rede_afiliado'], mensagem: 'rede_afiliado "awin" só vale quando programa_afiliado é da Awin (ex.: "Awin: Casas Bahia BR")' });
+      }
+      if (link.parametro_afiliado && typeof link.parametro_afiliado === 'object') {
+        erros.push({ arquivo: 'links', indice: i, caminho: ['parametro_afiliado'], mensagem: 'use parametro_afiliado ou rede_afiliado, não os dois' });
+      }
+    }
+  });
 
   (dados.ofertas ?? []).forEach((o, i) => {
     const e = (caminho, mensagem) => erros.push({ arquivo: 'ofertas', indice: i, caminho, mensagem });
@@ -277,13 +299,13 @@ export async function validarDados(pasta = PASTA_DADOS, { hoje = hojeEmBrasilia(
     }
     for (const { caminho, mensagem } of validarSchema(registros, schema)) {
       const [indice, ...resto] = caminho;
-      brutos.push({ arquivo: nome, indice, id: registros[indice]?.id, caminho: resto, mensagem });
+      brutos.push({ arquivo: nome, indice, id: registros[indice]?.id ?? registros[indice]?.loja_id, caminho: resto, mensagem });
     }
     if (Array.isArray(registros)) dados[nome] = registros;
   }
 
   const extras = regrasExtras(dados, hoje);
-  for (const e of extras.erros) brutos.push({ ...e, id: dados[e.arquivo]?.[e.indice]?.id });
+  for (const e of extras.erros) brutos.push({ ...e, id: dados[e.arquivo]?.[e.indice]?.id ?? dados[e.arquivo]?.[e.indice]?.loja_id });
 
   return { erros: brutos.map(formatarErro), avisos: extras.avisos };
 }

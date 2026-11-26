@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "links.schema.json",
+  "title": "Links de saída",
+  "description": "Um link por loja: o endereço do botão \"Ir para a loja\". Pode virar link de afiliado quando parametro_afiliado for preenchido. O motor de cálculo não lê este arquivo: a ordem do resultado nunca depende dele.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "loja_id",
+      "url_base",
+      "programa_afiliado",
+      "fonte_url",
+      "verificado_em"
+    ],
+    "properties": {
+      "loja_id": {
+        "$ref": "#/$defs/id"
+      },
+      "url_base": {
+        "description": "Endereço https:// no domínio da loja (o \"dominio\" de lojas.json ou um subdomínio dele). O validador recusa qualquer outro domínio.",
+        "$ref": "#/$defs/url"
+      },
+      "parametro_afiliado": {
+        "description": "Opcional. Parâmetro que o programa de afiliados da loja manda pôr no endereço (ex.: nome \"tag\", valor \"meucodigo-20\"). Sem ele, ou com \"A_CONFIRMAR\", o link é comum: sem rel=\"sponsored\" e sem aviso de comissão.",
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "nome",
+              "valor"
+            ],
+            "properties": {
+              "nome": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]{1,100}$"
+              },
+              "valor": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._-]{1,100}$"
+              }
+            }
+          },
+          {
+            "$ref": "#/$defs/a_confirmar"
+          }
+        ]
+      },
+      "rede_afiliado": {
+        "description": "Opcional. Só para loja cujo programa de afiliados é pela Awin (programa_afiliado precisa dizer \"Awin\"). O link vai para https://www.awin1.com/cread.php e o destino final é o url_base, no domínio da loja. Não use junto com parametro_afiliado.",
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "nome",
+              "anunciante_id",
+              "afiliado_id"
+            ],
+            "properties": {
+              "nome": {
+                "const": "awin"
+              },
+              "anunciante_id": {
+                "description": "Id da loja na Awin (awinmid), só números.",
+                "type": "string",
+                "pattern": "^[0-9]{1,12}$"
+              },
+              "afiliado_id": {
+                "description": "O seu id de afiliado na Awin (awinaffid), só números.",
+                "type": "string",
+                "pattern": "^[0-9]{1,12}$"
+              }
+            }
+          },
+          {
+            "$ref": "#/$defs/a_confirmar"
+          }
+        ]
+      },
+      "programa_afiliado": {
+        "description": "Nome do programa de afiliados em que o site foi aprovado (ex.: \"Programa de Associados da Amazon\"). \"A_CONFIRMAR\" enquanto não houver aprovação.",
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "$ref": "#/$defs/a_confirmar"
+          }
+        ]
+      },
+      "observacoes": {
+        "type": "string"
+      },
+      "fonte_url": {
+        "description": "Página oficial que confirma o endereço (e, quando houver, o programa de afiliados).",
+        "$ref": "#/$defs/url"
+      },
+      "verificado_em": {
+        "$ref": "#/$defs/data"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "description": "Letras minúsculas, números e hífen (ex.: magalu).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "a_confirmar": {
+      "const": "A_CONFIRMAR"
+    }
+  }
+}

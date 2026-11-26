@@ -13,11 +13,15 @@
 //   - Só diga o que o site faz de verdade. Se o código mudar (métrica, link de
 //     afiliado, canal de contato), estes textos mudam junto, e a data
 //     TEXTOS_ATUALIZADOS_EM (config.js) também.
+//   - Link de afiliado: Privacidade e Termos têm duas versões, escolhidas pelos
+//     dados (temAfiliado). Enquanto nenhum link de dados/links.json tiver
+//     parametro_afiliado preenchido, vale a versão "não recebemos nada".
 //   - Milheiro, clube e bônus são explicados em "Palavras desta página".
 //
 // Funções puras: recebem a data e a URL base e devolvem os arquivos.
 
 import { formatarData } from '../../site/js/motor/index.js';
+import { AVISO_COMISSAO } from '../../site/js/saida/links.js';
 import { EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
 import { h, juntar } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
@@ -82,6 +86,7 @@ function comoFunciona() {
       ]), p('Mais detalhes em ', sobreOsDados(), '.')),
       secao('mesma-conta', 'A conta é sempre a mesma',
         p('A conta segue regras fixas, escritas no código do site, sem inteligência artificial e sem palpite. A mesma compra, no mesmo dia, dá sempre o mesmo resultado.'),
+        p('A ordem do resultado é só pelos pontos. Comissão de loja não entra na conta: a parte do site que faz a conta nem sabe quais lojas pagam comissão. Veja os ', termos(), '.'),
         p('E a conta é feita no seu próprio aparelho: o valor que você digita e os cartões que você marca não vão para nenhum servidor. Veja ', privacidade(), '.')),
       secao('nao-fazemos', 'O que a gente não faz', lista([
         'Não vendemos nada e não cobramos nada.',
@@ -136,7 +141,7 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade() {
+function paginaPrivacidade(temAfiliado, usaAwin) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -177,7 +182,15 @@ function paginaPrivacidade() {
         p('O site fica hospedado na Cloudflare. Como em qualquer site, para entregar as páginas o servidor recebe dados técnicos de cada acesso, como o endereço de internet (IP) e o tipo de navegador. A gente não usa esses dados para saber quem você é. Veja também a ',
           h('a', { href: 'https://www.cloudflare.com/privacypolicy/', rel: 'noopener noreferrer' }, 'política de privacidade da Cloudflare'), '.')),
       secao('links-fora', 'Links para outros sites',
-        p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.')),
+        p('Quando você abre a fonte de uma oferta ou a página de uma loja, vai para outro site, com regras de privacidade próprias. Os nossos links não contam para o outro site de qual página você veio.'),
+        temAfiliado
+          ? p('Alguns links para lojas são links de afiliado. Eles têm, logo abaixo, o aviso "', AVISO_COMISSAO, '" Esses links levam no endereço um código do ', NOME_DO_SITE, ', para a loja saber que a visita veio daqui. O código é o mesmo para todo mundo e não identifica você. No site dela, a loja pode guardar esse código num cookie dela, com as regras de privacidade dela.')
+          : null,
+        temAfiliado && usaAwin
+          ? p('Alguns desses links passam antes, por um instante, pela Awin, a empresa que cuida do programa de afiliados de algumas lojas. A Awin registra o clique e leva você para o site da loja. Ela pode guardar um cookie dela, com as regras de privacidade dela, que estão no site da Awin.')
+          : null,
+        temAfiliado ? null
+          : p('Hoje os links para as lojas são links comuns: não levam nenhum código nosso.')),
       secao('falar', 'Se você falar com a gente',
         p('Se você escrever pela página de ', contato(), ', a gente recebe o que você mandar, como o seu endereço de e-mail, e usa só para responder.')),
     ],
@@ -187,7 +200,7 @@ function paginaPrivacidade() {
 // ---------------------------------------------------------------------------
 // Termos de uso
 
-function paginaTermos() {
+function paginaTermos(temAfiliado) {
   return {
     pasta: 'termos',
     titulo: 'Termos de uso',
@@ -213,8 +226,14 @@ function paginaTermos() {
       secao('nao-e-conselho', 'Não é conselho financeiro',
         p('O site não diz se vale a pena fazer um cartão, assinar um clube ou comprar alguma coisa. Ele só compara pontos. Anuidade, juros e o preço do produto em outras lojas ficam por sua conta.')),
       secao('como-se-mantem', 'Como o site se mantém',
-        p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
-        p('Se um dia isso mudar, vamos avisar de forma clara, perto de cada link, que podemos ganhar uma comissão sem custo extra para você. E a ordem do resultado vai continuar sendo só pelos pontos.')),
+        temAfiliado
+          ? juntar(
+            p('Alguns links para lojas são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você. Esses links têm, logo abaixo, o aviso "', AVISO_COMISSAO, '" Os links sem esse aviso não rendem nada para a gente.'),
+            p('Não recebemos de bancos nem de programas de pontos. Os nomes deles aparecem só para identificar cada um.'))
+          : juntar(
+            p('Hoje o site não ganha nada quando você compra: não usamos link de afiliado e não recebemos de lojas, bancos ou programas. Os nomes deles aparecem só para identificar cada um.'),
+            p('Se um dia isso mudar, cada link de afiliado vai ter, logo abaixo, o aviso "', AVISO_COMISSAO, '" Os outros links continuam comuns.')),
+        p('A comissão nunca muda a ordem do resultado: ela é sempre pelos pontos, e a parte do site que faz a conta nem sabe quais lojas pagam comissão.')),
       secao('mudancas', 'Mudanças neste texto',
         p('Se este texto mudar, a data no começo da página muda junto. Dúvidas? Fale com a gente em ', contato(), '.')),
     ],
@@ -303,6 +322,8 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   revisaoPendente  padrão: REVISAO_JURIDICA_PENDENTE (config.js)
  *   email            padrão: EMAIL_DE_CONTATO (config.js)
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
+ *   temAfiliado      algum link de dados/links.json é de afiliado (siteTemLinkDeAfiliado)
+ *   usaAwin          algum link passa pela Awin (siteUsaAwin)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -311,16 +332,21 @@ export function paginasInstitucionais({
   revisaoPendente = REVISAO_JURIDICA_PENDENTE,
   email = EMAIL_DE_CONTATO,
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
+  temAfiliado = false,
+  usaAwin = false,
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(), paginaTermos(), contatoPagina];
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(temAfiliado, usaAwin), paginaTermos(temAfiliado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {
     avisos.push('Páginas institucionais com REVISAO_JURIDICA_PENDENTE = true: aviso "Texto em revisão", noindex e fora do sitemap. Troque em scripts/paginas/config.js depois que um advogado revisar.');
   }
   if (email !== A_CONFIRMAR && !contatoPagina.temEmail) throw new Error(`EMAIL_DE_CONTATO inválido: ${email}`);
+  if (temAfiliado) {
+    avisos.push('Há link de afiliado em dados/links.json: Privacidade e Termos passaram a dizer isso. Se for a primeira vez, troque TEXTOS_ATUALIZADOS_EM em scripts/paginas/config.js.');
+  }
   if (!contatoPagina.temEmail) avisos.push('EMAIL_DE_CONTATO A_CONFIRMAR: a página Contato diz que o canal está em preparação. Defina em scripts/paginas/config.js.');
   return {
     paginas: todas.map((pagina) => montar(pagina, opcoes)),

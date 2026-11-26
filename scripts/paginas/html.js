@@ -83,3 +83,17 @@ export function jsonLd(objeto) {
 
 /** Texto para XML (sitemap): mesmo escape do HTML. */
 export const escaparXml = escaparHtml;
+
+/**
+ * Botão "Ir para a loja", a partir do que montarLinkDeSaida (site/js/saida/links.js)
+ * devolveu. Link de afiliado leva rel="sponsored noopener noreferrer" e o aviso
+ * de comissão logo abaixo, ligado ao link por aria-describedby.
+ * Terceira trava: só https://, mesmo que algo escape das outras duas.
+ */
+export function linkDeSaida(saida, rotulo, idAviso) {
+  if (!saida || typeof saida.url !== 'string' || !/^https:\/\/[^\s]+$/i.test(saida.url)) return null;
+  return juntar(
+    h('a', { class: 'botao botao--secundario botao--bloco', href: saida.url, rel: saida.rel, 'aria-describedby': saida.aviso ? idAviso : null }, rotulo),
+    saida.aviso ? h('p', { id: idAviso, class: 'texto-suave texto-pequeno' }, saida.aviso) : null,
+  );
+}

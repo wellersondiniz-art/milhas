@@ -101,15 +101,12 @@ test('textos: data de atualização no topo, termos explicados, sem linguagem de
   assert.throws(() => paginasInstitucionais({ atualizadoEm: 'ontem' }), /TEXTOS_ATUALIZADOS_EM/);
 });
 
-test('privacidade e termos dizem o que o código faz: sem cookie, sem métrica, sem afiliado', async () => {
+test('privacidade e termos dizem o que o código faz: sem cookie, sem métrica', async () => {
   const p = porCaminho(paginasInstitucionais({}).paginas);
   const privacidade = textoVisivel(p['privacidade/index.html']);
-  const termos = textoVisivel(p['termos/index.html']);
   assert.match(privacidade, /O site não cria cookies\. Hoje não usamos nenhuma ferramenta de métrica/);
   assert.match(privacidade, /Número do cartão/);
   assert.match(privacidade, /CPF/);
-  assert.match(termos, /não usamos link de afiliado/);
-  assert.match(termos, /comissão sem custo extra para você/);
 
   // Se algum destes falhar, mude os textos de Privacidade e Termos junto com o código.
   const codigo = await codigoDoSite();
@@ -118,6 +115,50 @@ test('privacidade e termos dizem o que o código faz: sem cookie, sem métrica, 
   const headers = await readFile(new URL('site/_headers', RAIZ), 'utf8');
   assert.match(headers, /connect-src 'self';/, 'o site passou a falar com outro servidor');
   assert.match(headers, /script-src 'self';/, 'o site passou a carregar script de fora');
-  const esquemas = await Promise.all(['ofertas', 'lojas', 'cartoes', 'programas'].map((n) => readFile(new URL(`dados/schemas/${n}.schema.json`, RAIZ), 'utf8')));
-  assert.doesNotMatch(esquemas.join('\n'), /afiliad|affiliate/i, 'os dados passaram a ter link de afiliado');
+  // Link de afiliado só existe em dados/links.json (os textos seguem esse arquivo; veja abaixo).
+  const esquemas = await Promise.all(['ofertas', 'lojas', 'cartoes', 'programas', 'cambio'].map((n) => readFile(new URL(`dados/schemas/${n}.schema.json`, RAIZ), 'utf8')));
+  assert.doesNotMatch(esquemas.join('\n'), /afiliad|affiliate/i, 'link de afiliado fora de dados/links.json');
+});
+
+test('afiliado: sem link de afiliado, Termos e Privacidade dizem que não recebemos nada', () => {
+  const p = porCaminho(paginasInstitucionais({ temAfiliado: false }).paginas);
+  const termos = textoVisivel(p['termos/index.html']);
+  const privacidade = textoVisivel(p['privacidade/index.html']);
+  assert.match(termos, /não usamos link de afiliado e não recebemos de lojas, bancos ou programas/);
+  assert.match(termos, /Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você\./);
+  assert.match(termos, /A comissão nunca muda a ordem do resultado/);
+  assert.match(privacidade, /Hoje os links para as lojas são links comuns: não levam nenhum código nosso\./);
+  assert.doesNotMatch(privacidade, /links de afiliado/);
+});
+
+test('afiliado: com link de afiliado, os textos mudam, mostram o aviso e o build avisa da data', () => {
+  const { paginas, avisos } = paginasInstitucionais({ temAfiliado: true });
+  const p = porCaminho(paginas);
+  const termos = textoVisivel(p['termos/index.html']);
+  const privacidade = textoVisivel(p['privacidade/index.html']);
+  assert.doesNotMatch(termos, /não usamos link de afiliado|não recebemos de lojas/);
+  assert.match(termos, /Alguns links para lojas são links de afiliado: se você comprar por eles, a loja pode pagar uma comissão ao site, sem custo extra para você\./);
+  assert.match(termos, /"Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você\."/);
+  assert.match(termos, /Não recebemos de bancos nem de programas de pontos\./);
+  assert.match(termos, /A comissão nunca muda a ordem do resultado/);
+  assert.match(privacidade, /Alguns links para lojas são links de afiliado/);
+  assert.match(privacidade, /O código é o mesmo para todo mundo e não identifica você\./);
+  assert.doesNotMatch(privacidade, /Awin/);
+  const comAwin = textoVisivel(porCaminho(paginasInstitucionais({ temAfiliado: true, usaAwin: true }).paginas)['privacidade/index.html']);
+  assert.match(comAwin, /passam antes, por um instante, pela Awin/);
+  assert.doesNotMatch(textoVisivel(porCaminho(paginasInstitucionais({ temAfiliado: false, usaAwin: true }).paginas)['privacidade/index.html']), /Awin/);
+  assert.ok(avisos.some((a) => /TEXTOS_ATUALIZADOS_EM/.test(a) && /afiliado/.test(a)));
+  // Como funciona diz o mesmo nos dois casos.
+  assert.equal(p['como-funciona/index.html'], porCaminho(paginasInstitucionais({ temAfiliado: false }).paginas)['como-funciona/index.html']);
+  assert.match(textoVisivel(p['como-funciona/index.html']), /A ordem do resultado é só pelos pontos\. Comissão de loja não entra na conta/);
+});
+
+test('afiliado: o build escolhe o texto pelos dados de dados/links.json', async () => {
+  const dados = await lerDados(new URL('dados/', RAIZ));
+  const termos = (d) => textoVisivel(gerarPaginas(d, { hoje: '2026-11-22', urlBase: BASE }).arquivos.find((a) => a.caminho === 'termos/index.html').conteudo);
+  assert.match(termos(dados), /não usamos link de afiliado/);
+  const pago = { ...dados, links: dados.links.map((l, i) => (i === 0 ? { ...l, parametro_afiliado: { nome: 'tag', valor: 'x' } } : l)) };
+  assert.match(termos(pago), /Alguns links para lojas são links de afiliado/);
+  const soAConfirmar = { ...dados, links: dados.links.map((l) => ({ ...l, parametro_afiliado: 'A_CONFIRMAR' })) };
+  assert.match(termos(soAConfirmar), /não usamos link de afiliado/);
 });

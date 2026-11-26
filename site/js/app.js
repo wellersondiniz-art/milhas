@@ -15,9 +15,10 @@ import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
 import { anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { iniciarPwa } from './pwa/pwa.js';
+import { montarLinkDeSaida } from './saida/links.js';
 import { maisAntiga } from './pwa/textos.js';
 
-const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio'];
+const ARQUIVOS = ['programas', 'cartoes', 'lojas', 'ofertas', 'cambio', 'links'];
 
 const $ = (id) => document.getElementById(id);
 const formulario = $('formulario');
@@ -133,7 +134,9 @@ function calcular({ focar } = { focar: true }) {
       // As datas das ofertas são de Brasília: o dia vira à meia-noite de São Paulo.
       dataHoraEmSaoPaulo(new Date()),
     );
-    resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil }));
+    // A ordem já veio do motor. O link de saída só entra depois, sem mexer nela.
+    const saida = montarLinkDeSaida(loja.id, dados);
+    resultado.replaceChildren(montarResultado(jeitos, { loja, valorTexto, semPerfil, saida }));
     anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja.nome, valorTexto }));
   } catch (erro) {
     anunciar('');

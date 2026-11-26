@@ -39,6 +39,19 @@ test.describe('com dados de teste', () => {
     await expect(cartoes.nth(3)).toContainText('R$ 4,00');
   });
 
+  test('link de afiliado para a loja: depois do resultado, com rel sponsored e aviso de comissão visível', async ({ page }) => {
+    await abrirInicio(page);
+    await calcular(page, { inicioDoNome: 'loj', loja: 'Loja Teste', digitos: '10000' });
+    const link = page.getByRole('link', { name: 'Ir para a loja Loja Teste' });
+    await expect(link).toHaveAttribute('href', 'https://www.loja-teste.invalid/?parceiro=codigo-de-teste');
+    await expect(link).toHaveAttribute('rel', 'sponsored noopener noreferrer');
+    await expect(link).toHaveAccessibleDescription('Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você.');
+    await expect(page.getByText('Podemos ganhar uma comissão se você comprar por aqui, sem custo extra para você.')).toBeVisible();
+    // O link vem depois de todos os jeitos: a ordem é só pelos pontos.
+    const depoisDoUltimo = await cartoesDoResultado(page).last().evaluate((ultimo, a) => Boolean(ultimo.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING), await link.elementHandle());
+    expect(depoisDoUltimo).toBe(true);
+  });
+
   test('"Como calcular" abre a conta passo a passo', async ({ page }) => {
     await abrirInicio(page);
     await calcular(page, { inicioDoNome: 'loj', loja: 'Loja Teste', digitos: '10000' });
@@ -60,6 +73,11 @@ test.describe('com dados de teste', () => {
     // Sem oferta nessa loja: só os dois cartões.
     await expect(cartoesDoResultado(page)).toHaveCount(2);
     await expect(cartoesDoResultado(page).first()).toContainText('Sem oferta');
+    // Link comum (sem código de afiliado): sem "sponsored" e sem aviso de comissão.
+    const link = page.getByRole('link', { name: 'Ir para a loja Outra Loja' });
+    await expect(link).toHaveAttribute('href', 'https://outra-loja.invalid/');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(page.getByText('Podemos ganhar uma comissão', { exact: false })).toHaveCount(0);
   });
 
   test('aponta o que falta: loja fora da lista e valor zero', async ({ page }) => {
