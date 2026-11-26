@@ -7,6 +7,7 @@ export function dadosDeTeste() {
 }
 
 export const SEGREDO = 'segredo-de-teste-com-mais-de-32-caracteres';
+export const SEGREDO_IP = 'outro-segredo-de-teste-so-para-o-ip-1234';
 export const URL_SITE = 'https://milhas.exemplo';
 
 /** Mesmo contrato de servidor/alertas/supabase.js, guardado em memória. */
@@ -14,11 +15,23 @@ export function repoEmMemoria() {
   const inscricoes = new Map();
   const alertas = new Map();
   const log = [];
+  const contadores = new Map();
   let seq = 0;
   const uuid = () => `a0000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
   const copia = (x) => (x ? structuredClone(x) : null);
   return {
-    inscricoes, alertas, log,
+    inscricoes, alertas, log, contadores,
+    async contar(chave, dia) {
+      const atual = contadores.get(chave) ?? { dia, quantidade: 0 };
+      atual.quantidade += 1;
+      contadores.set(chave, atual);
+      return atual.quantidade;
+    },
+    async apagarContadoresAntes(dia) {
+      let n = 0;
+      for (const [chave, c] of contadores) if (c.dia < dia) { contadores.delete(chave); n += 1; }
+      return n;
+    },
     async inscricaoPorEmail(email) { return copia([...inscricoes.values()].find((i) => i.email === email)); },
     async inscricaoPorId(id) { return copia(inscricoes.get(id)); },
     async inscricaoPorToken(hash) { return copia([...inscricoes.values()].find((i) => i.token_hash === hash)); },

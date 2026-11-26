@@ -14,7 +14,7 @@ import { onRequest as rotaInscrever } from '../functions/api/alertas/inscrever.j
 import { onRequest as rotaConfirmar } from '../functions/api/alertas/confirmar.js';
 import { onRequest as rotaCancelar } from '../functions/api/alertas/cancelar.js';
 import {
-  PERFIL_COM_CLUBE, SEGREDO, URL_SITE, cancelarDoEmail, correioFalso, dadosDeTeste, repoEmMemoria, tokenDoEmail,
+  PERFIL_COM_CLUBE, SEGREDO, SEGREDO_IP, URL_SITE, cancelarDoEmail, correioFalso, dadosDeTeste, repoEmMemoria, tokenDoEmail,
 } from './alertas/apoio.mjs';
 
 const dados = dadosDeTeste();
@@ -22,7 +22,7 @@ const AGORA = new Date('2026-11-10T15:00:00Z');
 
 function deps(extra = {}) {
   return {
-    repo: repoEmMemoria(), correio: correioFalso(), segredo: SEGREDO, urlSite: URL_SITE,
+    repo: repoEmMemoria(), correio: correioFalso(), segredo: SEGREDO, segredoIp: SEGREDO_IP, urlSite: URL_SITE,
     buscarDados: async () => dados, agora: () => AGORA, ...extra,
   };
 }
@@ -62,6 +62,50 @@ test('inscrever: resposta igual para e-mail novo, repetido, confirmado e no limi
   }
   assert.equal(new Set(respostas.map((r) => JSON.stringify(r))).size, 1);
   assert.equal(d.correio.enviados.length, 3);
+});
+
+test('inscrever: limite por IP (S1): o 11º pedido do mesmo IP no dia é recusado, sem e-mail', async () => {
+  const d = deps();
+  const doIp = (ip, i) => pedidoJson({ ...CORPO_BOM, email: `p${i}@exemplo.com` }, { extras: { 'CF-Connecting-IP': ip } });
+  for (let i = 0; i < 10; i++) assert.equal((await tratarInscricao(doIp('203.0.113.7', i), d)).status, 202);
+  const r = await tratarInscricao(doIp('203.0.113.7', 10), d);
+  assert.equal(r.status, 429);
+  assert.deepEqual(await r.json(), { ok: false, mensagem: MENSAGENS.muitosDoMesmoLugar });
+  assert.equal(r.headers.get('Retry-After'), '3600');
+  assert.equal(d.correio.enviados.length, 10);
+  assert.ok(d.repo.log.some((l) => l.resultado === 'limite' && l.quantidade_alertas === 0));
+  // Outro IP continua passando.
+  assert.equal((await tratarInscricao(doIp('198.51.100.2', 11), d)).status, 202);
+  // O contador não guarda o IP, só o resumo.
+  assert.ok(![...d.repo.contadores.keys()].some((k) => k.includes('203.0.113.7')));
+  assert.ok([...d.repo.contadores.keys()].every((k) => /^(ip:[0-9a-f]{64}|total):2026-11-10$/.test(k)));
+});
+
+test('inscrever: teto do dia somando todo mundo (S1): passa de 80, ninguém mais recebe e-mail hoje', async () => {
+  const d = deps();
+  for (let i = 0; i < 80; i++) {
+    const r = await tratarInscricao(pedidoJson({ ...CORPO_BOM, email: `t${i}@exemplo.com` }, { extras: { 'CF-Connecting-IP': `10.0.${Math.floor(i / 10)}.${i}` } }), d);
+    assert.equal(r.status, 202);
+  }
+  const r = await tratarInscricao(pedidoJson({ ...CORPO_BOM, email: 'ultimo@exemplo.com' }, { extras: { 'CF-Connecting-IP': '10.9.9.9' } }), d);
+  assert.equal(r.status, 429);
+  assert.deepEqual(await r.json(), { ok: false, mensagem: MENSAGENS.muitosNoDia });
+  assert.equal(d.correio.enviados.length, 80);
+});
+
+test('inscrever: contador fora do ar responde 503 e não manda e-mail', async () => {
+  const d = deps();
+  d.repo.contar = async () => { throw new ErroDoBanco('contar pedido', 500); };
+  assert.equal((await tratarInscricao(pedidoJson(CORPO_BOM), d)).status, 503);
+  assert.equal(d.correio.enviados.length, 0);
+});
+
+test('inscrever: pedidos ao mesmo tempo não furam o limite (a contagem é do banco)', async () => {
+  const d = deps();
+  const respostas = await Promise.all(Array.from({ length: 30 }, (_, i) =>
+    tratarInscricao(pedidoJson({ ...CORPO_BOM, email: `c${i}@exemplo.com` }, { extras: { 'CF-Connecting-IP': '203.0.113.9' } }), d)));
+  assert.equal(respostas.filter((r) => r.status === 202).length, 10);
+  assert.equal(respostas.filter((r) => r.status === 429).length, 20);
 });
 
 test('inscrever: travas na ordem (configuração, método, origem, tipo, tamanho, JSON)', async () => {
@@ -214,7 +258,9 @@ test('cancelar: link incompleto, assinatura errada, método errado e banco fora'
 
 test('configurado: exige banco, correio, segredo de 32+ e endereço', () => {
   assert.equal(configurado(deps()), true);
-  for (const falta of [{ repo: null }, { correio: null }, { segredo: undefined }, { urlSite: '' }]) assert.equal(configurado(deps(falta)), false);
+  for (const falta of [{ repo: null }, { correio: null }, { segredo: undefined }, { segredoIp: undefined }, { segredoIp: 'curto' }, { urlSite: '' }]) {
+    assert.equal(configurado(deps(falta)), false);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -233,7 +279,7 @@ test('functions/api/alertas: sem variáveis de ambiente, tudo responde 503', asy
 test('cloudflare: monta as dependências do ambiente e lê os dados publicados do próprio site', async () => {
   const pedidos = [];
   const env = {
-    SUPABASE_URL: 'https://abc.supabase.co', SUPABASE_SECRET_KEY: 'chave', RESEND_API_KEY: 'chave', ALERTAS_REMETENTE: 'Milhas <a@b.c>', ALERTAS_SEGREDO: SEGREDO,
+    SUPABASE_URL: 'https://abc.supabase.co', SUPABASE_SECRET_KEY: 'chave', RESEND_API_KEY: 'chave', ALERTAS_REMETENTE: 'Milhas <a@b.c>', ALERTAS_SEGREDO: SEGREDO, IP_SEGREDO: SEGREDO_IP,
     ASSETS: { fetch: async (url) => { pedidos.push(String(url)); return new Response(JSON.stringify(dados[/dados\/(\w+)\.json/.exec(url)[1]])); } },
   };
   const request = new Request('https://milhasdavez.com.br/api/alertas/inscrever');
@@ -262,6 +308,19 @@ function fetchFalso(respostas) {
   };
   return { buscar, chamadas };
 }
+
+test('supabase: contador do limite chama a função atômica do banco e apaga dias antigos', async () => {
+  const { buscar, chamadas } = fetchFalso([{ status: 200, corpo: 4 }, { status: 200, corpo: [{ chave: 'a' }, { chave: 'b' }] }, { status: 200, corpo: '' }]);
+  const repo = repositorioSupabase({ url: 'https://abc.supabase.co', chave: 'k', fetch: buscar });
+  assert.equal(await repo.contar('total:2026-11-10', '2026-11-10'), 4);
+  assert.equal(chamadas[0].url, 'https://abc.supabase.co/rest/v1/rpc/alertas_contar');
+  assert.equal(chamadas[0].method, 'POST');
+  assert.deepEqual(JSON.parse(chamadas[0].body), { p_chave: 'total:2026-11-10', p_dia: '2026-11-10' });
+  assert.equal(await repo.apagarContadoresAntes('2026-11-08'), 2);
+  assert.equal(chamadas[1].url, 'https://abc.supabase.co/rest/v1/alertas_contadores?dia=lt.2026-11-08&select=chave');
+  assert.equal(chamadas[1].method, 'DELETE');
+  assert.equal(await repo.apagarContadoresAntes('2026-11-08'), 0);
+});
 
 test('supabase: chave só no cabeçalho apikey, filtros com encode, erros sem corpo', async () => {
   assert.equal(repositorioSupabase({ url: '', chave: 'x' }), null);

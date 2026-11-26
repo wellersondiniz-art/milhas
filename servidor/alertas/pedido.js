@@ -22,6 +22,8 @@ export const MENSAGENS = Object.freeze({
   formato: 'O formulário chegou num formato que não entendemos. Recarregue a página e tente de novo.',
   grande: 'O pedido ficou grande demais.',
   invalido: 'Falta arrumar alguns campos.',
+  muitosDoMesmoLugar: 'Chegaram muitos pedidos da sua conexão hoje. Tente de novo amanhã.',
+  muitosNoDia: 'Os alertas receberam muitos pedidos hoje. Tente de novo amanhã.',
 });
 
 const CABECALHOS_JSON = Object.freeze({
@@ -108,7 +110,33 @@ async function lerFormulario(request) {
 
 /** Configuração completa? Sem ela, nada é gravado nem enviado. */
 export function configurado(deps) {
-  return Boolean(deps.repo && deps.correio && typeof deps.segredo === 'string' && deps.segredo.length >= 32 && deps.urlSite);
+  const segredoBom = (s) => typeof s === 'string' && s.length >= 32;
+  return Boolean(deps.repo && deps.correio && segredoBom(deps.segredo) && segredoBom(deps.segredoIp) && deps.urlSite);
+}
+
+/**
+ * Resumo do IP para o contador: HMAC-SHA-256 com IP_SEGREDO (um segredo só
+ * para isso, separado do que assina os links). O IP não é guardado.
+ */
+export async function resumoDoIp(ip, segredoIp) {
+  const chave = await crypto.subtle.importKey('raw', new TextEncoder().encode(segredoIp), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const bytes = new Uint8Array(await crypto.subtle.sign('HMAC', chave, new TextEncoder().encode(`alertas-ip:${ip}`)));
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Conta o pedido por IP e no total do dia (no banco, de forma atômica).
+ * @returns {Promise<null|'ip'|'total'>} o limite estourado, ou null.
+ */
+async function estourouLimite(request, deps, agora) {
+  const dia = agora.toISOString().slice(0, 10);
+  // Na Cloudflare, CF-Connecting-IP vem da própria rede (não dá para forjar).
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'sem-ip';
+  const porIp = await deps.repo.contar(`ip:${await resumoDoIp(ip, deps.segredoIp)}:${dia}`, dia);
+  if (porIp > LIMITES.pedidosPorIpPorDia) return 'ip';
+  const total = await deps.repo.contar(`total:${dia}`, dia);
+  if (total > LIMITES.pedidosPorDiaNoTotal) return 'total';
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -143,8 +171,25 @@ export async function tratarInscricao(request, deps) {
   const validacao = validarInscricao(entrada, dados);
   if (!validacao.ok) return responderJson(422, { ok: false, mensagem: MENSAGENS.invalido, erros: validacao.erros });
 
+  // Limites por IP e no total do dia, contados antes de qualquer e-mail sair.
+  // Sem eles, um script que troca o e-mail a cada pedido faria o site mandar
+  // e-mail para desconhecidos e gastaria a cota do Resend.
+  const agora = deps.agora();
+  let estouro;
   try {
-    const { resultado } = await inscrever(validacao.pedido, { ...deps, dados, agora: deps.agora() });
+    estouro = await estourouLimite(request, deps, agora);
+  } catch (erro) {
+    console.error(`alertas: contador falhou (${erro?.status ?? 'sem status'})`);
+    return responderJson(503, { ok: false, mensagem: MENSAGENS.foraDoAr });
+  }
+  if (estouro) {
+    if (estouro === 'total') console.error('alertas: teto diário de pedidos atingido');
+    await deps.repo.registrarEnvio({ tipo: 'confirmacao', resultado: 'limite', quantidade_alertas: 0 }).catch(() => {});
+    return responderJson(429, { ok: false, mensagem: estouro === 'ip' ? MENSAGENS.muitosDoMesmoLugar : MENSAGENS.muitosNoDia }, { 'Retry-After': '3600' });
+  }
+
+  try {
+    const { resultado } = await inscrever(validacao.pedido, { ...deps, dados, agora });
     if (resultado === 'erro_envio') console.error('alertas: o serviço de e-mail recusou a confirmação');
   } catch (erro) {
     console.error(`alertas: inscrição falhou (${erro?.status ?? 'sem status'})`);

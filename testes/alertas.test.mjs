@@ -377,7 +377,7 @@ test('rodada: avisa quem chegou no alvo, um e-mail por pessoa, cada um só com o
   amb.repo.log.length = 0;
   const resumoRodada = await rodarAlertas(amb);
   assert.deepEqual(resumoRodada, {
-    simulacao: false, pedidos_vencidos_apagados: 0, inscricoes: 3, alertas_avaliados: 3, alertas_no_alvo: 2,
+    simulacao: false, pedidos_vencidos_apagados: 0, contadores_antigos_apagados: 0, inscricoes: 3, alertas_avaliados: 3, alertas_no_alvo: 2,
     emails_enviados: 2, emails_barrados_pelo_limite: 0, erros_de_envio: 0, erros_de_avaliacao: 0,
   });
   assert.deepEqual(amb.correio.enviados.map((e) => e.para).sort(), ['a@exemplo.com', 'c@exemplo.com']);
@@ -449,6 +449,11 @@ test('rodada: apaga pedidos não confirmados vencidos; simulação não envia ne
   const depois = { ...amb, agora: new Date(AGORA.getTime() + 3 * 86_400_000) };
   assert.equal((await rodarAlertas(depois)).pedidos_vencidos_apagados, 1);
   assert.equal(amb.repo.inscricoes.size, 1);
+  // Contadores do limite de pedidos: só ficam hoje e ontem.
+  amb.repo.contadores.set('total:2026-11-01', { dia: '2026-11-01', quantidade: 5 });
+  amb.repo.contadores.set(`total:${depois.agora.toISOString().slice(0, 10)}`, { dia: depois.agora.toISOString().slice(0, 10), quantidade: 1 });
+  assert.equal((await rodarAlertas(depois)).contadores_antigos_apagados, 1);
+  assert.equal(amb.repo.contadores.size, 1);
 });
 
 test('rodada: erro de envio e perfil quebrado contam, sem parar as outras pessoas', async () => {

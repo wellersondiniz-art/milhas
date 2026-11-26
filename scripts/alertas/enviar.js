@@ -39,6 +39,7 @@ export function textoDoResumo(resumo) {
   return [
     resumo.simulacao ? 'Simulação: nada foi enviado nem gravado.' : 'Rodada de alertas concluída.',
     `Pedidos não confirmados apagados: ${resumo.pedidos_vencidos_apagados}`,
+    `Contadores antigos do limite de pedidos apagados: ${resumo.contadores_antigos_apagados ?? 0}`,
     `E-mails com alerta: ${resumo.inscricoes}`,
     `Alertas avaliados: ${resumo.alertas_avaliados} (no alvo: ${resumo.alertas_no_alvo})`,
     `E-mails ${resumo.simulacao ? 'que seriam enviados' : 'enviados'}: ${resumo.emails_enviados}`,
