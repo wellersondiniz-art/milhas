@@ -322,7 +322,7 @@ test('onde rende mais: categoria em campanha no topo, com números do motor, pro
   const p = porCaminho(gerarPaginas(await dadosComCategorias(), { hoje: HOJE, urlBase: BASE }).arquivos);
   const pagina = p['onde-rende-mais/index.html'];
   const texto = textoVisivel(pagina);
-  assert.match(texto, /Hoje, 22\/11\/2026, o que mais rende para qualquer pessoa é Eletrônicos e Celulares nas Casas Bahia pelo Esfera: 10 pontos por real\./);
+  assert.match(texto, /Hoje, 22\/11\/2026, o que mais rende para qualquer pessoa é comprar nas Casas Bahia pelo Esfera: 10 pontos por real, em Eletrônicos e Celulares\./);
   // Ordem: Casas Bahia eletro (10), Amazon (5, até 8), Casas Bahia resto (3).
   const titulos = [...pagina.matchAll(/<h2 id="oportunidade-\d+"[^>]*>([^<]*)<\/h2>/g)].map((m) => m[1]);
   assert.deepEqual(titulos, ['1. Casas Bahia · Esfera', '2. Amazon · Livelo', '3. Casas Bahia · Esfera']);

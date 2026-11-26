@@ -3,10 +3,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { calcularAnuidade, calcularJeitosDeComprar } from '../site/js/motor/index.js';
+import { fraseDoJeito } from '../site/js/tela/textos.js';
 import { perfilDeTodos } from '../site/js/perfil/formato.js';
 import {
   JEITOS_ABERTOS, VALOR_EXEMPLO_CENTAVOS, cartaoSugerido, cotacaoDe, escolhaDeCartao, exemplosRapidos, fraseSemPontos,
-  lerPorcento, lojasComOferta, milheiroDe, perfilComAjuste, premissasDaConta, programasComOfertaNaLoja, separarJeitos, textoAnuidade,
+  juntarJeitosIguais, lerPorcento, lojasComOferta, milheiroDe, perfilComAjuste, premissasDaConta, programasComOfertaNaLoja, separarJeitos,
+  textoAnuidade,
 } from '../site/js/tela/primeira-visita.js';
 
 const FONTE = 'https://exemplo.invalid/teste';
@@ -287,4 +289,61 @@ test('anuidade: sem conta possível, nunca compensa e cartão sem anuidade', () 
   assert.match(gratis.principal, /não tem anuidade no nosso cadastro/);
   const semValor = textoAnuidade(calcularAnuidade({ cartao, gasto_mensal_centavos: 100000, milheiro: null }), true);
   assert.deepEqual(semValor.detalhes.slice(0, 2), ['Pontos por ano: 24.000.', 'Anuidade: R$ 600,00.']);
+});
+
+// ---------------------------------------------------------------------------
+// Mesma oferta repetida para cada cartão
+
+test('juntar jeitos: oferta que não soma com o cartão vira um card só, sem mudar a ordem', () => {
+  const d = dados({ cotacao: 58889 });
+  // A oferta não soma com o cartão e rende mais que qualquer um deles.
+  d.ofertas[0] = { ...d.ofertas[0], acumula_com_cartao: 'A_CONFIRMAR', regras: [{ condicao: {}, pontos_por_real: 10 }] };
+  const jeitos = calcularJeitosDeComprar(perfilDeTodos(d), { loja_id: 'com', valor_centavos: 10000, tipo_vendedor: 'loja' }, d, HOJE);
+  const comOferta = jeitos.filter((j) => j.tipo === 'oferta');
+  assert.equal(comOferta.length, 3);
+  const juntos = juntarJeitosIguais(jeitos);
+  assert.equal(juntos.length, jeitos.length - 2);
+  const [primeiro] = juntos;
+  assert.equal(primeiro.tipo, 'oferta');
+  assert.equal(primeiro.cartao, null);
+  assert.deepEqual(primeiro.cartoes_que_servem, comOferta.map((j) => j.cartao.nome));
+  assert.equal(primeiro.total_pontos, 1000);
+  // Nada de aviso, data ou passo que fale de um cartão só.
+  for (const texto of [...primeiro.avisos, ...primeiro.explicacao, ...primeiro.conferido_em.map((c) => c.rotulo)]) {
+    assert.doesNotMatch(texto, /Cartão (Alfa|Beta|Dólar)|dólar|somam|Sem somar/, texto);
+  }
+  assert.ok(primeiro.conferido_em.some((c) => /^oferta Alfa/.test(c.rotulo)));
+  assert.equal(fraseDoJeito(primeiro, d.lojas[1]),
+    'Compre na Loja Com pela oferta do Alfa. Os pontos vêm só da oferta, então tanto faz qual cartão você usa para pagar.');
+  // Os jeitos sem oferta continuam, um por cartão, na mesma ordem.
+  assert.deepEqual(juntos.slice(1), jeitos.filter((j) => j.tipo !== 'oferta'));
+});
+
+test('juntar jeitos: oferta que soma com o cartão, ou um cartão só, não muda nada', () => {
+  const d = dados({ cotacao: 58889 });
+  const perfil = perfilDeTodos(d);
+  const compra = { loja_id: 'com', valor_centavos: 10000, tipo_vendedor: 'loja' };
+  const somando = calcularJeitosDeComprar(perfil, compra, d, HOJE);
+  assert.deepEqual(juntarJeitosIguais(somando), somando);
+  d.ofertas[0] = { ...d.ofertas[0], acumula_com_cartao: false, regras: [{ condicao: {}, pontos_por_real: 10 }] };
+  const umCartao = calcularJeitosDeComprar({ ...perfil, cartoes: ['c-alfa'] }, compra, d, HOJE);
+  assert.deepEqual(juntarJeitosIguais(umCartao), umCartao);
+  assert.match(fraseDoJeito(umCartao[0], d.lojas[1]), /pague com o cartão Cartão Alfa/);
+  assert.deepEqual(juntarJeitosIguais([]), []);
+});
+
+test('premissas: programas com o mesmo milheiro viram uma linha só', () => {
+  const d = dados({ cotacao: 58889 });
+  d.programas.push({ id: 'delta', nome: 'Delta', valor_milheiro_brl: 2000, valor_milheiro_origem: 'estimativa_editavel', fonte_url: FONTE, verificado_em: HOJE });
+  d.programas.push({ id: 'eps', nome: 'Eps', valor_milheiro_brl: 'A_CONFIRMAR', fonte_url: FONTE, verificado_em: HOJE });
+  d.cartoes.push({ id: 'c-delta', nome: 'Cartão Delta', programa_id: 'delta', pontos_por_real: 1, anuidade_brl: 0, status: 'confirmado', fonte_url: FONTE, verificado_em: HOJE });
+  d.cartoes.push({ id: 'c-eps', nome: 'Cartão Eps', programa_id: 'eps', pontos_por_real: 1, anuidade_brl: 0, status: 'confirmado', fonte_url: FONTE, verificado_em: HOJE });
+  const perfil = perfilDeTodos(d);
+  const jeitos = calcularJeitosDeComprar(perfil, { loja_id: 'sem', valor_centavos: 10000, tipo_vendedor: 'loja' }, d, HOJE);
+  const textos = premissasDaConta({ dados: d, perfil, semPerfil: true, jeitos }).map((p) => p.texto);
+  assert.ok(textos.includes('1.000 pontos valem uns R$ 20,00 em cada um destes: Alfa e Delta (estimativa média).'), textos.join('\n'));
+  assert.ok(textos.includes('Beta e Eps: ainda sem valor de milheiro confirmado, então mostramos só os pontos.'), textos.join('\n'));
+  const doPerfil = { ...perfil, valor_milheiro_brl: { alfa: 2500, delta: 2500 } };
+  const t2 = premissasDaConta({ dados: d, perfil: doPerfil, semPerfil: false, jeitos }).map((p) => p.texto);
+  assert.ok(t2.includes('1.000 pontos valem R$ 25,00 em cada um destes: Alfa e Delta (valor que você informou).'), t2.join('\n'));
 });

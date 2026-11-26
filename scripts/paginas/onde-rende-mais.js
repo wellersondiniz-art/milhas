@@ -101,8 +101,8 @@ function fraseDoTopo(lista, dados, hoje) {
     return `Hoje, ${formatarData(hoje)}, as ofertas ativas só rendem pontos extras com clube ou cartão específico. Veja abaixo o que cada uma pede.`;
   }
   const loja = dados.lojas.find((l) => l.id === topo.loja.id);
-  return `Hoje, ${formatarData(hoje)}, o que mais rende para qualquer pessoa é ${alvoCurto(topo.alvo)} ${naLoja(loja)} ` +
-    `pelo ${topo.programa.nome}: ${pontosPorReal(topo.pontos_por_real_referencia)}.`;
+  return `Hoje, ${formatarData(hoje)}, o que mais rende para qualquer pessoa é comprar ${naLoja(loja)} ` +
+    `pelo ${topo.programa.nome}: ${pontosPorReal(topo.pontos_por_real_referencia)}, em ${alvoCurto(topo.alvo)}.`;
 }
 
 /** Página "Onde rende mais hoje": todas as ofertas ativas, da que mais rende para a que menos rende. */

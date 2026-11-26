@@ -21,6 +21,9 @@ export function fraseDoJeito(jeito, loja) {
   const cartao = jeito.cartao?.nome;
   const na = naLoja(loja);
   if (jeito.tipo === 'oferta') {
+    if (jeito.cartoes_que_servem?.length > 1) {
+      return `Compre ${na} pela oferta do ${programa}. Os pontos vêm só da oferta, então tanto faz qual cartão você usa para pagar.`;
+    }
     return cartao
       ? `Compre ${na} pela oferta do ${programa} e pague com o cartão ${cartao}.`
       : `Compre ${na} pela oferta do ${programa}.`;

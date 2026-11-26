@@ -334,7 +334,9 @@ async function iniciar() {
 
   desenharBonusDeHoje();
 
-  campoOrigem.replaceChildren(...origensDeTransferencia(dados).map((o) => el('option', { value: o.id }, o.nome)));
+  // Começa pelo programa que tem bônus hoje: é o caso mais provável de quem chega aqui.
+  const comBonus = campanhasDeHoje(dados, hoje())[0]?.rota.origem_id;
+  campoOrigem.replaceChildren(...origensDeTransferencia(dados).map((o) => el('option', { value: o.id, selected: o.id === comBonus ? '' : null }, o.nome)));
   campoOrigem.disabled = false;
   $('transferir-ver').disabled = false;
   campoOrigem.addEventListener('change', () => { if (!caixaTransferir.hidden) caixaTransferir.hidden = true; });

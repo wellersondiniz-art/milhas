@@ -108,15 +108,30 @@ export function premissasDaConta({ dados, perfil, semPerfil, jeitos }) {
       if (c) programas.add(c.programa_id);
     }
   }
+  // Programas com o mesmo valor (ou sem valor) viram uma linha só: sem
+  // cadastro, são vários programas com a mesma estimativa.
+  const grupos = new Map();
   for (const id of programas) {
     const nome = dados.programas.find((p) => p.id === id)?.nome ?? id;
     const m = milheiroDe(id, perfil, dados);
+    const tipo = !m ? 'sem' : m.doPerfil ? `perfil-${m.centavos}` : `estimado-${m.centavos}-${m.estimativa === true}`;
+    if (!grupos.has(tipo)) grupos.set(tipo, { m, ids: [], nomes: [] });
+    grupos.get(tipo).ids.push(id);
+    grupos.get(tipo).nomes.push(nome);
+  }
+  for (const { m, ids, nomes } of grupos.values()) {
+    const chave = `milheiro-${ids.join('-')}`;
+    const quem = listaComE(nomes);
     if (!m) {
-      lista.push({ chave: `milheiro-${id}`, texto: `${nome}: ainda sem valor de milheiro confirmado, então mostramos só os pontos.`, onde: 'perfil' });
-    } else if (m.doPerfil) {
-      lista.push({ chave: `milheiro-${id}`, texto: `1.000 pontos ${nome} valem ${formatarCentavos(m.centavos)} (valor que você informou).`, onde: 'perfil' });
+      lista.push({ chave, texto: `${quem}: ainda sem valor de milheiro confirmado, então mostramos só os pontos.`, onde: 'perfil' });
+    } else if (nomes.length === 1) {
+      lista.push({ chave, texto: m.doPerfil
+        ? `1.000 pontos ${quem} valem ${formatarCentavos(m.centavos)} (valor que você informou).`
+        : `1.000 pontos ${quem} valem uns ${formatarCentavos(m.centavos)}${m.estimativa ? ' (estimativa média)' : ''}.`, onde: 'perfil' });
     } else {
-      lista.push({ chave: `milheiro-${id}`, texto: `1.000 pontos ${nome} valem uns ${formatarCentavos(m.centavos)}${m.estimativa ? ' (estimativa média)' : ''}.`, onde: 'perfil' });
+      lista.push({ chave, texto: m.doPerfil
+        ? `1.000 pontos valem ${formatarCentavos(m.centavos)} em cada um destes: ${quem} (valor que você informou).`
+        : `1.000 pontos valem uns ${formatarCentavos(m.centavos)} em cada um destes: ${quem}${m.estimativa ? ' (estimativa média)' : ''}.`, onde: 'perfil' });
     }
   }
 
@@ -244,6 +259,48 @@ export function fraseSemPontos(semPontos, faltaDolar) {
     ? 'porque eles dão pontos por dólar e falta a cotação do dólar (informe no ajuste acima)'
     : 'com o que sabemos hoje (pontos ainda não confirmados ou sem oferta)';
   return `${quem} não ${nomes.length === 1 ? 'rende' : 'rendem'} pontos nesta compra, ${por}.`;
+}
+
+/** "A", "A e B", "A, B e C". */
+function listaComE(nomes) {
+  return nomes.length < 2 ? nomes.join('') : `${nomes.slice(0, -1).join(', ')} e ${nomes.at(-1)}`;
+}
+
+/**
+ * Junta os jeitos que só mudam no cartão e dão a mesma coisa: oferta que não
+ * soma com o cartão (ou sem confirmação de que soma) e rende mais que ele.
+ * Sem isso, quem não cadastrou nada via a mesma oferta repetida para cada
+ * um dos cartões, com o mesmo valor. Fica o primeiro (a ordem do motor não
+ * muda), sem cartão e com a lista dos cartões que servem; saem dele os avisos
+ * e as datas de conferência que falam só de um desses cartões.
+ */
+export function juntarJeitosIguais(jeitos) {
+  const grupos = new Map();
+  const saida = [];
+  for (const j of jeitos) {
+    if (j.tipo !== 'oferta' || !j.cartao || j.pontos_do_cartao !== 0) { saida.push(j); continue; }
+    const chave = `${j.oferta_id}|${j.total_pontos_escalado}|${j.valor_estimado_em_reais?.bilionesimos_de_centavo ?? '-'}`;
+    const grupo = grupos.get(chave);
+    if (grupo) { grupo.cartoes.push(j.cartao.nome); continue; }
+    const novo = { jeito: j, cartoes: [j.cartao.nome] };
+    grupos.set(chave, novo);
+    saida.push(novo);
+  }
+  return saida.map((item) => {
+    if (!item.cartoes) return item;
+    const { jeito, cartoes } = item;
+    if (cartoes.length === 1) return jeito;
+    const falaDeUm = (texto) => cartoes.some((nome) => texto.includes(nome));
+    return {
+      ...jeito,
+      cartao: null,
+      cartoes_que_servem: cartoes,
+      avisos: jeito.avisos.filter((a) => !falaDeUm(a) && !a.includes('pontos do cartão somam') && !a.includes('não soma com os pontos do cartão')),
+      // A cotação do dólar só entra pelos pontos do cartão, que aqui não contam.
+      conferido_em: jeito.conferido_em.filter((c) => !falaDeUm(c.rotulo) && !c.rotulo.includes('dólar')),
+      explicacao: jeito.explicacao.filter((p) => !falaDeUm(p) && !p.startsWith('Sem somar, vale o maior')),
+    };
+  });
 }
 
 /** Cartão sugerido para a conta da anuidade: o do melhor jeito, senão o primeiro do perfil, senão o primeiro com anuidade. */

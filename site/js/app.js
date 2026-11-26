@@ -15,7 +15,7 @@ import { alerta, montarCarregando, montarResultado } from './tela/resultado.js';
 import { anuncioDoResultado } from './tela/textos.js';
 import { el } from './tela/dom.js';
 import { montarAjusteRapido, montarValeAPena } from './tela/decisao-tela.js';
-import { exemplosRapidos, perfilComAjuste, premissasDaConta } from './tela/primeira-visita.js';
+import { exemplosRapidos, juntarJeitosIguais, perfilComAjuste, premissasDaConta } from './tela/primeira-visita.js';
 import { iniciarPwa } from './pwa/pwa.js';
 import { montarLinkDeSaida } from './saida/links.js';
 import { EXPLICAR_LIGADO } from './explicar/config.js';
@@ -178,7 +178,9 @@ function calcular({ focar = true, contar = true } = {}) {
     const premissas = premissasDaConta({ dados, perfil, semPerfil, jeitos });
     ajuste.atualizarPremissas(premissas);
     const ativo = document.activeElement;
-    resultado.replaceChildren(montarResultado(jeitos, {
+    // Na tela, a mesma oferta repetida para cada cartão vira um card só.
+    const naTela = juntarJeitosIguais(jeitos);
+    resultado.replaceChildren(montarResultado(naTela, {
       loja,
       valorTexto,
       semPerfil,
@@ -194,7 +196,7 @@ function calcular({ focar = true, contar = true } = {}) {
     if (EXPLICAR_LIGADO && jeitos.length) {
       resultado.append(montarExplicar({ lojaId: loja.id, centavos, perfil: perfilSalvo, melhor: jeitos[0] }));
     }
-    anunciar(anuncioDoResultado(jeitos, { nomeLoja: loja, valorTexto }));
+    anunciar(anuncioDoResultado(naTela, { nomeLoja: loja, valorTexto }));
     lojaDaConta = loja.id;
     if (contar) metricas.registrar('calculo', { loja: loja.id });
   } catch (erro) {

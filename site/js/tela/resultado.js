@@ -24,9 +24,12 @@ function seloDoCard(jeito) {
   const selo = seloDeConferencia(jeito);
   if (!selo) return null;
   return el('p', { class: `fonte${selo.antigo ? ' fonte--antiga' : ''}` },
-    el('span', { class: 'fonte__icone', 'aria-hidden': 'true' }, selo.antigo ? '!' : '✓'),
-    el('span', {}, selo.texto),
-    selo.site ? el('span', {}, ' · Fonte: ', linkDaFonte(selo.fonte_url, selo.site)) : null);
+    // Duas partes que quebram juntas: no celular, "Fonte" desce inteira para
+    // a linha de baixo, sem um "·" solto no começo.
+    el('span', {},
+      el('span', { class: 'fonte__icone', 'aria-hidden': 'true' }, selo.antigo ? '! ' : '✓ '),
+      selo.texto),
+    selo.site ? el('span', {}, el('span', { class: 'fonte__ponto', 'aria-hidden': 'true' }, '· '), 'Fonte: ', linkDaFonte(selo.fonte_url, selo.site)) : null);
 }
 
 const TERMOS = {

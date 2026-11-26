@@ -237,6 +237,9 @@ main {
 }
 
 .fonte__icone { font-weight: var(--peso-forte); }
+/* O "·" só separa quando as duas partes cabem na mesma linha (telas largas). */
+.fonte__ponto { display: none; }
+@media (min-width: 30rem) { .fonte__ponto { display: inline; } }
 
 .fonte__link,
 .resultado__conferido a {
@@ -534,3 +537,24 @@ html:has(#tela-perfil:not([hidden])) { scroll-padding-bottom: 7rem; }
 }
 
 .campo__entrada--curta { max-width: 8rem; }
+
+/* Mais jeitos de ganhar pontos (atalhos da tela inicial) ------------------ */
+.mais-jeitos__titulo { font-size: var(--texto-lg); margin: 0; }
+.mais-jeitos__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espaco-2); }
+.mais-jeitos__link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-1);
+  min-height: var(--altura-toque);
+  padding: var(--espaco-3) var(--espaco-4);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-left: 4px solid var(--cor-destaque);
+  border-radius: var(--raio-lg);
+  color: var(--cor-texto);
+  text-decoration: none;
+}
+.mais-jeitos__link:hover { border-color: var(--cor-primaria); border-left-color: var(--cor-destaque); }
+.mais-jeitos__nome { font-weight: var(--peso-extra); color: var(--cor-primaria); text-decoration: underline; text-underline-offset: 0.15em; }
+.mais-jeitos__texto { font-size: var(--texto-sm); color: var(--cor-texto-suave); }
+@media (min-width: 48rem) { .mais-jeitos__lista { grid-template-columns: repeat(3, 1fr); } }
