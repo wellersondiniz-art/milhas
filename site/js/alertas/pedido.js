@@ -2,6 +2,8 @@
 // A validação de verdade é a do servidor (servidor/alertas/regras.js); a da
 // página só ajuda quem digita.
 
+import { ehCartaoProprio } from '../perfil/formato.js';
+
 /** Quanto tempo a página espera a resposta do servidor. */
 export const ESPERA_MS = 15_000;
 
@@ -35,7 +37,8 @@ export function montarCorpo(campos, perfil, tempoNoFormularioMs) {
     programa_id: campos.programa_id || null,
     pontos_por_real: campos.pontos_por_real.trim(),
     consentimento: campos.consentimento === true,
-    perfil: perfil ? { programas: perfil.programas, cartoes: perfil.cartoes } : null,
+    // Os cartões adicionados pela pessoa ("meu-1"…) não saem do aparelho.
+    perfil: perfil ? { programas: perfil.programas, cartoes: perfil.cartoes.filter((id) => !ehCartaoProprio(id)) } : null,
     site: campos.site ?? '',
     tempo_no_formulario_ms: Math.max(0, Math.round(tempoNoFormularioMs)),
   };

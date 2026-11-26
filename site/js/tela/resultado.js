@@ -33,6 +33,18 @@ function seloDoCard(jeito) {
     selo.site ? el('span', {}, el('span', { class: 'fonte__ponto', 'aria-hidden': 'true' }, '· '), 'Fonte: ', linkDaFonte(selo.fonte_url, selo.site)) : null);
 }
 
+/**
+ * Cartão que a pessoa adicionou em "Meu perfil": não tem selo de fonte nosso,
+ * então dizemos de onde vieram os números, logo abaixo do selo da oferta.
+ */
+export function seloDoCartaoDaPessoa(jeito) {
+  if (jeito.cartao?.informado_pela_pessoa !== true) return null;
+  return el('p', { class: 'fonte fonte--pessoa' },
+    el('span', {},
+      el('span', { class: 'fonte__icone', 'aria-hidden': 'true' }, '✎ '),
+      `${jeito.cartao.nome}: os pontos do cartão usam os números que você informou em Meu perfil. Não conferimos.`));
+}
+
 const TERMOS = {
   milheiro: ['O que é milheiro?', 'É quanto valem 1.000 pontos. Se o milheiro vale R$ 20,00, cada 1.000 pontos que você junta valem uns R$ 20,00 em passagem ou produto. É uma média: o valor real depende de como você usa os pontos.'],
   clube: ['O que é clube?', 'É uma assinatura mensal do programa de pontos. Quem assina costuma ganhar mais pontos por real nas lojas parceiras. Algumas ofertas pedem que o clube esteja ativo há um tempo, por exemplo 24 horas antes da compra.'],
@@ -62,6 +74,7 @@ function selos(jeito, posicao) {
   if (vence) lista.push(el('span', { class: 'selo selo--aviso' }, vence));
   if (jeito.depende_da_categoria) lista.push(el('span', { class: 'selo selo--aviso' }, 'Depende do produto'));
   if (jeito.tem_dado_antigo) lista.push(el('span', { class: 'selo selo--aviso' }, 'Dado antigo'));
+  if (jeito.cartao?.informado_pela_pessoa === true) lista.push(el('span', { class: 'selo selo--info' }, 'Cartão informado por você'));
   return el('div', { class: 'card__topo' }, lista);
 }
 
@@ -112,6 +125,7 @@ function card(jeito, posicao, loja, reporteLigado) {
     el('p', { class: `card__valor${destaque.emReais ? '' : ' card__valor--pontos'}`, id: `${id}-valor` }, destaque.principal),
     el('p', { class: 'card__legenda' }, destaque.legenda),
     seloDoCard(jeito),
+    seloDoCartaoDaPessoa(jeito),
     el('div', { class: 'card__bloco' },
       el('p', { id: `${id}-frase` }, fraseDoJeito(jeito, nomeLoja)),
       destaque.emReais

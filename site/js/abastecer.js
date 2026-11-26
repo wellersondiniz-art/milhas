@@ -5,7 +5,7 @@
 
 import { COMBUSTIVEIS, calcularAbastecimento, dataHoraEmSaoPaulo, formatarCentavos } from './motor/index.js';
 import { abrirArmazem } from './perfil/armazem.js';
-import { ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
+import { dadosComCartoesDaPessoa, ehVazio, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
 import { aplicarMascara, erroDoValor, VALOR_MAXIMO_CENTAVOS } from './tela/moeda.js';
 import { alerta, montarCarregando } from './tela/resultado.js';
 import { el } from './tela/dom.js';
@@ -105,10 +105,12 @@ function calcular() {
   const abastecimento = lerFormulario();
   if (!abastecimento || !dados) return;
   const semPerfil = ehVazio(perfilSalvo());
-  const perfil = semPerfil ? perfilDeTodos(dados, perfilSalvo()?.cotacao_dolar) : perfilParaConta(perfilSalvo());
+  // Os cartões que a pessoa adicionou em "Meu perfil" entram como os do cadastro.
+  const dadosDaConta = dadosComCartoesDaPessoa(dados, perfilSalvo());
+  const perfil = semPerfil ? perfilDeTodos(dadosDaConta, perfilSalvo()?.cotacao_dolar) : perfilParaConta(perfilSalvo());
   passoResultado.hidden = false;
   try {
-    const r = calcularAbastecimento(perfil, abastecimento, dados, dataHoraEmSaoPaulo(new Date()));
+    const r = calcularAbastecimento(perfil, abastecimento, dadosDaConta, dataHoraEmSaoPaulo(new Date()));
     const nomeRede = dados.redes_postos.find((x) => x.id === abastecimento.rede_id)?.nome;
     const texto = tituloDoAbastecimento(r.abastecimento, nomeRede);
     titulo.textContent = texto[0].toUpperCase() + texto.slice(1);

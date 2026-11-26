@@ -367,7 +367,9 @@ function paraSaida(ctx, j) {
     rede: j.rede ? { id: j.rede.id, nome: j.rede.nome } : null,
     programa: j.programaId ? { id: j.programaId, nome: ctx.nomePrograma(j.programaId) } : null,
     programa_do_posto: j.regra ? { id: j.regra.programa_id, nome: ctx.nomePrograma(j.regra.programa_id) } : null,
-    cartao: j.cartao ? { id: j.cartao.id, nome: j.cartao.nome } : null,
+    cartao: j.cartao
+      ? { id: j.cartao.id, nome: j.cartao.nome, ...(j.cartao.informado_pela_pessoa === true ? { informado_pela_pessoa: true } : {}) }
+      : null,
     combustivel: { id: ctx.combustivel, nome: ctx.nomeCombustivel },
     pontos_do_programa: pontosParaNumero(j.progEsc),
     pontos_do_cartao: pontosParaNumero(j.cartEsc),

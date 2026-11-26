@@ -7,7 +7,7 @@
 // para o pacote, sem nenhuma alteração.
 
 import { calcularJeitosDeComprar } from './motor/index.js';
-import { ehVazio, limparPerfil, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
+import { dadosComCartoesDaPessoa, ehVazio, limparPerfil, perfilDeTodos, perfilParaConta } from './perfil/formato.js';
 import { lerPreco, recortarPreco } from './preco.js';
 import { textoDoSelo } from './selo-texto.js';
 
@@ -45,12 +45,14 @@ export function calcularSelo(pedido, host, perfilBruto, dados, seletores, hoje) 
 
   const perfil = limparPerfil(perfilBruto, dados);
   const semPerfil = ehVazio(perfil);
-  const paraConta = semPerfil ? perfilDeTodos(dados, perfil?.cotacao_dolar) : perfilParaConta(perfil);
+  // Cartões que a pessoa adicionou no site (perfil importado) contam como os do cadastro.
+  const dadosDaConta = dadosComCartoesDaPessoa(dados, perfil);
+  const paraConta = semPerfil ? perfilDeTodos(dadosDaConta, perfil?.cotacao_dolar) : perfilParaConta(perfil);
   const jeitos = calcularJeitosDeComprar(
     paraConta,
     // A extensão não sabe quem vende o produto: conta como vendido pela loja, igual ao site.
     { loja_id: loja.loja_id, valor_centavos: centavos, tipo_vendedor: 'loja' },
-    dados,
+    dadosDaConta,
     hoje,
   );
   return textoDoSelo(jeitos, { semPerfil });

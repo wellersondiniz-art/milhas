@@ -8,10 +8,14 @@
 import { ID_COTACAO_DOLAR, formatarCentavos, formatarCotacao, formatarData } from '../motor/index.js';
 import { DIAS_ATENCAO, avisosDeVencimento, avisosQuePedemAtencao, prazoDoPrograma } from '../motor/validade.js';
 import {
-  MILHEIRO_MAXIMO, TAMANHO_MAXIMO, ehVazio, nomeDoArquivo, perfilVazio, semNadaParaGuardar,
+  MILHEIRO_MAXIMO, TAMANHO_MAXIMO, ehVazio, nomeDoArquivo, novoIdProprio, perfilComCartaoProprio, perfilSemCartaoProprio, perfilVazio, semNadaParaGuardar,
   textoParaExportar, validarImportacao,
 } from '../perfil/formato.js';
+import { REPORTE_LIGADO } from '../reporte/config.js';
+import { montarPedidoDeCartao } from '../reporte/pedido-cartao.js';
 import { el } from './dom.js';
+import { montarAdicionarCartao } from './meu-cartao-tela.js';
+import { resumoDoCartaoProprio } from '../perfil/cartao-digitado.js';
 import { aplicarMascara, mascaraCotacao } from './moeda.js';
 import { alerta, termo } from './resultado.js';
 
@@ -41,7 +45,7 @@ export function resumoDoPerfil(perfil) {
 
 /**
  * @param {object} opcoes
- * @param {object} opcoes.elementos   { formulario, aviso, vencimentos?, status, exportar, importar, arquivo, resultadoImportacao, apagar, confirmarApagar, simApagar, naoApagar }
+ * @param {object} opcoes.elementos   { formulario, aviso, vencimentos?, meuCartao?, status, exportar, importar, arquivo, resultadoImportacao, apagar, confirmarApagar, simApagar, naoApagar }
  * @param {object} opcoes.dados       { programas, cartoes }
  * @param {() => string} opcoes.hoje  "AAAA-MM-DD" no relógio do aparelho
  * @param {() => object|null} opcoes.obterPerfil
@@ -49,7 +53,7 @@ export function resumoDoPerfil(perfil) {
  */
 export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirPerfil }) {
   const {
-    formulario, aviso, vencimentos, status, exportar, importar, arquivo, resultadoImportacao,
+    formulario, aviso, vencimentos, meuCartao, status, exportar, importar, arquivo, resultadoImportacao,
     apagar, confirmarApagar, simApagar, naoApagar,
   } = elementos;
   const nomePrograma = new Map(dados.programas.map((p) => [p.id, p.nome]));
@@ -163,6 +167,41 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
           ` · junta ${nomePrograma.get(cartao.programa_id) ?? 'pontos'}${nota}`)));
   }
 
+  /** Cartão adicionado pela pessoa: marca, nome, o que ela informou e "Remover". */
+  function blocoCartaoProprio(cartao, marcado) {
+    const caixa = el('input', { type: 'checkbox', id: `perfil-cartao-${cartao.id}`, value: cartao.id, checked: marcado });
+    caixasCartao.push(caixa);
+    const remover = el('button', { type: 'button', class: 'botao botao--fantasma', 'aria-label': `Remover o cartão ${cartao.nome}` }, 'Remover');
+    remover.addEventListener('click', () => removerCartaoProprio(cartao));
+    return el('div', { class: 'perfil__proprio' },
+      el('label', { class: 'opcao' }, caixa,
+        el('span', {}, cartao.nome,
+          el('span', { class: 'texto-suave texto-pequeno perfil__nota' },
+            ` · informado por você · ${resumoDoCartaoProprio(cartao, nomePrograma)}`))),
+      remover);
+  }
+
+  /** "O seu não está aqui?": abre "Adicionar meu cartão" e leva o foco até lá. */
+  function botaoIrParaMeuCartao() {
+    const botao = el('button', { type: 'button', class: 'botao botao--fantasma' }, 'O seu cartão não está aqui? Adicione');
+    botao.addEventListener('click', () => {
+      const caixa = meuCartao.querySelector('#meu-cartao');
+      if (caixa) caixa.open = true;
+      (meuCartao.querySelector('#meu-cartao-nome') ?? meuCartao).focus();
+    });
+    return el('div', {}, botao);
+  }
+
+  function removerCartaoProprio(cartao) {
+    const atual = obterPerfil();
+    if (!atual) return;
+    const novo = perfilSemCartaoProprio(atual, cartao.id);
+    const r = definirPerfil(semNadaParaGuardar(novo) ? null : novo);
+    desenhar();
+    avisarSalvo(r, `${cartao.nome} foi removido deste aparelho.`);
+    (meuCartao?.querySelector('summary') ?? status).focus();
+  }
+
   function blocoCotacao(valorDoPerfil) {
     campoCotacao = el('input', {
       type: 'text', id: 'perfil-cotacao-dolar', class: 'campo__entrada', inputmode: 'numeric', autocomplete: 'off',
@@ -200,10 +239,17 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
         el('legend', { class: 'perfil__legenda' }, 'Cartões de crédito que você usa'),
         dados.cartoes.length
           ? dados.cartoes.map((c) => blocoCartao(c, perfil.cartoes.includes(c.id)))
-          : el('p', { class: 'texto-suave' }, 'Ainda não temos cartões no cadastro.')),
+          : el('p', { class: 'texto-suave' }, 'Ainda não temos cartões no cadastro.'),
+        (perfil.cartoes_proprios ?? []).length
+          ? el('div', { class: 'pilha--sm' },
+            el('p', { class: 'perfil__nome' }, 'Cartões que você adicionou'),
+            perfil.cartoes_proprios.map((c) => blocoCartaoProprio(c, perfil.cartoes.includes(c.id))))
+          : null,
+        meuCartao ? botaoIrParaMeuCartao() : null),
       blocoCotacao(perfil.cotacao_dolar),
     );
     mostrarVencimentos(perfil);
+    adicionar?.atualizar();
   }
 
   function lerFormulario() {
@@ -228,6 +274,9 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
       if (centavos) novo.valor_milheiro_brl[c.programa.id] = centavos;
     }
     novo.cartoes = caixasCartao.filter((c) => c.checked).map((c) => c.value);
+    // Os cartões adicionados não têm campo no formulário: seguem como estão.
+    const proprios = obterPerfil()?.cartoes_proprios;
+    if (proprios?.length) novo.cartoes_proprios = proprios;
     const { valor } = mascaraCotacao(campoCotacao?.value);
     if (valor) novo.cotacao_dolar = valor;
     return novo;
@@ -245,6 +294,34 @@ export function montarTelaPerfil({ elementos, dados, hoje, obterPerfil, definirP
     mostrarVencimentos(novo);
     avisarSalvo(r, ehVazio(novo) ? 'Nada marcado. A conta usa todos os cartões e programas.' : 'Salvo neste aparelho.');
   });
+
+  // Meu cartão não está na lista ---------------------------------------------
+
+  let ultimoNome = '';
+  const adicionar = meuCartao ? montarAdicionarCartao({
+    programas: dados.programas,
+    proximoId: () => novoIdProprio(obterPerfil()?.cartoes_proprios),
+    aoAdicionar(cartao) {
+      const antes = obterPerfil();
+      const novo = perfilComCartaoProprio(antes, cartao);
+      const r = definirPerfil(novo);
+      ultimoNome = cartao.nome;
+      desenhar();
+      avisarSalvo(r, ehVazio(antes)
+        ? `Pronto: ${cartao.nome} foi adicionado. Ele já entra na conta, junto com todos os outros.`
+        : `Pronto: ${cartao.nome} foi adicionado e marcado. Ele já entra na conta.`);
+      document.getElementById(`perfil-cartao-${cartao.id}`)?.focus();
+    },
+  }) : null;
+  if (meuCartao) {
+    meuCartao.replaceChildren(
+      el('h2', { id: 'meu-cartao-titulo', class: 'perfil__subtitulo', tabindex: '-1' }, 'Meu cartão não está na lista'),
+      el('p', { class: 'texto-suave' }, 'Você pode colocar os números do seu cartão aqui e usar já. E pode pedir para a gente incluir o cartão na lista, para todo mundo.'),
+      adicionar.elemento,
+      REPORTE_LIGADO
+        ? montarPedidoDeCartao({ programas: dados.programas, sugerirNome: () => ultimoNome })
+        : el('p', { class: 'texto-pequeno texto-suave' }, 'Quer que o cartão entre na lista para todo mundo? Diga o nome dele em ', el('a', { href: 'contato/' }, 'Contato'), '.'));
+  }
 
   // Exportar ------------------------------------------------------------------
 

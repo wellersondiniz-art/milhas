@@ -177,7 +177,8 @@ function secaoAvisos() {
     p(forte('O e-mail é apagado quando a gente resolve o aviso, ou em até 90 dias, o que vier primeiro.'), ' Ele serve só para responder sobre o aviso.'),
     p('O texto e o link ficam guardados como histórico das correções. Por isso, não escreva dados pessoais no texto.'),
     p('Para evitar abuso, o servidor conta quantos avisos chegam de cada conexão. Para isso, usa um código embaralhado feito a partir do endereço de internet (IP), que some sozinho depois de uma hora. O IP não vai para o aviso.'),
-    p('Quer apagar um aviso que você mandou? Fale com a gente em ', contato(), ', dizendo a loja e o dia.'));
+    p('Quer apagar um aviso que você mandou? Fale com a gente em ', contato(), ', dizendo a loja e o dia.'),
+    p('Em ', meuPerfil(), ', o botão "Pedir para incluirmos esse cartão" funciona do mesmo jeito: a gente recebe só o nome do cartão, o banco, o programa e o link que você colar, sem e-mail. Os números que você digitou em "Adicionar meu cartão" não vão junto: ficam só no seu aparelho.'));
 }
 
 // Só entra quando o botão "Explica pra mim" está ligado
@@ -229,6 +230,7 @@ function paginaPrivacidade({ temAfiliado, usaAwin, medindo, reporteLigado, alert
         lista([
           'os programas de pontos que você marcou, se você assina o clube de cada um e desde quando;',
           'os cartões que você marcou, pelo nome;',
+          'os cartões que você adicionou porque não estavam na nossa lista: o nome, o programa, os pontos e a anuidade que você digitou;',
           'o valor do milheiro, se você trocou o nosso pelo seu;',
           'a cotação do dólar, se você informou uma.',
         ]),

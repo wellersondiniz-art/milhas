@@ -10,7 +10,7 @@ import {
 import { formatarData } from './motor/formatar.js';
 import { aplicarMascara, erroDoValor, mascaraCotacao } from './tela/moeda.js';
 import { abrirArmazem } from './perfil/armazem.js';
-import { ehVazio, perfilParaConta } from './perfil/formato.js';
+import { dadosComCartoesDaPessoa, ehVazio, perfilParaConta } from './perfil/formato.js';
 import { alerta } from './tela/resultado.js';
 import { dataHoraEmSaoPaulo } from './motor/datas.js';
 import { el } from './tela/dom.js';
@@ -330,6 +330,8 @@ async function iniciar() {
     return;
   }
   const salvo = abrirArmazem(globalThis.localStorage).ler(dados);
+  // Os cartões que a pessoa adicionou em "Meu perfil" entram como os do cadastro.
+  dados = dadosComCartoesDaPessoa(dados, salvo);
   perfil = salvo && !ehVazio(salvo) ? perfilParaConta(salvo) : (salvo?.cotacao_dolar ? { cotacao_dolar: salvo.cotacao_dolar } : null);
 
   desenharBonusDeHoje();

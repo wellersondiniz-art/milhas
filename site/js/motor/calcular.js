@@ -644,7 +644,10 @@ function paraSaida(ctx, j) {
     tipo: j.tipo,
     oferta_id: j.oferta?.id ?? null,
     programa: j.programaId ? { id: j.programaId, nome: ctx.nomePrograma(j.programaId) } : null,
-    cartao: j.cartao ? { id: j.cartao.id, nome: j.cartao.nome } : null,
+    // Cartão que a pessoa adicionou no perfil (números dela, sem fonte nossa): a tela avisa.
+    cartao: j.cartao
+      ? { id: j.cartao.id, nome: j.cartao.nome, ...(j.cartao.informado_pela_pessoa === true ? { informado_pela_pessoa: true } : {}) }
+      : null,
     pontos_do_programa: pontosParaNumero(j.progEsc),
     pontos_do_cartao: pontosParaNumero(j.cartEsc),
     total_pontos: pontosParaNumero(total),

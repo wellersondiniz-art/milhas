@@ -109,7 +109,8 @@ export function montarReporte({ id, loja, jeito }, { enviar = (...a) => fetch(..
       loja_id: loja.id,
       oferta_id: jeito.oferta_id ?? null,
       programa_id: jeito.programa?.id ?? null,
-      cartao_id: jeito.cartao?.id ?? null,
+      // Cartão adicionado pela pessoa não está nos nossos dados: não vai.
+      cartao_id: jeito.cartao && jeito.cartao.informado_pela_pessoa !== true ? jeito.cartao.id : null,
       o_que_esta_errado: valores.o_que_esta_errado,
       link_da_prova: valores.link_da_prova.trim(),
       email: valores.email.trim(),

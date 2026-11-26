@@ -16,12 +16,13 @@
 // hora e nunca vai para a issue. O texto da pessoa nunca vai para o log.
 
 import {
-  comentarioDoEmail, dataEmSaoPaulo, LIMITES, montarIssue, validarReporte,
+  comentarioDoEmail, dataEmSaoPaulo, LIMITES, montarIssue, montarIssueDoPedido, validarPedidoDeCartao, validarReporte,
 } from './regras.js';
 import { consumir, podeEnviar, resumoDoIp } from './limite.js';
 
 export const MENSAGENS = Object.freeze({
   enviado: 'Recebemos o seu aviso. Obrigado! A gente confere e corrige.',
+  pedidoEnviado: 'Recebemos o seu pedido. Obrigado! Quando a gente conferir o cartão no site do banco, ele entra na lista.',
   foraDoAr: 'O envio de avisos está fora do ar agora. Tente mais tarde.',
   origem: 'Envie pelo formulário do próprio site.',
   formato: 'O formulário chegou num formato que não entendemos. Recarregue a página e tente de novo.',
@@ -84,10 +85,16 @@ export async function tratarReporte(request, deps) {
     return responder(400, { ok: false, mensagem: MENSAGENS.formato });
   }
 
+  // Dois tipos de pedido: "Essa informação está errada?" (o normal) e
+  // "Pedir esse cartão" (tipo: "pedido_de_cartao"), com as mesmas travas.
+  const ehPedidoDeCartao = entrada.tipo === 'pedido_de_cartao';
+  if (entrada.tipo !== undefined && !ehPedidoDeCartao) return responder(400, { ok: false, mensagem: MENSAGENS.formato });
+  const enviado = ehPedidoDeCartao ? MENSAGENS.pedidoEnviado : MENSAGENS.enviado;
+
   // Armadilhas: quem cai recebe "ok" e nada acontece.
   const tempo = Number(entrada.tempo_no_formulario_ms);
   if ((typeof entrada.site === 'string' && entrada.site !== '') || !Number.isFinite(tempo) || tempo < LIMITES.tempoMinimoMs) {
-    return responder(200, { ok: true, mensagem: MENSAGENS.enviado });
+    return responder(200, { ok: true, mensagem: enviado });
   }
 
   const agora = deps.agora();
@@ -102,13 +109,13 @@ export async function tratarReporte(request, deps) {
   let dados;
   try { dados = await deps.buscarDados(); } catch { return responder(503, { ok: false, mensagem: MENSAGENS.foraDoAr }); }
 
-  const validacao = validarReporte(entrada, dados);
+  const validacao = ehPedidoDeCartao ? validarPedidoDeCartao(entrada, dados) : validarReporte(entrada, dados);
   if (!validacao.ok) return responder(422, { ok: false, mensagem: MENSAGENS.invalido, erros: validacao.erros });
 
   // Conta antes de chamar o GitHub: quem insiste num erro também gasta o limite.
   await consumir(deps.kv, limite);
 
-  const issue = montarIssue(validacao.reporte, hoje);
+  const issue = ehPedidoDeCartao ? montarIssueDoPedido(validacao.pedido, hoje) : montarIssue(validacao.reporte, hoje);
   let criada;
   try {
     criada = await deps.github.criarIssue(issue);
@@ -116,7 +123,7 @@ export async function tratarReporte(request, deps) {
     console.error(`reportar: GitHub recusou a issue (${erro?.status ?? 'sem status'})`);
     return responder(502, { ok: false, mensagem: MENSAGENS.github });
   }
-  if (validacao.reporte.email) {
+  if (validacao.reporte?.email) {
     try {
       await deps.github.comentar(criada.number, comentarioDoEmail(validacao.reporte.email));
     } catch (erro) {
@@ -124,5 +131,5 @@ export async function tratarReporte(request, deps) {
       console.error(`reportar: GitHub recusou o comentário (${erro?.status ?? 'sem status'})`);
     }
   }
-  return responder(201, { ok: true, mensagem: MENSAGENS.enviado });
+  return responder(201, { ok: true, mensagem: enviado });
 }
