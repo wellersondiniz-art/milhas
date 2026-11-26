@@ -30,7 +30,9 @@ async function capturarEnvios(page) {
 
 /** Sites de fora abertos por clique: página em branco, sem rede de verdade. */
 async function sitesDeFora(page) {
-  await page.route(/^https:\/\/(www\.)?(magazineluiza\.com\.br|loja-teste\.invalid)\//, (rota) => rota.fulfill({ status: 200, contentType: 'text/html', body: '<p>fora</p>' }));
+  // Qualquer site de fora (fontes e lojas) responde aqui: o teste nunca sai para a internet.
+  await page.route((url) => url.protocol === 'https:' && !/(^|\.)plausible\.io$/.test(url.hostname),
+    (rota) => rota.fulfill({ status: 200, contentType: 'text/html', body: '<p>fora</p>' }));
 }
 
 const nomes = (envios) => envios.map((e) => e.corpo.n);
