@@ -73,7 +73,9 @@ export function documento({ titulo, descricao, caminho, raiz, urlBase, atual, da
       h('a', { class: 'pular-para-conteudo', href: '#conteudo' }, 'Pular para o conteúdo'),
       cabecalho(raiz, atual),
       h('main', { id: 'conteudo', class: 'container pilha--lg' }, principal),
-      rodape(raiz, atual)))}\n`;
+      rodape(raiz, atual),
+      // Métricas sem cookie (site/js/metricas/). Sem o Plausible configurado, não mede nada.
+      h('script', { type: 'module', src: `${raiz}js/metricas/paginas.js` })))}\n`;
 }
 
 export function alerta(tipo, icone, titulo, ...corpo) {

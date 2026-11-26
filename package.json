@@ -25,7 +25,8 @@
     "propor": "node scripts/propor-mudancas.js",
     "aprovar": "node scripts/aprovar-mudancas.js",
     "atualizacao:demo": "node testes/atualizacao/demo.mjs",
-    "reconferir": "node scripts/reconferir.js"
+    "reconferir": "node scripts/reconferir.js",
+    "painel": "node scripts/painel-semanal.js"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0"

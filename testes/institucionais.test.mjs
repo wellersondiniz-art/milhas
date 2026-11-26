@@ -10,6 +10,8 @@ import { PAGINAS_DO_RODAPE } from '../scripts/paginas/moldura.js';
 import { conferirHtml } from '../scripts/paginas/conferir-html.js';
 import { gerarPaginas } from '../scripts/paginas/montar.js';
 import { lerDados } from '../scripts/gerar-paginas.js';
+import { EVENTOS } from '../site/js/metricas/metricas.js';
+import { DOMINIO_NO_PLAUSIBLE } from '../site/js/metricas/config.js';
 
 const RAIZ = new URL('../', import.meta.url);
 const BASE = 'https://exemplo.com.br';
@@ -101,8 +103,14 @@ test('textos: data de atualização no topo, termos explicados, sem linguagem de
   assert.throws(() => paginasInstitucionais({ atualizadoEm: 'ontem' }), /TEXTOS_ATUALIZADOS_EM/);
 });
 
-test('privacidade e termos dizem o que o código faz: sem cookie, sem métrica', async () => {
-  const p = porCaminho(paginasInstitucionais({}).paginas);
+async function codigoPorArquivo() {
+  const pasta = new URL('site/js/', RAIZ);
+  const arquivos = (await readdir(pasta, { recursive: true })).filter((a) => a.endsWith('.js'));
+  return Promise.all(arquivos.map(async (a) => [a, await readFile(new URL(a, pasta), 'utf8')]));
+}
+
+test('privacidade e termos dizem o que o código faz: sem cookie; métrica só pelo módulo de métricas', async () => {
+  const p = porCaminho(paginasInstitucionais({ medindo: false }).paginas);
   const privacidade = textoVisivel(p['privacidade/index.html']);
   assert.match(privacidade, /O site não cria cookies\. Hoje não usamos nenhuma ferramenta de métrica/);
   assert.match(privacidade, /Número do cartão/);
@@ -111,9 +119,14 @@ test('privacidade e termos dizem o que o código faz: sem cookie, sem métrica',
   // Se algum destes falhar, mude os textos de Privacidade e Termos junto com o código.
   const codigo = await codigoDoSite();
   assert.doesNotMatch(codigo, /document\.cookie/, 'o site passou a usar cookie');
-  assert.doesNotMatch(codigo, /sendBeacon|analytics|gtag|plausible|umami/i, 'o site passou a usar métrica');
+  assert.doesNotMatch(codigo, /sendBeacon|gtag|google|umami|cloudflareinsights/i, 'o site passou a usar outra métrica');
+  // Só a pasta metricas/ fala com o Plausible (e a Privacidade lista o que ela manda).
+  // Links comuns para lojas (saida/links.js) são navegação, não conexão: a CSP abaixo garante o resto.
+  const falamComFora = (await codigoPorArquivo()).filter(([, texto]) => /plausible/i.test(texto)).map(([a]) => a);
+  assert.ok(falamComFora.includes('metricas/config.js'));
+  assert.deepEqual(falamComFora.filter((a) => !a.startsWith('metricas/')), [], 'só site/js/metricas/ pode falar com o Plausible');
   const headers = await readFile(new URL('site/_headers', RAIZ), 'utf8');
-  assert.match(headers, /connect-src 'self';/, 'o site passou a falar com outro servidor');
+  assert.match(headers, /connect-src 'self' https:\/\/plausible\.io;/, 'o site passou a falar com outro servidor');
   assert.match(headers, /script-src 'self';/, 'o site passou a carregar script de fora');
   // Link de afiliado só existe em dados/links.json (os textos seguem esse arquivo; veja abaixo).
   const esquemas = await Promise.all(['ofertas', 'lojas', 'cartoes', 'programas', 'cambio'].map((n) => readFile(new URL(`dados/schemas/${n}.schema.json`, RAIZ), 'utf8')));
@@ -161,4 +174,25 @@ test('afiliado: o build escolhe o texto pelos dados de dados/links.json', async 
   assert.match(termos(pago), /Alguns links para lojas são links de afiliado/);
   const soAConfirmar = { ...dados, links: dados.links.map((l) => ({ ...l, parametro_afiliado: 'A_CONFIRMAR' })) };
   assert.match(termos(soAConfirmar), /não usamos link de afiliado/);
+});
+
+test('com as métricas ligadas, a Privacidade lista tudo o que é medido e o que nunca vai', () => {
+  const { paginas, avisos } = paginasInstitucionais({ medindo: true });
+  const privacidade = textoVisivel(porCaminho(paginas)['privacidade/index.html']);
+  assert.match(privacidade, /O site não cria cookies e não mostra anúncios/);
+  assert.match(privacidade, /Plausible, uma ferramenta de métricas que não usa cookie/);
+  for (const { descricao } of Object.values(EVENTOS)) {
+    assert.ok(privacidade.toLowerCase().includes(descricao.toLowerCase()), descricao);
+  }
+  assert.match(privacidade, /Nunca mandamos o valor da compra, os seus cartões, os seus programas/);
+  assert.match(privacidade, /Do Not Track/);
+  assert.doesNotMatch(privacidade, /Hoje não usamos nenhuma ferramenta de métrica/);
+  assert.ok(avisos.some((a) => /Métricas ligadas/.test(a)));
+  assert.equal(conferirHtml(porCaminho(paginas)['privacidade/index.html']).length, 0);
+});
+
+test('a Privacidade segue o config: desligada enquanto o Plausible for A_CONFIRMAR', () => {
+  const privacidade = textoVisivel(porCaminho(paginasInstitucionais({}).paginas)['privacidade/index.html']);
+  if (DOMINIO_NO_PLAUSIBLE === 'A_CONFIRMAR') assert.match(privacidade, /Hoje não usamos nenhuma ferramenta de métrica/);
+  else assert.match(privacidade, /Contamos só isto/);
 });

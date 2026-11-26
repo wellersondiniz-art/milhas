@@ -22,6 +22,7 @@
 
 import { formatarData } from '../../site/js/motor/index.js';
 import { AVISO_COMISSAO } from '../../site/js/saida/links.js';
+import { EVENTOS, metricasLigadas } from '../../site/js/metricas/metricas.js';
 import { EMAIL_DE_CONTATO, NOME_DO_SITE, REVISAO_JURIDICA_PENDENTE, TEXTOS_ATUALIZADOS_EM } from './config.js';
 import { h, juntar } from './html.js';
 import { alerta, documento, termosExplicados, urlAbsoluta } from './moldura.js';
@@ -141,7 +142,7 @@ function sobreDados() {
 // ---------------------------------------------------------------------------
 // Privacidade
 
-function paginaPrivacidade(temAfiliado, usaAwin) {
+function paginaPrivacidade({ temAfiliado, usaAwin, medindo }) {
   return {
     pasta: 'privacidade',
     titulo: 'Privacidade',
@@ -175,9 +176,10 @@ function paginaPrivacidade(temAfiliado, usaAwin) {
         juntar('Em ', meuPerfil(), ', toque em "Apagar tudo". Some tudo o que você marcou neste aparelho.'),
         'Ou apague os dados do site nas configurações do navegador. Isso também tira a cópia usada sem internet.',
       ])),
-      secao('cookies', 'Cookies, métricas e anúncios',
-        p('O site não cria cookies. Hoje não usamos nenhuma ferramenta de métrica de visitas e não mostramos anúncios.'),
-        p('Se um dia a gente passar a contar visitas, vai ser com uma ferramenta que não usa cookie e não identifica você, como a Cloudflare Web Analytics. Antes disso, esta página vai dizer qual ferramenta é e o que ela conta.')),
+      medindo ? secaoMetricas()
+        : secao('cookies', 'Cookies, métricas e anúncios',
+          p('O site não cria cookies. Hoje não usamos nenhuma ferramenta de métrica de visitas e não mostramos anúncios.'),
+          p('Quando a gente passar a contar o uso do site, vai ser com o Plausible, uma ferramenta que não usa cookie e não identifica você. Antes disso, esta página vai dizer exatamente o que é contado.')),
       secao('hospedagem', 'Quem hospeda o site',
         p('O site fica hospedado na Cloudflare. Como em qualquer site, para entregar as páginas o servidor recebe dados técnicos de cada acesso, como o endereço de internet (IP) e o tipo de navegador. A gente não usa esses dados para saber quem você é. Veja também a ',
           h('a', { href: 'https://www.cloudflare.com/privacypolicy/', rel: 'noopener noreferrer' }, 'política de privacidade da Cloudflare'), '.')),
@@ -313,6 +315,21 @@ function montar(pagina, { revisaoPendente, urlBase, atualizadoEm }) {
   };
 }
 
+// A lista do que é medido vem de EVENTOS (site/js/metricas/metricas.js):
+// evento novo no código aparece aqui sozinho.
+function secaoMetricas() {
+  const itens = Object.values(EVENTOS).map(({ descricao }, i, todos) =>
+    `${descricao[0].toUpperCase()}${descricao.slice(1)}${i === todos.length - 1 ? '.' : ';'}`);
+  return secao('cookies', 'Cookies, métricas e anúncios',
+    p('O site não cria cookies e não mostra anúncios.'),
+    p('Para saber o que melhorar, contamos alguns usos do site com o Plausible, uma ferramenta de métricas que não usa cookie e não guarda dados pessoais. Contamos só isto:'),
+    lista(itens),
+    p('Nunca mandamos o valor da compra, os seus cartões, os seus programas, o texto que você digita nem nada do seu perfil. Cada aviso leva só o nome do que aconteceu, os itens da lista acima e o endereço da página, sem o que vem depois do "?".'),
+    p('Para contar quantas pessoas usaram o site sem usar cookie, o Plausible recebe o endereço de internet (IP) e o tipo de navegador, mistura os dois com um código que muda todo dia e não guarda o IP. Assim dá para saber quantas pessoas foram num dia, mas não quem são, nem seguir alguém de um dia para o outro. Veja a ',
+      h('a', { href: 'https://plausible.io/data-policy', rel: 'noopener noreferrer' }, 'política de dados do Plausible'), '.'),
+    p('Se o seu navegador pede para não ser rastreado (as opções "Do Not Track" ou "Global Privacy Control"), o site não manda nada.'));
+}
+
 /** Pastas das páginas institucionais (cada uma vira <pasta>/index.html). */
 export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privacidade', 'termos', 'contato'];
 
@@ -324,6 +341,7 @@ export const PASTAS_INSTITUCIONAIS = ['como-funciona', 'sobre-os-dados', 'privac
  *   atualizadoEm     padrão: TEXTOS_ATUALIZADOS_EM (config.js)
  *   temAfiliado      algum link de dados/links.json é de afiliado (siteTemLinkDeAfiliado)
  *   usaAwin          algum link passa pela Awin (siteUsaAwin)
+ *   medindo          padrão: metricasLigadas() (site/js/metricas/config.js)
  * @returns {{ paginas: {caminho, conteudo}[], indexaveis: string[], avisos: string[] }}
  *   indexaveis: caminhos que entram no sitemap (nenhum enquanto a revisão estiver pendente).
  */
@@ -334,10 +352,11 @@ export function paginasInstitucionais({
   atualizadoEm = TEXTOS_ATUALIZADOS_EM,
   temAfiliado = false,
   usaAwin = false,
+  medindo = metricasLigadas(),
 } = {}) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(atualizadoEm ?? '')) throw new Error(`TEXTOS_ATUALIZADOS_EM precisa ser AAAA-MM-DD (recebido: ${atualizadoEm})`);
   const contatoPagina = paginaContato(email);
-  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade(temAfiliado, usaAwin), paginaTermos(temAfiliado), contatoPagina];
+  const todas = [comoFunciona(), sobreDados(), paginaPrivacidade({ temAfiliado, usaAwin, medindo }), paginaTermos(temAfiliado), contatoPagina];
   const opcoes = { revisaoPendente, urlBase, atualizadoEm };
   const avisos = [];
   if (revisaoPendente) {
@@ -347,6 +366,7 @@ export function paginasInstitucionais({
   if (temAfiliado) {
     avisos.push('Há link de afiliado em dados/links.json: Privacidade e Termos passaram a dizer isso. Se for a primeira vez, troque TEXTOS_ATUALIZADOS_EM em scripts/paginas/config.js.');
   }
+  if (medindo) avisos.push('Métricas ligadas (site/js/metricas/config.js): a página Privacidade diz o que é medido. Se for a primeira vez, troque TEXTOS_ATUALIZADOS_EM em scripts/paginas/config.js.');
   if (!contatoPagina.temEmail) avisos.push('EMAIL_DE_CONTATO A_CONFIRMAR: a página Contato diz que o canal está em preparação. Defina em scripts/paginas/config.js.');
   return {
     paginas: todas.map((pagina) => montar(pagina, opcoes)),
